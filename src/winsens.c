@@ -7,6 +7,7 @@
 
 #include "winsens.h"
 #include "sensors/ws_distance.h"
+#include "ws_publisher.h"
 
 #include "nrf_delay.h"
 #define NRF_LOG_MODULE_NAME "WINSENS"
@@ -36,13 +37,17 @@ WINSENS_Status_e WINSENS_Init()
 
     // init a distance sensor
     status = WS_DistanceInit(WS_DistanceCallback, &ws_timer);
+
+    WS_PublisherInit();
+
     return status;
 }
 
 void WINSENS_Deinit()
 {
-    nrf_drv_timer_uninit(&ws_timer);
+    WS_PublisherInit();
     WS_DistanceDeinit();
+    nrf_drv_timer_uninit(&ws_timer);
 }
 
 WINSENS_Status_e WINSENS_Loop()
@@ -75,6 +80,7 @@ static void WS_DistanceCallback(
     int16_t value)
 {
     NRF_LOG_DEBUG("WS_DistanceCallback value %hu\n", value);
+    WS_PublisherPublish(WINSENS_EVENT_WINDOW_STATE, value);
 }
 
 static void WS_TimerCallback(
