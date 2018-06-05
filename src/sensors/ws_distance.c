@@ -19,9 +19,9 @@ static void WS_AdcEventHandler(
     const nrf_drv_adc_evt_t* event);
 
 static nrf_adc_value_t       ws_adc_buffer[ADC_BUFFER_LEN];
-static nrf_drv_adc_channel_t ws_channel_config = NRF_DRV_ADC_DEFAULT_CHANNEL(NRF_ADC_CONFIG_INPUT_2);
+static nrf_drv_adc_channel_t ws_channel_config = NRF_DRV_ADC_DEFAULT_CHANNEL(NRF_ADC_CONFIG_INPUT_3);
 static WS_DistanceCallback_f ws_callback;
-static nrf_ppi_channel_t ws_ppiChannel;
+static nrf_ppi_channel_t ws_ppiChannelAdc;
 
 
 WINSENS_Status_e WS_DistanceInit(
@@ -41,21 +41,23 @@ WINSENS_Status_e WS_DistanceInit(
     // init PPI
     err_code = nrf_drv_ppi_init();
     APP_ERROR_CHECK(err_code);
-    err_code = nrf_drv_ppi_channel_alloc(&ws_ppiChannel);
+
+    err_code = nrf_drv_ppi_channel_alloc(&ws_ppiChannelAdc);
     APP_ERROR_CHECK(err_code);
-    err_code = nrf_drv_ppi_channel_assign(ws_ppiChannel,
+    err_code = nrf_drv_ppi_channel_assign(ws_ppiChannelAdc,
                                           nrf_drv_timer_event_address_get(timer, NRF_TIMER_EVENT_COMPARE0),
                                           nrf_drv_adc_start_task_get());
     APP_ERROR_CHECK(err_code);
 
     ws_callback = callback;
+    ws_channel_config.config.config.input = NRF_ADC_CONFIG_SCALING_INPUT_ONE_THIRD;
 
     return WINSENS_OK;
 }
 
 void WS_DistanceDeinit()
 {
-    nrf_drv_ppi_channel_free(ws_ppiChannel);
+    nrf_drv_ppi_channel_free(ws_ppiChannelAdc);
     nrf_drv_ppi_uninit();
 
     nrf_drv_adc_uninit();
@@ -65,14 +67,14 @@ WINSENS_Status_e WS_DistanceStart()
 {
     nrf_drv_adc_channel_enable(&ws_channel_config);
     APP_ERROR_CHECK(nrf_drv_adc_buffer_convert(ws_adc_buffer, ADC_BUFFER_LEN));
-    APP_ERROR_CHECK(nrf_drv_ppi_channel_enable(ws_ppiChannel));
+    APP_ERROR_CHECK(nrf_drv_ppi_channel_enable(ws_ppiChannelAdc));
 
     return WINSENS_OK;
 }
 
 void WS_DistanceStop()
 {
-    APP_ERROR_CHECK(nrf_drv_ppi_channel_disable(ws_ppiChannel));
+    APP_ERROR_CHECK(nrf_drv_ppi_channel_disable(ws_ppiChannelAdc));
     nrf_drv_adc_channel_disable(&ws_channel_config);
 }
 
