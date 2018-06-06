@@ -18,7 +18,7 @@ int main(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
     uint32_t err_code;
-    WS_Broker_t *broker = WS_BroketStubCreate();
+    WS_Broker_t *broker = WS_BrokerStubCreate();
 
     err_code = NRF_LOG_INIT(NULL);
     APP_ERROR_CHECK(err_code);
@@ -33,6 +33,6 @@ int main(void)
     NRF_LOG_ERROR("WINSENS_Loop failed with %u\n", status);
 
     WINSENS_Deinit();
-    WS_BroketStubRemove(broker);
+    WS_BrokerStubRemove(broker);
     return 0;
 }

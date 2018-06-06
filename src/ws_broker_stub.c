@@ -12,12 +12,12 @@ void WS_BrokerStubDeliver(
 
 WS_Broker_t brokerStub = { WS_BrokerStubDeliver };
 
-WS_Broker_t * WS_BroketStubCreate(void)
+WS_Broker_t * WS_BrokerStubCreate(void)
 {
     return &brokerStub;
 }
 
-void WS_BroketStubRemove(
+void WS_BrokerStubRemove(
     WS_Broker_t *broker)
 {
     (void) broker;

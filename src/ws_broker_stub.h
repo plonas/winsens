@@ -10,9 +10,9 @@
 
 #include "ws_broker.h"
 
-WS_Broker_t * WS_BroketStubCreate(void);
+WS_Broker_t * WS_BrokerStubCreate(void);
 
-void WS_BroketStubRemove(
+void WS_BrokerStubRemove(
     WS_Broker_t *broker);
 
 #endif /* WS_BROKER_STUB_H_ */
