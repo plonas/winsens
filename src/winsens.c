@@ -14,6 +14,10 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 
+static WINSENS_Status_e WS_Publish(
+    WINSENS_Topic_e topic,
+    int value);
+
 static void WS_DistanceCallback(
     int16_t value);
 static void WS_TimerCallback(
@@ -22,7 +26,10 @@ static void WS_TimerCallback(
 
 static const nrf_drv_timer_t ws_timer = NRF_DRV_TIMER_INSTANCE(0);
 
-WINSENS_Status_e WINSENS_Init()
+static WS_Publisher_t ws_publisher;
+
+WINSENS_Status_e WINSENS_Init(
+    WS_Broker_t *broker)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
@@ -38,14 +45,14 @@ WINSENS_Status_e WINSENS_Init()
     // init a distance sensor
     status = WS_DistanceInit(WS_DistanceCallback, &ws_timer);
 
-    WS_PublisherInit();
+    ws_publisher.broker = broker;
 
     return status;
 }
 
 void WINSENS_Deinit()
 {
-    WS_PublisherInit();
+    ws_publisher.broker = NULL;
     WS_DistanceDeinit();
     nrf_drv_timer_uninit(&ws_timer);
 }
@@ -76,11 +83,21 @@ WINSENS_Status_e WINSENS_Loop()
     return WINSENS_OK;
 }
 
+static WINSENS_Status_e WS_Publish(
+    WINSENS_Topic_e topic,
+    int value)
+{
+    WS_Message_t msg = { topic, value };
+
+    ws_publisher.broker->deliver(&msg);
+    return WINSENS_OK;
+}
+
 static void WS_DistanceCallback(
     int16_t value)
 {
     NRF_LOG_DEBUG("WS_DistanceCallback value %hu\n", value);
-    WS_PublisherPublish(WINSENS_EVENT_WINDOW_STATE, value);
+    WS_Publish(WINSENS_TOPIC_WINDOW_STATE, value); //todo handle return value
 }
 
 static void WS_TimerCallback(

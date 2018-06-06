@@ -19,4 +19,11 @@ typedef enum
 
 } WINSENS_Status_e;
 
+typedef enum
+{
+    WINSENS_TOPIC_WINDOW_STATE,
+    WINSENS_TOPIC_BATTERY,
+
+} WINSENS_Topic_e;
+
 #endif /* WINSENS_TYPES_H_ */
