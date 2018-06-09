@@ -6,12 +6,13 @@ SDK_ROOT := C:/Damian/dev/nRF5_SDK_12.3.0_d7731ad
 PROJ_DIR := .
 
 $(OUTPUT_DIRECTORY)/nrf51422_xxac.out: \
-  LINKER_SCRIPT  := nrf51_memory.ld
+  LINKER_SCRIPT := nrf51_memory.ld
 
 # Source files common to all targets
 SRC_FILES += \
   $(PROJ_DIR)/src/main.c \
   $(PROJ_DIR)/src/winsens.c \
+  $(PROJ_DIR)/src/ws_broker_bt.c \
   $(PROJ_DIR)/src/ws_broker_stub.c \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_adc.c \
@@ -31,6 +32,34 @@ SRC_FILES += \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
 
+# Source files for BLE
+SRC_FILES += \
+  $(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
+  $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
+  $(SDK_ROOT)/components/ble/common/ble_conn_state.c \
+  $(SDK_ROOT)/components/ble/common/ble_srv_common.c \
+  $(SDK_ROOT)/components/ble/peer_manager/gatt_cache_manager.c \
+  $(SDK_ROOT)/components/ble/peer_manager/gatts_cache_manager.c \
+  $(SDK_ROOT)/components/ble/peer_manager/id_manager.c \
+  $(SDK_ROOT)/components/ble/peer_manager/peer_data.c \
+  $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \
+  $(SDK_ROOT)/components/ble/peer_manager/peer_database.c \
+  $(SDK_ROOT)/components/ble/peer_manager/peer_id.c \
+  $(SDK_ROOT)/components/ble/peer_manager/peer_manager.c \
+  $(SDK_ROOT)/components/ble/peer_manager/pm_buffer.c \
+  $(SDK_ROOT)/components/ble/peer_manager/pm_mutex.c \
+  $(SDK_ROOT)/components/ble/peer_manager/security_dispatcher.c \
+  $(SDK_ROOT)/components/ble/peer_manager/security_manager.c \
+  $(SDK_ROOT)/components/softdevice/common/softdevice_handler/softdevice_handler.c \
+  $(SDK_ROOT)/components/libraries/fds/fds.c \
+  $(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
+  $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
+  $(SDK_ROOT)/components/ble/common/ble_conn_state.c \
+  $(SDK_ROOT)/components/libraries/fstorage/fstorage.c \
+  $(SDK_ROOT)/components/ble/common/ble_advdata.c \
+  $(SDK_ROOT)/components/libraries/timer/app_timer.c \
+  $(SDK_ROOT)/components/libraries/util/sdk_mapped_flags.c \
+
 INC_FOLDERS += \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/config \
@@ -45,25 +74,36 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/drivers_nrf/common \
   $(SDK_ROOT)/components/drivers_nrf/delay \
   $(SDK_ROOT)/components/drivers_nrf/gpiote \
-  $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   $(SDK_ROOT)/components/libraries/log \
   $(SDK_ROOT)/components/libraries/log/src \
   $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/external/segger_rtt \
+
+INC_FOLDERS += \
+  $(SDK_ROOT)/components/softdevice/s130/headers \
+  $(SDK_ROOT)/components/softdevice/s130/headers/nrf51 \
+  $(SDK_ROOT)/components/libraries/timer \
+  $(SDK_ROOT)/components/ble/peer_manager \
+  $(SDK_ROOT)/components/libraries/fds \
+  $(SDK_ROOT)/components/ble/common \
+  $(SDK_ROOT)/components/ble/ble_advertising \
+  $(SDK_ROOT)/components/softdevice/common/softdevice_handler \
+  $(SDK_ROOT)/components/libraries/fstorage \
+  $(SDK_ROOT)/components/libraries/experimental_section_vars \
 
 # C flags common to all targets
 CFLAGS += -DNRF51
 CFLAGS += -DNRF_LOG_ENABLED=1
 CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_UART=0
 CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_RTT=1
-#CFLAGS += -DSOFTDEVICE_PRESENT
-#CFLAGS += -DSWI_DISABLE0
+CFLAGS += -DSOFTDEVICE_PRESENT
+CFLAGS += -DSWI_DISABLE0
 #CFLAGS += -D__HEAP_SIZE=0
-CFLAGS += -DBSP_DEFINES_ONLY
-#CFLAGS += -DS130
-#CFLAGS += -DBLE_STACK_SUPPORT_REQD
+#CFLAGS += -DBSP_DEFINES_ONLY
+CFLAGS += -DS130
+CFLAGS += -DBLE_STACK_SUPPORT_REQD
 CFLAGS += -DNRF51422
-#CFLAGS += -DNRF_SD_BLE_API_VERSION=2
+CFLAGS += -DNRF_SD_BLE_API_VERSION=2
 CFLAGS += -mcpu=cortex-m0
 CFLAGS += -mthumb -mabi=aapcs
 CFLAGS +=  -Wall -Werror -O3 -g3
@@ -77,15 +117,15 @@ CXXFLAGS += \
 
 # Assembler flags common to all targets
 ASMFLAGS += -x assembler-with-cpp
-#ASMFLAGS += -DSOFTDEVICE_PRESENT
-#ASMFLAGS += -DSWI_DISABLE0
+ASMFLAGS += -DSOFTDEVICE_PRESENT
+ASMFLAGS += -DSWI_DISABLE0
 #ASMFLAGS += -D__HEAP_SIZE=0
 ASMFLAGS += -DNRF51
-#ASMFLAGS += -DS130
-#ASMFLAGS += -DBLE_STACK_SUPPORT_REQD
+ASMFLAGS += -DS130
+ASMFLAGS += -DBLE_STACK_SUPPORT_REQD
 ASMFLAGS += -DNRF51422
-#ASMFLAGS += -DNRF_SD_BLE_API_VERSION=2
-ASMFLAGS += -DBSP_DEFINES_ONLY
+ASMFLAGS += -DNRF_SD_BLE_API_VERSION=2
+#ASMFLAGS += -DBSP_DEFINES_ONLY
 
 # Linker flags
 LDFLAGS += -mthumb -mabi=aapcs -L $(TEMPLATE_PATH) -T$(LINKER_SCRIPT)

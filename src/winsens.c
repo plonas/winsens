@@ -24,7 +24,7 @@ static void WS_TimerCallback(
     nrf_timer_event_t eventType,
     void* context);
 
-static const nrf_drv_timer_t ws_timer = NRF_DRV_TIMER_INSTANCE(0);
+static const nrf_drv_timer_t ws_timer = NRF_DRV_TIMER_INSTANCE(1);
 
 static WS_Publisher_t ws_publisher;
 
@@ -96,7 +96,8 @@ static WINSENS_Status_e WS_Publish(
 static void WS_DistanceCallback(
     int16_t value)
 {
-    NRF_LOG_DEBUG("WS_DistanceCallback value %hu\n", value);
+    static uint_fast32_t c = 0;
+    NRF_LOG_DEBUG("WS_DistanceCallback [%u] value %hu\n", c++, value);
     WS_Publish(WINSENS_TOPIC_WINDOW_STATE, value); //todo handle return value
 }
 
