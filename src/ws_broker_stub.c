@@ -10,17 +10,17 @@
 void WS_BrokerStubDeliver(
     const struct WS_Message_s *message);
 
-WS_Broker_t brokerStub = { WS_BrokerStubDeliver };
-
-WS_Broker_t * WS_BrokerStubCreate(void)
-{
-    return &brokerStub;
-}
-
-void WS_BrokerStubRemove(
+WINSENS_Status_e WS_BrokerStubInit(
     WS_Broker_t *broker)
 {
-    (void) broker;
+    broker->deliver = WS_BrokerStubDeliver;
+    return WINSENS_OK;
+}
+
+void WS_BrokerStubDeinit(
+    WS_Broker_t *broker)
+{
+    broker->deliver = NULL;
 }
 
 void WS_BrokerStubDeliver(

@@ -10,9 +10,10 @@
 
 #include "ws_broker.h"
 
-WS_Broker_t * WS_BrokerStubCreate(void);
+WINSENS_Status_e WS_BrokerStubInit(
+    WS_Broker_t *broker);
 
-void WS_BrokerStubRemove(
+void WS_BrokerStubDeinit(
     WS_Broker_t *broker);
 
 #endif /* WS_BROKER_STUB_H_ */
