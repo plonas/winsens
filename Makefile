@@ -14,6 +14,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/winsens.c \
   $(PROJ_DIR)/src/ws_broker_bt.c \
   $(PROJ_DIR)/src/ws_broker_stub.c \
+  $(PROJ_DIR)/src/ws_ble_wms.c \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/adc/nrf_drv_adc.c \

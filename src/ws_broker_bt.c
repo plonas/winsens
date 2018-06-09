@@ -6,6 +6,7 @@
  */
 
 #include "ws_broker_bt.h"
+#include "ws_ble_wms.h"
 
 #include "nordic_common.h"
 #include "nrf.h"
@@ -94,6 +95,7 @@ static void ws_on_ble_evt(
 static const bool ws_erase_bonds = false;
 static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
+static ws_ble_wms_t ws_wms;
 
 
 WINSENS_Status_e WS_BrokerBtInit(
@@ -424,29 +426,13 @@ static void ws_on_adv_evt(
 
 static void ws_services_init(void)
 {
-    /* YOUR_JOB: Add code to initialize the services used by the application.
-       uint32_t                           err_code;
-       ble_xxs_init_t                     xxs_init;
-       ble_yys_init_t                     yys_init;
+       uint32_t err_code;
 
-       // Initialize XXX Service.
-       memset(&xxs_init, 0, sizeof(xxs_init));
+       // Initialize WMS Service.
+//       memset(&xxs_init, 0, sizeof(xxs_init));
 
-       xxs_init.evt_handler                = NULL;
-       xxs_init.is_xxx_notify_supported    = true;
-       xxs_init.ble_xx_initial_value.level = 100;
-
-       err_code = ble_bas_init(&m_xxs, &xxs_init);
+       err_code = ws_ble_wms_init(&ws_wms);
        APP_ERROR_CHECK(err_code);
-
-       // Initialize YYY Service.
-       memset(&yys_init, 0, sizeof(yys_init));
-       yys_init.evt_handler                  = on_yys_evt;
-       yys_init.ble_yy_initial_value.counter = 0;
-
-       err_code = ble_yy_service_init(&yys_init, &yy_init);
-       APP_ERROR_CHECK(err_code);
-     */
 }
 
 static void ws_conn_params_init(void)
