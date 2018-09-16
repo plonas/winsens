@@ -34,6 +34,8 @@ WINSENS_Status_e WINSENS_Init(
     WINSENS_Status_e status = WINSENS_ERROR;
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
 
+    NRF_LOG_INFO("WINSENS_Init\n");
+
     // init a timer
     timer_cfg.frequency = NRF_TIMER_FREQ_31250Hz;
     ret_code_t err_code = nrf_drv_timer_init(&ws_timer, &timer_cfg, WS_TimerCallback);
@@ -52,6 +54,7 @@ WINSENS_Status_e WINSENS_Init(
 
 void WINSENS_Deinit()
 {
+    NRF_LOG_INFO("WINSENS_Deinit\n");
     ws_publisher.broker = NULL;
     WS_DistanceDeinit();
     nrf_drv_timer_uninit(&ws_timer);
@@ -61,6 +64,8 @@ WINSENS_Status_e WINSENS_Loop()
 {
     WINSENS_Status_e status = WINSENS_ERROR;
     uint32_t counter = 0;
+
+    NRF_LOG_INFO("WINSENS_Loop in\n");
 
     status = WS_DistanceStart();
     NRF_LOG_DEBUG("WS_DistanceStart returned %u\n", status);
@@ -80,6 +85,7 @@ WINSENS_Status_e WINSENS_Loop()
 
     nrf_drv_timer_disable(&ws_timer);
     WS_DistanceStop();
+    NRF_LOG_INFO("WINSENS_Loop out\n");
     return WINSENS_OK;
 }
 

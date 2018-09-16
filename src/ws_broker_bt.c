@@ -94,6 +94,8 @@ static void ws_on_ble_evt(
 
 static const bool ws_erase_bonds = false;
 static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
+static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
+
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
 static ws_ble_wms_t ws_wms;
 
@@ -103,13 +105,15 @@ WINSENS_Status_e WS_BrokerBtInit(
 {
     uint32_t err_code;
 
+    ws_wms = (ws_ble_wms_t)WS_BLE_WMS_INIT;
+
     ws_timers_init();
     ws_ble_stack_init();
-    ws_peer_manager_init(ws_erase_bonds);
     ws_gap_params_init();
-    ws_advertising_init();
     ws_services_init();
+    ws_advertising_init();
     ws_conn_params_init();
+    ws_peer_manager_init(ws_erase_bonds);
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     APP_ERROR_CHECK(err_code);
@@ -240,11 +244,11 @@ static void ws_peer_manager_init(
     sec_param.kdist_peer.id  = 1;
 
     err_code = pm_sec_params_set(&sec_param);
-    NRF_LOG_INFO("XXX pm_sec_params_set: %d\n", err_code);
+    NRF_LOG_DEBUG("pm_sec_params_set: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     err_code = pm_register(ws_pm_evt_handler);
-    NRF_LOG_INFO("XXX pm_register: %d\n", err_code);
+    NRF_LOG_DEBUG("pm_register: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -377,15 +381,16 @@ static void ws_gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    NRF_LOG_INFO("XXX sd_ble_gap_ppcp_set: %d\n", err_code);
+    NRF_LOG_INFO("sd_ble_gap_ppcp_set: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
 static void ws_advertising_init(void)
 {
-    uint32_t               err_code;
-    ble_advdata_t          advdata;
-    ble_adv_modes_config_t options;
+    uint32_t                err_code;
+    ble_advdata_t           advdata;
+    ble_advdata_t           srdata;
+    ble_adv_modes_config_t  options;
 
     // Build advertising data struct to pass into @ref ble_advertising_init.
     memset(&advdata, 0, sizeof(advdata));
@@ -396,13 +401,17 @@ static void ws_advertising_init(void)
     advdata.uuids_complete.uuid_cnt = sizeof(ws_adv_uuids) / sizeof(ws_adv_uuids[0]);
     advdata.uuids_complete.p_uuids  = ws_adv_uuids;
 
+    memset(&srdata, 0, sizeof(srdata));
+    srdata.uuids_complete.uuid_cnt = sizeof(ws_sr_uuids) / sizeof(ws_sr_uuids[0]);
+    srdata.uuids_complete.p_uuids  = ws_sr_uuids;
+
     memset(&options, 0, sizeof(options));
     options.ble_adv_fast_enabled  = true;
     options.ble_adv_fast_interval = APP_ADV_INTERVAL;
     options.ble_adv_fast_timeout  = APP_ADV_TIMEOUT_IN_SECONDS;
 
-    err_code = ble_advertising_init(&advdata, NULL, &options, ws_on_adv_evt, NULL);
-    NRF_LOG_INFO("XXX ble_advertising_init: %d\n", err_code);
+    err_code = ble_advertising_init(&advdata, &srdata, &options, ws_on_adv_evt, NULL);
+    NRF_LOG_DEBUG("ble_advertising_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -429,8 +438,6 @@ static void ws_services_init(void)
        uint32_t err_code;
 
        // Initialize WMS Service.
-//       memset(&xxs_init, 0, sizeof(xxs_init));
-
        err_code = ws_ble_wms_init(&ws_wms);
        APP_ERROR_CHECK(err_code);
 }
@@ -452,7 +459,7 @@ static void ws_conn_params_init(void)
     cp_init.error_handler                  = ws_conn_params_error_handler;
 
     err_code = ble_conn_params_init(&cp_init);
-    NRF_LOG_INFO("XXX ble_conn_params_init: %d\n", err_code);
+    NRF_LOG_INFO("ble_conn_params_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 

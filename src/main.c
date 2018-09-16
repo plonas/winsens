@@ -24,7 +24,7 @@ int main(void)
     err_code = NRF_LOG_INIT(NULL);
     APP_ERROR_CHECK(err_code);
 
-    NRF_LOG_INFO("XXX Start\n");
+    NRF_LOG_INFO("main in\n");
 
     WS_BrokerBtInit(&broker); //todo handle return value
 //    WS_BrokerStubInit(&broker); //todo handle return value
@@ -38,5 +38,7 @@ int main(void)
     WINSENS_Deinit();
     WS_BrokerBtDeinit(&broker);
 //    WS_BrokerStubDeinit(&broker);
+
+    NRF_LOG_INFO("main out\n");
     return 0;
 }
