@@ -18,6 +18,9 @@
 
 static uint32_t ws_wms_char_add(ws_ble_wms_t * p_wms);
 
+static void ws_on_connect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
+static void ws_on_disconnect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
+
 
 uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms)
 {
@@ -40,12 +43,91 @@ uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms)
     return NRF_SUCCESS;
 }
 
-uint32_t ws_ble_window_state_update(ws_ble_wms_t *p_wms, bool status)
+uint32_t ws_ble_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e state)
 {
-    return NRF_SUCCESS;
+    uint32_t err_code = NRF_SUCCESS;
+    ble_gatts_value_t gatts_value;
+
+    NRF_LOG_INFO("ws_ble_window_state_update\n");
+
+    if (NULL == p_wms)
+    {
+        return NRF_ERROR_NULL;
+    }
+
+    NRF_LOG_INFO("ws_ble_window_state_update state %hu last state %hu\n", state, p_wms->last_state);
+
+    if (state != p_wms->last_state)
+    {
+        // Initialize value struct.
+        memset(&gatts_value, 0, sizeof(gatts_value));
+
+        gatts_value.len     = sizeof(ws_ble_wms_state_e);
+        gatts_value.offset  = 0;
+        gatts_value.p_value = &state;
+
+        // Update database.
+        err_code = sd_ble_gatts_value_set(p_wms->conn_handle,
+            p_wms->char_handles.value_handle,
+            &gatts_value);
+
+        if (err_code == NRF_SUCCESS)
+        {
+            // Save new battery value.
+            p_wms->last_state = state;
+        }
+        else
+        {
+            return err_code;
+        }
+
+        if (BLE_CONN_HANDLE_INVALID != p_wms->conn_handle)
+        {
+            ble_gatts_hvx_params_t hvx_params;
+
+            memset(&hvx_params, 0, sizeof(hvx_params));
+
+            hvx_params.handle = p_wms->char_handles.value_handle;
+            hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+            hvx_params.offset = gatts_value.offset;
+            hvx_params.p_len  = &gatts_value.len;
+            hvx_params.p_data = gatts_value.p_value;
+
+            err_code = sd_ble_gatts_hvx(p_wms->conn_handle, &hvx_params);
+        }
+        else
+        {
+            err_code = NRF_ERROR_INVALID_STATE;
+        }
+    }
+
+    return err_code;
 }
 
-static uint32_t ws_wms_char_add(ws_ble_wms_t * p_wms)
+void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+{
+    if (p_wms == NULL || p_ble_evt == NULL)
+    {
+        return;
+    }
+
+    switch (p_ble_evt->header.evt_id)
+    {
+        case BLE_GAP_EVT_CONNECTED:
+            ws_on_connect(p_wms, p_ble_evt);
+            break;
+
+        case BLE_GAP_EVT_DISCONNECTED:
+            ws_on_disconnect(p_wms, p_ble_evt);
+            break;
+
+        default:
+            // No implementation needed.
+            break;
+    }
+}
+
+static uint32_t ws_wms_char_add(ws_ble_wms_t *p_wms)
 {
     //Add a custom characteristic UUID
     uint32_t            err_code;
@@ -91,10 +173,9 @@ static uint32_t ws_wms_char_add(ws_ble_wms_t * p_wms)
     attr_char_value.p_attr_md = &attr_md;
 
     //Set characteristic length in number of bytes
-    attr_char_value.max_len     = 4;
-    attr_char_value.init_len    = 4;
-    uint8_t value[4]            = {0x12,0x34,0x56,0x78};
-    attr_char_value.p_value     = value;
+    attr_char_value.max_len     = sizeof(ws_ble_wms_state_e);
+    attr_char_value.init_len    = sizeof(ws_ble_wms_state_e);
+    attr_char_value.p_value     = (uint8_t*) &p_wms->last_state;
 
     //Add our new characteristic to the service
     err_code = sd_ble_gatts_characteristic_add(p_wms->service_handle,
@@ -105,4 +186,15 @@ static uint32_t ws_wms_char_add(ws_ble_wms_t * p_wms)
     NRF_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\n", err_code);
 
     return NRF_SUCCESS;
+}
+
+static void ws_on_connect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+{
+    p_wms->conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
+}
+
+static void ws_on_disconnect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+{
+    UNUSED_PARAMETER(p_ble_evt);
+    p_wms->conn_handle = BLE_CONN_HANDLE_INVALID;
 }

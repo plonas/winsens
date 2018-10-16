@@ -131,7 +131,23 @@ void WS_BrokerBtDeinit(
 void WS_BrokerBtDeliver(
     const struct WS_Message_s *message)
 {
-    (void) message;
+    if (BLE_CONN_HANDLE_INVALID == ws_conn_handle)
+    {
+        return;
+    }
+
+    switch (message->topic)
+    {
+    case WINSENS_TOPIC_WINDOW_STATE:
+    {
+        const ws_ble_wms_state_e state = message->value ? WS_BLE_WMS_STATE_OPEN : WS_BLE_WMS_STATE_CLOSED;
+        ws_ble_window_state_update(&ws_wms, state);
+        break;
+    }
+
+    default:
+        break;
+    }
 }
 
 static void ws_timers_init(void)
@@ -500,6 +516,7 @@ static void ws_on_ble_evt(
     {
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected.\r\n");
+            ws_conn_handle = BLE_CONN_HANDLE_INVALID;
             break; // BLE_GAP_EVT_DISCONNECTED
 
         case BLE_GAP_EVT_CONNECTED:
@@ -569,4 +586,6 @@ static void ws_on_ble_evt(
             // No implementation needed.
             break;
     }
+
+    ws_ble_wms_on_ble_evt(&ws_wms, p_ble_evt);
 }

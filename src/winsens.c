@@ -18,6 +18,9 @@ static WINSENS_Status_e WS_Publish(
     WINSENS_Topic_e topic,
     int value);
 
+static bool WS_IsWindowOpen(
+    int16_t value);
+
 static void WS_DistanceCallback(
     int16_t value);
 static void WS_TimerCallback(
@@ -99,12 +102,31 @@ static WINSENS_Status_e WS_Publish(
     return WINSENS_OK;
 }
 
+static bool WS_IsWindowOpen(
+    int16_t value)
+{
+    bool open = false;
+
+    if (400 < value)
+    {
+        open = true;
+    }
+
+    NRF_LOG_DEBUG("WS_IsWindowOpen value %hu open %hu\n", value, open);
+    return open;
+}
+
 static void WS_DistanceCallback(
     int16_t value)
 {
     static uint_fast32_t c = 0;
+    bool windowOpenState = false;
+
     NRF_LOG_DEBUG("WS_DistanceCallback [%u] value %hu\n", c++, value);
-    WS_Publish(WINSENS_TOPIC_WINDOW_STATE, value); //todo handle return value
+
+    windowOpenState = WS_IsWindowOpen(value);
+
+    WS_Publish(WINSENS_TOPIC_WINDOW_STATE, windowOpenState); //todo handle return value
 }
 
 static void WS_TimerCallback(
