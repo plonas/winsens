@@ -6,7 +6,7 @@
  */
 
 #include "winsens.h"
-#include "sensors/ws_distance.h"
+#include "ws_window_state.h"
 #include "ws_publisher.h"
 
 #include "nrf_delay.h"
@@ -47,8 +47,8 @@ WINSENS_Status_e WINSENS_Init(
     nrf_drv_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
 //    nrf_drv_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL1, 51250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
 
-    // init a distance sensor
-    status = WS_DistanceInit(WS_DistanceCallback, &ws_timer);
+    // init a window state
+    status = WS_WindowStateInit();
 
     ws_publisher.broker = broker;
 
@@ -59,7 +59,7 @@ void WINSENS_Deinit()
 {
     NRF_LOG_INFO("WINSENS_Deinit\n");
     ws_publisher.broker = NULL;
-    WS_DistanceDeinit();
+    WS_WindowStateDeinit();
     nrf_drv_timer_uninit(&ws_timer);
 }
 

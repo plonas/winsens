@@ -6,22 +6,25 @@
  */
 
 #include "winsens_types.h"
+#include "hwal/ws_adc_adapter.h"
 
 #include "nrf_drv_timer.h"
 
 #ifndef WS_DISTANCE_H_
 #define WS_DISTANCE_H_
 
-typedef void (*WS_DistanceCallback_f)(int16_t value);
 
-WINSENS_Status_e WS_DistanceInit(
-    WS_DistanceCallback_f callback,
-    const nrf_drv_timer_t* timer);
+typedef void (*WS_DistanceCallback_f)(WS_AdcAdapterChannelId_e id, int16_t value);
 
-void WS_DistanceDeinit();
+WINSENS_Status_e WS_DistanceInit(void);
 
-WINSENS_Status_e WS_DistanceStart();
+void WS_DistanceDeinit(void);
 
-void WS_DistanceStop();
+WINSENS_Status_e WS_DistanceStart(
+    WS_AdcAdapterChannelId_e channelId,
+    WS_DistanceCallback_f callback);
+
+void WS_DistanceStop(
+    WS_AdcAdapterChannelId_e channelId);
 
 #endif /* WS_DISTANCE_H_ */

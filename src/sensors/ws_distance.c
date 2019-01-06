@@ -7,85 +7,60 @@
 
 #include "ws_distance.h"
 
-#include "nrf.h"
-#include "nrf_drv_adc.h"
-#include "nrf_drv_ppi.h"
 #include "app_error.h"
+#include "utils.h"
+#include "ws_adc_adapter.h"
 
-
-#define ADC_BUFFER_LEN          1
 
 static void WS_AdcEventHandler(
-    const nrf_drv_adc_evt_t* event);
+    WS_AdcAdapterChannelId_e id,
+    int16_t value);
 
-static nrf_adc_value_t       ws_adc_buffer[ADC_BUFFER_LEN];
-static nrf_drv_adc_channel_t ws_channel_config = NRF_DRV_ADC_DEFAULT_CHANNEL(NRF_ADC_CONFIG_INPUT_3);
-static WS_DistanceCallback_f ws_callback;
-static nrf_ppi_channel_t ws_ppiChannelAdc;
+static WS_DistanceCallback_f callbacks[WS_ADC_ADAPTER_CHANNELS_NUMBER];
 
-
-WINSENS_Status_e WS_DistanceInit(
-    WS_DistanceCallback_f callback,
-    const nrf_drv_timer_t* timer)
+WINSENS_Status_e WS_DistanceInit(void)
 {
-    ret_code_t ret_code;
-    uint32_t err_code = NRF_ERROR_INTERNAL;
-    nrf_drv_adc_config_t config = NRF_DRV_ADC_DEFAULT_CONFIG;
-
-    if (NULL == callback) return WINSENS_ERROR;
-
-    // init ADC
-    ret_code = nrf_drv_adc_init(&config, WS_AdcEventHandler);
-    APP_ERROR_CHECK(ret_code);
-
-    // init PPI
-    err_code = nrf_drv_ppi_init();
-    APP_ERROR_CHECK(err_code);
-
-    err_code = nrf_drv_ppi_channel_alloc(&ws_ppiChannelAdc);
-    APP_ERROR_CHECK(err_code);
-    err_code = nrf_drv_ppi_channel_assign(ws_ppiChannelAdc,
-                                          nrf_drv_timer_event_address_get(timer, NRF_TIMER_EVENT_COMPARE0),
-                                          nrf_drv_adc_start_task_get());
-    APP_ERROR_CHECK(err_code);
-
-    ws_callback = callback;
-    ws_channel_config.config.config.input = NRF_ADC_CONFIG_SCALING_INPUT_ONE_THIRD;
-
-    return WINSENS_OK;
+    WINSENS_Status_e status = WS_AdcAdapterInit();
+    return status;
 }
 
-void WS_DistanceDeinit()
+void WS_DistanceDeinit(void)
 {
-    nrf_drv_ppi_channel_free(ws_ppiChannelAdc);
-    nrf_drv_ppi_uninit();
-
-    nrf_drv_adc_uninit();
+    WS_AdcAdapterDeinit();
 }
 
-WINSENS_Status_e WS_DistanceStart()
+WINSENS_Status_e WS_DistanceStart(
+    WS_AdcAdapterChannelId_e channelId,
+    WS_DistanceCallback_f callback)
 {
-    nrf_drv_adc_channel_enable(&ws_channel_config);
-    APP_ERROR_CHECK(nrf_drv_adc_buffer_convert(ws_adc_buffer, ADC_BUFFER_LEN));
-    APP_ERROR_CHECK(nrf_drv_ppi_channel_enable(ws_ppiChannelAdc));
+    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId)
 
-    return WINSENS_OK;
-}
+    callbacks[channelId] = callback;
 
-void WS_DistanceStop()
-{
-    APP_ERROR_CHECK(nrf_drv_ppi_channel_disable(ws_ppiChannelAdc));
-    nrf_drv_adc_channel_disable(&ws_channel_config);
-}
-
-static void WS_AdcEventHandler(
-    const nrf_drv_adc_evt_t* event)
-{
-    if (NRF_DRV_ADC_EVT_DONE == event->type)
+    WINSENS_Status_e status = WS_AdcAdapterEnableChannel(channelId, WS_AdcEventHandler);
+    if (WINSENS_OK != status)
     {
-        if (0 < event->data.done.size)
-            ws_callback(event->data.done.p_buffer[0]);
+        callbacks[channelId] = NULL;
+    }
 
-        APP_ERROR_CHECK(nrf_drv_adc_buffer_convert(ws_adc_buffer, ADC_BUFFER_LEN));
+    return status;
+}
+
+void WS_DistanceStop(
+    WS_AdcAdapterChannelId_e channelId)
+{
+    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId)
+
+    WS_AdcAdapterDisableChannel(channelId);
+    callbacks[channelId] = NULL;
+}
+
+static void WS_AdcEventHandler(
+    WS_AdcAdapterChannelId_e id,
+    int16_t value)
+{
+    if (NULL != callbacks[id])
+    {
+        callbacks[id](id, value);
     }
 }
