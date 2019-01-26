@@ -7,6 +7,7 @@
 
 #include "ws_window_state.h"
 #include "sensors/ws_distance.h"
+#include <string.h>
 
 static void WS_DistanceCallback(
     WS_AdcAdapterChannelId_e id,
@@ -23,8 +24,10 @@ static const WS_AdcAdapterChannelId_e WS_ADC_CHANNEL_WINDOW_MAP[WS_ADC_ADAPTER_C
     WS_WINDOW_1
 };
 static WS_WindowState_e ws_windowState[WS_WINDOWS_NUMBER];
+static WS_WindowStateCallback_f ws_callback = NULL;
 
-WINSENS_Status_e WS_WindowStateInit(void)
+WINSENS_Status_e WS_WindowStateInit(
+    WS_WindowStateCallback_f callback)
 {
     WINSENS_Status_e status = WS_DistanceInit();
 
@@ -33,6 +36,7 @@ WINSENS_Status_e WS_WindowStateInit(void)
         return status;
     }
 
+    ws_callback = callback;
     memset(ws_windowState, 0, sizeof(bool) * WS_WINDOWS_NUMBER);
 
     return WS_StartDistanceSensors();
@@ -56,7 +60,7 @@ static void WS_DistanceCallback(
 {
     WS_WindowState_e wStatus = WS_WINDOW_STATE_UNKNOWN;
 
-    if (10 < value)
+    if (400 < value)
     {
         wStatus = WS_WINDOW_STATE_OPEN;
     }
@@ -68,7 +72,7 @@ static void WS_DistanceCallback(
     if (wStatus != ws_windowState[WS_ADC_CHANNEL_WINDOW_MAP[id]])
     {
         ws_windowState[WS_ADC_CHANNEL_WINDOW_MAP[id]] = wStatus;
-        // todo update BLE service
+        ws_callback(WS_ADC_CHANNEL_WINDOW_MAP[id], wStatus);
     }
 }
 

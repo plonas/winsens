@@ -8,8 +8,8 @@
 #include "ws_distance.h"
 
 #include "app_error.h"
-#include "utils.h"
-#include "ws_adc_adapter.h"
+#include "utils/utils.h"
+#include "hwal/ws_adc_adapter.h"
 
 
 static void WS_AdcEventHandler(

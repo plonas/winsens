@@ -5,7 +5,7 @@
  *      Author: Damian Plonek
  */
 
-#include "ws_adc_adapter.h"
+#include "hwal/ws_adc_adapter.h"
 #include "utils/utils.h"
 
 #include "nrf.h"
@@ -13,6 +13,11 @@
 #include "nrf_drv_ppi.h"
 #include "nrf_drv_timer.h"
 #include "app_error.h"
+#define NRF_LOG_MODULE_NAME "ADC_ADAPTER"
+#include "nrf_log.h"
+#include "nrf_log_ctrl.h"
+
+#include <string.h>
 
 
 #define WS_ADC_MAX_CHANNELS          1
@@ -20,8 +25,6 @@
 const uint32_t ADC_CONFIG_INPUT_MAP[WS_ADC_MAX_CHANNELS] = {
         NRF_ADC_CONFIG_INPUT_3
 };
-
-typedef struct WS_AdcAdapterChannel;
 
 typedef struct
 {
@@ -58,7 +61,7 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
 
     // init a timer
     timer_cfg.frequency = NRF_TIMER_FREQ_31250Hz;
-    ret_code_t err_code = nrf_drv_timer_init(&ws_timer, &timer_cfg, WS_TimerCallback);
+    err_code = nrf_drv_timer_init(&ws_timer, &timer_cfg, WS_TimerCallback);
     APP_ERROR_CHECK(err_code);
     nrf_drv_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
 
@@ -70,10 +73,10 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     err_code = nrf_drv_ppi_init();
     APP_ERROR_CHECK(err_code);
 
-    err_code = nrf_drv_ppi_channel_alloc(ws_ppiChannelAdc);
+    err_code = nrf_drv_ppi_channel_alloc(&ws_ppiChannelAdc);
     APP_ERROR_CHECK(err_code);
     err_code = nrf_drv_ppi_channel_assign(ws_ppiChannelAdc,
-                                          nrf_drv_timer_event_address_get(ws_timer, NRF_TIMER_EVENT_COMPARE0),
+                                          nrf_drv_timer_event_address_get(&ws_timer, NRF_TIMER_EVENT_COMPARE0),
                                           nrf_drv_adc_start_task_get());
     APP_ERROR_CHECK(err_code);
 

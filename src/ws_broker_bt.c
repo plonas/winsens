@@ -138,10 +138,17 @@ void WS_BrokerBtDeliver(
 
     switch (message->topic)
     {
-    case WINSENS_TOPIC_WINDOW_STATE:
+    case WS_BROKER_TOPIC_WINDOW_STATE:
     {
-        const ws_ble_wms_state_e state = message->value ? WS_BLE_WMS_STATE_OPEN : WS_BLE_WMS_STATE_CLOSED;
-        ws_ble_window_state_update(&ws_wms, state);
+        if (WS_WINDOW_1 == message->value.windowState.windowId)
+        {
+            const ws_ble_wms_state_e state = message->value.windowState.state ? WS_BLE_WMS_STATE_OPEN : WS_BLE_WMS_STATE_CLOSED;
+            ws_ble_window_state_update(&ws_wms, state);
+        }
+        else
+        {
+            // take care of the other windows state
+        }
         break;
     }
 

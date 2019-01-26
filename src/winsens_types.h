@@ -22,9 +22,19 @@ typedef enum
 
 typedef enum
 {
-    WINSENS_TOPIC_WINDOW_STATE,
-    WINSENS_TOPIC_BATTERY,
+    WS_WINDOW_STATE_UNKNOWN,
+    WS_WINDOW_STATE_OPEN,
+    WS_WINDOW_STATE_CLOSED
 
-} WINSENS_Topic_e;
+} WS_WindowState_e;
+
+typedef enum
+{
+    WS_WINDOW_1,
+    WS_WINDOW_2,
+    WS_WINDOW_3,
+
+    WS_WINDOWS_NUMBER
+} WS_Window_e;
 
 #endif /* WINSENS_TYPES_H_ */
