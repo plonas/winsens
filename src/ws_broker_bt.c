@@ -63,8 +63,10 @@
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
 
-void WS_BrokerBtDeliver(
+static void WS_BrokerBtDeliver(
     const struct WS_Message_s *message);
+static ws_ble_wms_state_e ws_convertWindowState(
+    WS_WindowState_e state);
 
 static void ws_timers_init(void);
 static void ws_ble_stack_init(void);
@@ -128,7 +130,7 @@ void WS_BrokerBtDeinit(
     broker->deliver = NULL;
 }
 
-void WS_BrokerBtDeliver(
+static void WS_BrokerBtDeliver(
     const struct WS_Message_s *message)
 {
     if (BLE_CONN_HANDLE_INVALID == ws_conn_handle)
@@ -142,7 +144,7 @@ void WS_BrokerBtDeliver(
     {
         if (WS_WINDOW_1 == message->value.windowState.windowId)
         {
-            const ws_ble_wms_state_e state = message->value.windowState.state ? WS_BLE_WMS_STATE_OPEN : WS_BLE_WMS_STATE_CLOSED;
+            const ws_ble_wms_state_e state = ws_convertWindowState(message->value.windowState.state);
             ws_ble_window_state_update(&ws_wms, state);
         }
         else
@@ -155,6 +157,12 @@ void WS_BrokerBtDeliver(
     default:
         break;
     }
+}
+
+static ws_ble_wms_state_e ws_convertWindowState(
+    WS_WindowState_e state)
+{
+    return (ws_ble_wms_state_e) state;
 }
 
 static void ws_timers_init(void)
@@ -489,11 +497,9 @@ static void ws_conn_params_init(void)
 static void ws_on_conn_params_evt(
     ble_conn_params_evt_t * p_evt)
 {
-    uint32_t err_code;
-
     if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
     {
-        err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
+        uint32_t err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
         APP_ERROR_CHECK(err_code);
     }
 }
