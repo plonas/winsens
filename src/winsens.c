@@ -46,27 +46,6 @@ void WINSENS_Deinit()
     WS_WindowStateDeinit();
 }
 
-WINSENS_Status_e WINSENS_Loop()
-{
-    uint32_t counter = 0;
-
-    NRF_LOG_INFO("WINSENS_Loop in\n");
-
-    while (true)
-    {
-        if (10 == counter)
-        {
-            NRF_LOG_FLUSH();
-            counter = 0;
-        }
-        nrf_delay_ms(100);
-        counter++;
-    }
-
-    NRF_LOG_INFO("WINSENS_Loop out\n");
-    return WINSENS_OK;
-}
-
 static WINSENS_Status_e WS_Publish(
     WS_BrokerTopic_e topic,
     WS_BrokerMessageValue_t value)

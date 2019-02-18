@@ -13,6 +13,7 @@
 #include "nrf_drv_ppi.h"
 #include "nrf_drv_timer.h"
 #include "app_error.h"
+#include "app_scheduler.h"
 #define NRF_LOG_MODULE_NAME "ADC_ADAPTER"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -33,8 +34,11 @@ typedef struct
 
 } WS_AdcAdapterChannel_t;
 
-static void WS_AdcAdapterEventHandler(
+static void WS_AdcAdapterIrqHandler(
     const nrf_drv_adc_evt_t* event);
+static void WS_AdcAdapterEventHandler(
+    void *p_event_data,
+    uint16_t event_size);
 static void WS_TimerCallback(
     nrf_timer_event_t eventType,
     void* context);
@@ -66,7 +70,7 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     nrf_drv_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, false);
 
     // init ADC
-    ret_code = nrf_drv_adc_init(&config, WS_AdcAdapterEventHandler);
+    ret_code = nrf_drv_adc_init(&config, WS_AdcAdapterIrqHandler);
     APP_ERROR_CHECK(ret_code);
 
     // init PPI
@@ -153,7 +157,7 @@ void WS_AdcAdapterDisableChannel(
     }
 }
 
-static void WS_AdcAdapterEventHandler(
+static void WS_AdcAdapterIrqHandler(
     const nrf_drv_adc_evt_t* event)
 {
     if (NRF_DRV_ADC_EVT_DONE == event->type)
@@ -168,17 +172,31 @@ static void WS_AdcAdapterEventHandler(
 
         for (i = 0; i < event->data.done.size; i++)
         {
-            if (ws_channels[i].callback)
-            {
-                ws_channels[i].callback(i, event->data.done.p_buffer[i]);
-            }
-            else
-            {
-                NRF_LOG_ERROR("Missing channel's #%u callback\r\n", i);
-            }
+            WS_AdcAdapterEvent_t adcEvent = { i, (int16_t) event->data.done.p_buffer[i] };
+
+            app_sched_event_put(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
         }
 
         APP_ERROR_CHECK(nrf_drv_adc_buffer_convert(ws_adc_buffer, ws_active_adc_channels_num));
+    }
+}
+
+static void WS_AdcAdapterEventHandler(
+    void *p_event_data,
+    uint16_t event_size)
+{
+    const WS_AdcAdapterEvent_t *adcEvent = p_event_data;
+    UNUSED_PARAMETER(event_size);
+
+    ASSERT(adcEvent);
+
+    if (ws_channels[adcEvent->id].callback)
+    {
+        ws_channels[adcEvent->id].callback(adcEvent->id, adcEvent->value);
+    }
+    else
+    {
+        NRF_LOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
     }
 }
 

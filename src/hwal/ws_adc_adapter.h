@@ -11,8 +11,6 @@
 #include "winsens_types.h"
 
 
-struct WS_AdcAdapterChannel;
-
 typedef enum
 {
     WS_ADC_ADAPTER_CHANNEL_1,
@@ -23,6 +21,13 @@ typedef enum
 } WS_AdcAdapterChannelId_e;
 
 typedef void (*WS_AdcAdapterCallback_f)(WS_AdcAdapterChannelId_e id, int16_t value);
+
+typedef struct
+{
+    WS_AdcAdapterChannelId_e id;
+    int16_t value;
+} WS_AdcAdapterEvent_t;
+#define WS_ADC_ADAPTER_SCHED_EVT_SIZE       sizeof(WS_AdcAdapterEvent_t)
 
 WINSENS_Status_e WS_AdcAdapterInit(void);
 

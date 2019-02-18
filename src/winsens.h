@@ -16,6 +16,4 @@ WINSENS_Status_e WINSENS_Init(
 
 void WINSENS_Deinit();
 
-WINSENS_Status_e WINSENS_Loop();
-
 #endif /* WINSENS_H_ */
