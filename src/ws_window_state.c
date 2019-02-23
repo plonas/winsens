@@ -9,6 +9,9 @@
 #include "sensors/ws_distance.h"
 #include <string.h>
 
+#define WS_OPEN_CLOSED_THRESHOLD_DEFAULT    400
+
+
 static void WS_DistanceCallback(
     WS_AdcAdapterChannelId_e id,
     int16_t value);
@@ -22,6 +25,7 @@ static const WS_AdcAdapterChannelId_e WS_ADC_CHANNEL_WINDOW_MAP[WS_ADC_ADAPTER_C
 };
 static WS_WindowState_e ws_windowState[WS_WINDOWS_NUMBER];
 static WS_WindowStateCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
+static uint16_t ws_openClosedthreshold = 0;
 
 WINSENS_Status_e WS_WindowStateInit(void)
 {
@@ -31,6 +35,8 @@ WINSENS_Status_e WS_WindowStateInit(void)
     {
         return status;
     }
+
+    ws_openClosedthreshold = WS_OPEN_CLOSED_THRESHOLD_DEFAULT;
 
     memset(ws_windowState, 0, sizeof(bool) * WS_WINDOWS_NUMBER);
     memset(ws_callbacks, 0, sizeof(WS_WindowStateCallback_f) * WS_WINDOWS_NUMBER);
@@ -42,6 +48,14 @@ void WS_WindowStateDeinit(void)
 {
     WS_StopDistanceSensors();
     WS_DistanceDeinit();
+}
+
+WS_WindowState_e WS_WindowStateConfigure(
+    WS_Window_e windowsId,
+    uint16_t openClosedThreshold)
+{
+    ws_openClosedthreshold = openClosedThreshold;
+    return WINSENS_OK;
 }
 
 WS_WindowState_e WS_WindowStateSubscribe(
@@ -83,7 +97,7 @@ static void WS_DistanceCallback(
 {
     WS_WindowState_e wStatus = WS_WINDOW_STATE_UNKNOWN;
 
-    if (400 < value)
+    if (ws_openClosedthreshold < value)
     {
         wStatus = WS_WINDOW_STATE_OPEN;
     }

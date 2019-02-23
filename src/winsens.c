@@ -17,6 +17,9 @@
 static void WS_WindowStateCallback(
     WS_Window_e window,
     WS_WindowState_e state);
+static void WS_ServerCallback(
+    WS_Window_e window,
+    uint16_t value);
 
 WS_Server_t *ws_server = NULL;
 
@@ -32,6 +35,7 @@ WINSENS_Status_e WINSENS_Init(
     // init a window state
     status = WS_WindowStateInit();
     WS_WindowStateSubscribe(WS_WINDOW_1, WS_WindowStateCallback);
+    server->subscribe(server, WS_WINDOW_1, WS_ServerCallback);
 
     return status;
 }
@@ -39,6 +43,7 @@ WINSENS_Status_e WINSENS_Init(
 void WINSENS_Deinit()
 {
     NRF_LOG_INFO("WINSENS_Deinit\n");
+    ws_server->unsubscribe(ws_server, WS_WINDOW_1, WS_ServerCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
     WS_WindowStateDeinit();
 }
@@ -48,4 +53,11 @@ static void WS_WindowStateCallback(
     WS_WindowState_e state)
 {
     ws_server->updateWindowState(ws_server, window, state); // todo handle return value
+}
+
+static void WS_ServerCallback(
+    WS_Window_e window,
+    uint16_t value)
+{
+    WS_WindowStateConfigure(window, value); // todo handle return value
 }

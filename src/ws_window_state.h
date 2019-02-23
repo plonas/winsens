@@ -18,6 +18,10 @@ WINSENS_Status_e WS_WindowStateInit(void);
 
 void WS_WindowStateDeinit(void);
 
+WS_WindowState_e WS_WindowStateConfigure(
+    WS_Window_e windowsId,
+    uint16_t openClosedThreshold);
+
 WS_WindowState_e WS_WindowStateSubscribe(
     WS_Window_e windowsId,
     WS_WindowStateCallback_f callback);
