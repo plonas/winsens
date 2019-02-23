@@ -5,7 +5,8 @@
  *      Author: Damian.Plonek
  */
 
-#include "ws_broker_bt.h"
+#include "ws_server_bt.h"
+
 #include "ws_ble_wms.h"
 
 #include "nordic_common.h"
@@ -63,8 +64,12 @@
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
 
-static void WS_BrokerBtDeliver(
-    const struct WS_Message_s *message);
+static void ws_ServerBtDeinit(
+    WS_Server_t *server);
+static void ws_ServerBtUpdateWindowState(
+    WS_Server_t *server,
+    WS_Window_e windowId,
+    WS_WindowState_e state);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
 
@@ -102,8 +107,8 @@ static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                       
 static ws_ble_wms_t ws_wms;
 
 
-WINSENS_Status_e WS_BrokerBtInit(
-    WS_Broker_t *broker)
+WINSENS_Status_e WS_ServerBtInit(
+    WS_Server_t *server)
 {
     uint32_t err_code;
 
@@ -120,42 +125,36 @@ WINSENS_Status_e WS_BrokerBtInit(
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     APP_ERROR_CHECK(err_code);
 
-    broker->deliver = WS_BrokerBtDeliver;
+    server->updateWindowState = ws_ServerBtUpdateWindowState;
+    server->deinit = ws_ServerBtDeinit;
     return WINSENS_OK;
 }
 
-void WS_BrokerBtDeinit(
-    WS_Broker_t *broker)
+static void ws_ServerBtDeinit(
+    WS_Server_t *server)
 {
-    broker->deliver = NULL;
+    server->updateWindowState = NULL;
+    server->deinit = NULL;
 }
 
-static void WS_BrokerBtDeliver(
-    const struct WS_Message_s *message)
+static void ws_ServerBtUpdateWindowState(
+    WS_Server_t *server,
+    WS_Window_e windowId,
+    WS_WindowState_e state)
 {
     if (BLE_CONN_HANDLE_INVALID == ws_conn_handle)
     {
         return;
     }
 
-    switch (message->topic)
+    if (WS_WINDOW_1 == windowId)
     {
-    case WS_BROKER_TOPIC_WINDOW_STATE:
-    {
-        if (WS_WINDOW_1 == message->value.windowState.windowId)
-        {
-            const ws_ble_wms_state_e state = ws_convertWindowState(message->value.windowState.state);
-            ws_ble_window_state_update(&ws_wms, state);
-        }
-        else
-        {
-            // take care of the other windows state
-        }
-        break;
+        const ws_ble_wms_state_e wmsState = ws_convertWindowState(state);
+        ws_ble_window_state_update(&ws_wms, wmsState);
     }
-
-    default:
-        break;
+    else
+    {
+        // take care of the other windows state
     }
 }
 

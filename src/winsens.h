@@ -9,10 +9,10 @@
 #define WINSENS_H_
 
 #include "winsens_types.h"
-#include "ws_publisher.h" //to show it is a publisher
+#include "ws_server.h"
 
 WINSENS_Status_e WINSENS_Init(
-    WS_Broker_t *broker);
+    WS_Server_t *server);
 
 void WINSENS_Deinit();
 

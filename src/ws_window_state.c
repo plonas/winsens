@@ -17,17 +17,13 @@ static void WS_DistanceCallback(
 static WINSENS_Status_e WS_StartDistanceSensors(void);
 static void WS_StopDistanceSensors(void);
 
-static const WS_AdcAdapterChannelId_e WS_WINDOW_ADC_CHANNEL_MAP[WS_WINDOWS_NUMBER] = {
-    WS_ADC_ADAPTER_CHANNEL_1
-};
 static const WS_AdcAdapterChannelId_e WS_ADC_CHANNEL_WINDOW_MAP[WS_ADC_ADAPTER_CHANNELS_NUMBER] = {
     WS_WINDOW_1
 };
 static WS_WindowState_e ws_windowState[WS_WINDOWS_NUMBER];
-static WS_WindowStateCallback_f ws_callback = NULL;
+static WS_WindowStateCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
 
-WINSENS_Status_e WS_WindowStateInit(
-    WS_WindowStateCallback_f callback)
+WINSENS_Status_e WS_WindowStateInit(void)
 {
     WINSENS_Status_e status = WS_DistanceInit();
 
@@ -36,8 +32,8 @@ WINSENS_Status_e WS_WindowStateInit(
         return status;
     }
 
-    ws_callback = callback;
     memset(ws_windowState, 0, sizeof(bool) * WS_WINDOWS_NUMBER);
+    memset(ws_callbacks, 0, sizeof(WS_WindowStateCallback_f) * WS_WINDOWS_NUMBER);
 
     return WS_StartDistanceSensors();
 }
@@ -48,10 +44,37 @@ void WS_WindowStateDeinit(void)
     WS_DistanceDeinit();
 }
 
-WS_WindowState_e WS_WindowStateGet(
-    WS_Window_e windowId)
+WS_WindowState_e WS_WindowStateSubscribe(
+    WS_Window_e windowsId,
+    WS_WindowStateCallback_f callback)
 {
-    return ws_windowState[WS_WINDOW_ADC_CHANNEL_MAP[windowId]];
+    if (windowsId >= WS_WINDOWS_NUMBER)
+    {
+        return WINSENS_ERROR;
+    }
+
+    if (ws_callbacks[windowsId])
+    {
+        return WINSENS_NO_RESOURCES;
+    }
+
+    ws_callbacks[windowsId] = callback;
+
+    return WINSENS_OK;
+}
+
+void WS_WindowStateUnsubscribe(
+    WS_Window_e windowsId,
+    WS_WindowStateCallback_f callback)
+{
+    (void) callback;
+
+    if (windowsId >= WS_WINDOWS_NUMBER)
+    {
+        return;
+    }
+
+    ws_callbacks[windowsId] = NULL;
 }
 
 static void WS_DistanceCallback(
@@ -72,7 +95,10 @@ static void WS_DistanceCallback(
     if (wStatus != ws_windowState[WS_ADC_CHANNEL_WINDOW_MAP[id]])
     {
         ws_windowState[WS_ADC_CHANNEL_WINDOW_MAP[id]] = wStatus;
-        ws_callback(WS_ADC_CHANNEL_WINDOW_MAP[id], wStatus);
+        if (ws_callbacks[WS_ADC_CHANNEL_WINDOW_MAP[id]])
+        {
+            ws_callbacks[WS_ADC_CHANNEL_WINDOW_MAP[id]](WS_ADC_CHANNEL_WINDOW_MAP[id], wStatus);
+        }
     }
 }
 

@@ -6,8 +6,8 @@
  */
 
 #include "winsens.h"
-#include "ws_broker_bt.h"
-//#include "ws_broker_stub.h"
+//#include "ws_server_stub.h"
+#include "ws_server_bt.h"
 
 #include "nrf_delay.h"
 #include "app_error.h"
@@ -27,7 +27,7 @@ int main(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
     uint32_t err_code;
-    WS_Broker_t broker;
+    WS_Server_t server;
 
     APP_SCHED_INIT(SCHED_MAX_EVENT_DATA_SIZE, SCHED_QUEUE_SIZE);
     err_code = NRF_LOG_INIT(NULL);
@@ -35,9 +35,9 @@ int main(void)
 
     NRF_LOG_INFO("main in\n");
 
-    WS_BrokerBtInit(&broker); //todo handle return value
-//    WS_BrokerStubInit(&broker); //todo handle return value
-    status = WINSENS_Init(&broker);
+//    WS_ServerStubInit(&server); //todo handle return value
+    WS_ServerBtInit(&server); //todo handle return value
+    status = WINSENS_Init(&server);
     if (WINSENS_OK != status) return -1;
 
     while (true)
@@ -47,8 +47,7 @@ int main(void)
     };
 
     WINSENS_Deinit();
-    WS_BrokerBtDeinit(&broker);
-//    WS_BrokerStubDeinit(&broker);
+    server.deinit(&server);
 
     NRF_LOG_INFO("main out\n");
     return 0;

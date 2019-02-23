@@ -12,8 +12,8 @@ $(OUTPUT_DIRECTORY)/nrf51422_xxac.out: \
 SRC_FILES += \
   $(PROJ_DIR)/src/main.c \
   $(PROJ_DIR)/src/winsens.c \
-  $(PROJ_DIR)/src/ws_broker_bt.c \
-  $(PROJ_DIR)/src/ws_broker_stub.c \
+  $(PROJ_DIR)/src/ws_server_stub.c \
+  $(PROJ_DIR)/src/ws_server_bt.c \
   $(PROJ_DIR)/src/ws_ble_wms.c \
   $(PROJ_DIR)/src/ws_window_state.c \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
