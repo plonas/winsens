@@ -6,6 +6,7 @@
  */
 
 #include "hwal/ws_adc_adapter.h"
+#include "hwal/ws_task_queue.h"
 #include "utils/utils.h"
 
 #include "nrf.h"
@@ -13,7 +14,6 @@
 #include "nrf_drv_ppi.h"
 #include "nrf_drv_timer.h"
 #include "app_error.h"
-#include "app_scheduler.h"
 #define NRF_LOG_MODULE_NAME "ADC_ADAPTER"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -172,9 +172,14 @@ static void WS_AdcAdapterIrqHandler(
 
         for (i = 0; i < event->data.done.size; i++)
         {
+            WINSENS_Status_e status = WINSENS_ERROR;
             WS_AdcAdapterEvent_t adcEvent = { i, (int16_t) event->data.done.p_buffer[i] };
 
-            app_sched_event_put(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
+            status = WS_TaskQueueAdd(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
+            if (WINSENS_OK != status)
+            {
+                NRF_LOG_ERROR("WS_TaskQueueAdd failed\n");
+            }
         }
 
         APP_ERROR_CHECK(nrf_drv_adc_buffer_convert(ws_adc_buffer, ws_active_adc_channels_num));

@@ -18,6 +18,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/ws_window_state.c \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
   $(PROJ_DIR)/src/hwal/nrf51/ws_adc_adapter.c \
+  $(PROJ_DIR)/src/hwal/nrf51/ws_task_queue.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/adc/nrf_drv_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/timer/nrf_drv_timer.c \
