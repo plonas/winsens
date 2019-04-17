@@ -35,7 +35,9 @@ WINSENS_Status_e WINSENS_Init(
     // init a window state
     status = WS_WindowStateInit();
     WS_WindowStateSubscribe(WS_WINDOW_1, WS_WindowStateCallback);
+    WS_WindowStateSubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     server->subscribe(server, WS_WINDOW_1, WS_ServerCallback);
+    server->subscribe(server, WS_WINDOW_2, WS_ServerCallback);
 
     return status;
 }
@@ -43,7 +45,9 @@ WINSENS_Status_e WINSENS_Init(
 void WINSENS_Deinit()
 {
     NRF_LOG_INFO("WINSENS_Deinit\n");
+    ws_server->unsubscribe(ws_server, WS_WINDOW_2, WS_ServerCallback);
     ws_server->unsubscribe(ws_server, WS_WINDOW_1, WS_ServerCallback);
+    WS_WindowStateUnsubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
     WS_WindowStateDeinit();
 }

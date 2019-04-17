@@ -32,7 +32,6 @@ typedef enum
 {
     WS_WINDOW_1,
     WS_WINDOW_2,
-    WS_WINDOW_3,
 
     WS_WINDOWS_NUMBER
 } WS_Window_e;

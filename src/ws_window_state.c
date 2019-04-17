@@ -21,7 +21,8 @@ static WINSENS_Status_e WS_StartDistanceSensors(void);
 static void WS_StopDistanceSensors(void);
 
 static const WS_AdcAdapterChannelId_e WS_ADC_CHANNEL_WINDOW_MAP[WS_ADC_ADAPTER_CHANNELS_NUMBER] = {
-    WS_WINDOW_1
+    WS_WINDOW_1,
+    WS_WINDOW_2,
 };
 static WS_WindowState_e ws_windowState[WS_WINDOWS_NUMBER];
 static WS_WindowStateCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
@@ -118,10 +119,26 @@ static void WS_DistanceCallback(
 
 static WINSENS_Status_e WS_StartDistanceSensors(void)
 {
-    return WS_DistanceStart(WS_ADC_ADAPTER_CHANNEL_1, WS_DistanceCallback);
+    WINSENS_Status_e status = WINSENS_ERROR;
+
+    status = WS_DistanceStart(WS_ADC_ADAPTER_CHANNEL_1, WS_DistanceCallback);
+    if (WINSENS_OK != status)
+    {
+        return status;
+    }
+
+    status = WS_DistanceStart(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
+    if (WINSENS_OK != status)
+    {
+        WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_1);
+        return status;
+    }
+
+    return status;
 }
 
 static void WS_StopDistanceSensors(void)
 {
+    WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_2);
     WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_1);
 }

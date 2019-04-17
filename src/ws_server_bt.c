@@ -113,16 +113,20 @@ static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UU
 static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
 
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
-static ws_ble_wms_t ws_wms;
+static ws_ble_wms_t ws_wms[WS_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
 static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
 
 
 WINSENS_Status_e WS_ServerBtInit(
     WS_Server_t *server)
 {
+    uint32_t i = 0;
     uint32_t err_code;
 
-    ws_wms = (ws_ble_wms_t)WS_BLE_WMS_INIT;
+    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
+    {
+        ws_wms[i] = (ws_ble_wms_t)WS_BLE_WMS_INIT;
+    }
     memset(ws_callbacks, 0, sizeof(WS_ServerCallback_f) * WS_WINDOWS_NUMBER);
 
     ws_timers_init();
@@ -195,14 +199,10 @@ static void ws_ServerBtUpdateWindowState(
         return;
     }
 
-    if (WS_WINDOW_1 == windowId)
+    if (WS_WINDOWS_NUMBER > windowId)
     {
         const ws_ble_wms_state_e wmsState = ws_convertWindowState(state);
-        ws_ble_window_state_update(&ws_wms, wmsState);
-    }
-    else
-    {
-        // take care of the other windows state
+        ws_ble_window_state_update(&ws_wms[windowId], wmsState);
     }
 }
 
@@ -214,9 +214,14 @@ static ws_ble_wms_state_e ws_convertWindowState(
 
 static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value)
 {
-    if (ws_callbacks[WS_WINDOW_1])
+    uint32_t i;
+
+    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
     {
-        ws_callbacks[WS_WINDOW_1](WS_WINDOW_1, value);
+        if (wms == &ws_wms[i])
+        {
+            ws_callbacks[i](i, value);
+        }
     }
 }
 
@@ -524,7 +529,8 @@ static void ws_services_init(void)
        uint32_t err_code;
 
        // Initialize WMS Service.
-       err_code = ws_ble_wms_init(&ws_wms, ws_on_threshold_write);
+       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], ws_on_threshold_write);
+       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], ws_on_threshold_write);
        APP_ERROR_CHECK(err_code);
 }
 
@@ -656,5 +662,5 @@ static void ws_on_ble_evt(
             break;
     }
 
-    ws_ble_wms_on_ble_evt(&ws_wms, p_ble_evt);
+    ws_ble_wms_on_ble_evt(&ws_wms[WS_WINDOW_1], p_ble_evt);
 }

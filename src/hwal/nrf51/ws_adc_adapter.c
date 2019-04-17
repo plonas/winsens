@@ -21,10 +21,9 @@
 #include <string.h>
 
 
-#define WS_ADC_MAX_CHANNELS          1
-
-const uint32_t ADC_CONFIG_INPUT_MAP[WS_ADC_MAX_CHANNELS] = {
-        NRF_ADC_CONFIG_INPUT_3
+const uint32_t ADC_CONFIG_INPUT_MAP[WS_ADC_ADAPTER_CHANNELS_NUMBER] = {
+        NRF_ADC_CONFIG_INPUT_3,
+        NRF_ADC_CONFIG_INPUT_6
 };
 
 typedef struct
@@ -45,9 +44,9 @@ static void WS_TimerCallback(
 
 
 nrf_ppi_channel_t ws_ppiChannelAdc;
-WS_AdcAdapterChannel_t ws_channels[WS_ADC_MAX_CHANNELS];
+WS_AdcAdapterChannel_t ws_channels[WS_ADC_ADAPTER_CHANNELS_NUMBER];
 
-static nrf_adc_value_t ws_adc_buffer[WS_ADC_MAX_CHANNELS];
+static nrf_adc_value_t ws_adc_buffer[WS_ADC_ADAPTER_CHANNELS_NUMBER];
 static uint8_t ws_active_adc_channels_num = 0;
 
 static const nrf_drv_timer_t ws_timer = NRF_DRV_TIMER_INSTANCE(1);
@@ -60,7 +59,7 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     nrf_drv_adc_config_t config = NRF_DRV_ADC_DEFAULT_CONFIG;
     nrf_drv_timer_config_t timer_cfg = NRF_DRV_TIMER_DEFAULT_CONFIG;
 
-    memset(ws_channels, 0, sizeof(WS_AdcAdapterChannel_t) * WS_ADC_MAX_CHANNELS);
+    memset(ws_channels, 0, sizeof(WS_AdcAdapterChannel_t) * WS_ADC_ADAPTER_CHANNELS_NUMBER);
     ws_active_adc_channels_num = 0;
 
     // init a timer
@@ -101,7 +100,7 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
     WS_AdcAdapterChannelId_e channelId,
     WS_AdcAdapterCallback_f callback)
 {
-    WS_ASSERT(WS_ADC_MAX_CHANNELS > channelId);
+    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
     WS_ASSERT(callback);
 
     if (ws_active_adc_channels_num)
@@ -133,7 +132,7 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
 void WS_AdcAdapterDisableChannel(
     WS_AdcAdapterChannelId_e channelId)
 {
-    WS_ASSERT(WS_ADC_MAX_CHANNELS > channelId);
+    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
 
     if (ws_active_adc_channels_num)
     {
