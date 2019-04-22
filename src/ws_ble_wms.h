@@ -18,11 +18,13 @@
 #define BLE_UUID_WMS_SERVICE_UUID                   0xF00D // Just a random, but recognizable value
 #define BLE_UUID_WMS_STATE_CHARACTERISTC_UUID       0xBEEF // Just a random, but recognizable value
 #define BLE_UUID_WMS_THRESHOLD_CHARACTERISTC_UUID   0xF000 // Just a random, but recognizable value
+#define BLE_UUID_WMS_ENABLED_CHARACTERISTC_UUID     0xF001 // Just a random, but recognizable value
 
 
 struct ws_ble_wms;
 
 typedef void (*ws_ble_wms_threshold_write_f)(struct ws_ble_wms *p_wms, uint16_t value);
+typedef void (*ws_ble_wms_enabled_write_f)(struct ws_ble_wms *p_wms, bool value);
 
 typedef enum
 {
@@ -38,17 +40,23 @@ typedef struct ws_ble_wms
     uint16_t service_handle;
     ble_gatts_char_handles_t state_char_handles;
     ble_gatts_char_handles_t threshold_char_handles;
+    ble_gatts_char_handles_t enabled_char_handles;
+
+    ws_ble_wms_threshold_write_f on_threshold_write;
+    ws_ble_wms_enabled_write_f on_enabled_write;
 
     ws_ble_wms_state_e last_state;
     uint16_t threshold;
+    bool enabled;
 
 } ws_ble_wms_t;
 #define WS_BLE_CHAR_HANDLES_INIT            {BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID}
-#define WS_BLE_WMS_INIT                     {BLE_CONN_HANDLE_INVALID, 0x0000, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_WMS_STATE_UNKNOWN, 0x0000}
+#define WS_BLE_WMS_INIT                     {BLE_CONN_HANDLE_INVALID, 0x0000, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_CHAR_HANDLES_INIT, NULL, NULL, WS_BLE_WMS_STATE_UNKNOWN, 0x0000, false}
 
-uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, ws_ble_wms_threshold_write_f on_threshold_write);
+uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, ws_ble_wms_threshold_write_f on_threshold_write, ws_ble_wms_enabled_write_f on_enabled_write);
 
-uint32_t ws_ble_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e state);
+uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e state);
+uint32_t ws_ble_wms_enable(ws_ble_wms_t *p_wms, bool enable);
 
 void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
 

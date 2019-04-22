@@ -78,9 +78,14 @@ static void ws_ServerUnsubscribe(
     WS_Server_t *server,
     WS_Window_e windowId,
     WS_ServerCallback_f callback);
+static void ws_ServerEnable(
+    struct WS_Server *server,
+    WS_Window_e windowId,
+    bool enable);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
 static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value);
+static void ws_on_enabled_write(ws_ble_wms_t *wms, bool value);
 
 static void ws_timers_init(void);
 static void ws_ble_stack_init(void);
@@ -143,6 +148,7 @@ WINSENS_Status_e WS_ServerBtInit(
     server->updateWindowState = ws_ServerBtUpdateWindowState;
     server->subscribe = ws_ServerSubscribe;
     server->unsubscribe = ws_ServerUnsubscribe;
+    server->enable = ws_ServerEnable;
     server->deinit = ws_ServerBtDeinit;
     return WINSENS_OK;
 }
@@ -180,6 +186,14 @@ static void ws_ServerUnsubscribe(
     ws_callbacks[windowId] = NULL;
 }
 
+static void ws_ServerEnable(
+    struct WS_Server *server,
+    WS_Window_e windowId,
+    bool enable)
+{
+    ws_ble_wms_enable(&ws_wms[windowId], enable); // todo handle return value
+}
+
 static void ws_ServerBtDeinit(
     WS_Server_t *server)
 {
@@ -202,7 +216,7 @@ static void ws_ServerBtUpdateWindowState(
     if (WS_WINDOWS_NUMBER > windowId)
     {
         const ws_ble_wms_state_e wmsState = ws_convertWindowState(state);
-        ws_ble_window_state_update(&ws_wms[windowId], wmsState);
+        ws_ble_wms_window_state_update(&ws_wms[windowId], wmsState);
     }
 }
 
@@ -220,7 +234,22 @@ static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value)
     {
         if (wms == &ws_wms[i])
         {
-            ws_callbacks[i](i, value);
+            WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE, {value}};
+            ws_callbacks[i](i, e);
+        }
+    }
+}
+
+static void ws_on_enabled_write(ws_ble_wms_t *wms, bool value)
+{
+    uint32_t i;
+
+    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
+    {
+        if (wms == &ws_wms[i])
+        {
+            WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_ENABLED_UPDATE, {value}};
+            ws_callbacks[i](i, e);
         }
     }
 }
@@ -529,8 +558,8 @@ static void ws_services_init(void)
        uint32_t err_code;
 
        // Initialize WMS Service.
-       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], ws_on_threshold_write);
-       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], ws_on_threshold_write);
+       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], ws_on_threshold_write, ws_on_enabled_write);
+       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], ws_on_threshold_write, ws_on_enabled_write);
        APP_ERROR_CHECK(err_code);
 }
 

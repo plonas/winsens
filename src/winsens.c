@@ -19,7 +19,7 @@ static void WS_WindowStateCallback(
     WS_WindowState_e state);
 static void WS_ServerCallback(
     WS_Window_e window,
-    uint16_t value);
+    WS_ServerEvent_t event);
 
 WS_Server_t *ws_server = NULL;
 
@@ -61,7 +61,16 @@ static void WS_WindowStateCallback(
 
 static void WS_ServerCallback(
     WS_Window_e window,
-    uint16_t value)
+    WS_ServerEvent_t event)
 {
-    WS_WindowStateConfigure(window, value); // todo handle return value
+    switch (event.eventType) {
+        case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
+            WS_WindowStateConfigure(window, event.value.threshold); // todo handle return value
+            break;
+        case WS_SERVER_EVENT_TYPE_ENABLED_UPDATE:
+            ws_server->enable(ws_server, window, event.value.enabled); // todo handle return value
+            break;
+        default:
+            break;
+    }
 }
