@@ -19,6 +19,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
   $(PROJ_DIR)/src/hwal/nrf51/ws_adc_adapter.c \
   $(PROJ_DIR)/src/hwal/nrf51/ws_task_queue.c \
+  $(PROJ_DIR)/src/hwal/nrf51/ws_storage.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/adc/nrf_drv_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/timer/nrf_drv_timer.c \
@@ -84,6 +85,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/log/src \
   $(SDK_ROOT)/components/libraries/util \
   $(SDK_ROOT)/components/libraries/scheduler \
+  $(SDK_ROOT)/components/libraries/fds \
   $(SDK_ROOT)/external/segger_rtt \
 
 INC_FOLDERS += \
