@@ -25,7 +25,7 @@ static void ws_on_disconnect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
 static void ws_on_write(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
 
 
-uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, ws_ble_wms_threshold_write_f on_threshold_write, ws_ble_wms_enabled_write_f on_enabled_write)
+uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, bool enabled, ws_ble_wms_threshold_write_f on_threshold_write, ws_ble_wms_enabled_write_f on_enabled_write)
 {
     uint32_t            err_code;
     ble_uuid_t          service_uuid;
@@ -46,8 +46,12 @@ uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, ws_ble_wms_threshold_write_f on_th
     APP_ERROR_CHECK(err_code);
 
     ws_wms_enabled_char_add(p_wms);
-    ws_wms_state_char_add(p_wms);
-    ws_wms_threshold_char_add(p_wms);
+
+    if (enabled)
+    {
+        ws_wms_state_char_add(p_wms);
+        ws_wms_threshold_char_add(p_wms);
+    }
 
     return NRF_SUCCESS;
 }
@@ -111,11 +115,6 @@ uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e 
     }
 
     return err_code;
-}
-
-uint32_t ws_ble_wms_enable(ws_ble_wms_t *p_wms, bool enable)
-{
-    return NRF_SUCCESS;
 }
 
 void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)

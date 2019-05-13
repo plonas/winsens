@@ -10,9 +10,11 @@
 
 #include "winsens_types.h"
 #include "ws_server.h"
+#include "ws_configuration.h"
 
 WINSENS_Status_e WINSENS_Init(
-    WS_Server_t *server);
+    WS_Server_t *server,
+    const WS_Configuration_t *config);
 
 void WINSENS_Deinit();
 

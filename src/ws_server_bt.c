@@ -6,7 +6,6 @@
  */
 
 #include "ws_server_bt.h"
-
 #include "ws_ble_wms.h"
 
 #include "nordic_common.h"
@@ -78,10 +77,6 @@ static void ws_ServerUnsubscribe(
     WS_Server_t *server,
     WS_Window_e windowId,
     WS_ServerCallback_f callback);
-static void ws_ServerEnable(
-    struct WS_Server *server,
-    WS_Window_e windowId,
-    bool enable);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
 static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value);
@@ -102,7 +97,8 @@ static void ws_gap_params_init(void);
 static void ws_advertising_init(void);
 static void ws_on_adv_evt(
     ble_adv_evt_t ble_adv_evt);
-static void ws_services_init(void);
+static void ws_services_init(
+    const bool *enabled);
 static void ws_conn_params_init(void);
 static void ws_on_conn_params_evt(
     ble_conn_params_evt_t * p_evt);
@@ -123,7 +119,8 @@ static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
 
 
 WINSENS_Status_e WS_ServerBtInit(
-    WS_Server_t *server)
+    WS_Server_t *server,
+    const WS_Configuration_t *config)
 {
     uint32_t i = 0;
     uint32_t err_code;
@@ -137,7 +134,7 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_timers_init();
     ws_ble_stack_init();
     ws_gap_params_init();
-    ws_services_init();
+    ws_services_init(config->windowEnabled);
     ws_advertising_init();
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
@@ -148,7 +145,6 @@ WINSENS_Status_e WS_ServerBtInit(
     server->updateWindowState = ws_ServerBtUpdateWindowState;
     server->subscribe = ws_ServerSubscribe;
     server->unsubscribe = ws_ServerUnsubscribe;
-    server->enable = ws_ServerEnable;
     server->deinit = ws_ServerBtDeinit;
     return WINSENS_OK;
 }
@@ -184,14 +180,6 @@ static void ws_ServerUnsubscribe(
     }
 
     ws_callbacks[windowId] = NULL;
-}
-
-static void ws_ServerEnable(
-    struct WS_Server *server,
-    WS_Window_e windowId,
-    bool enable)
-{
-    ws_ble_wms_enable(&ws_wms[windowId], enable); // todo handle return value
 }
 
 static void ws_ServerBtDeinit(
@@ -553,14 +541,16 @@ static void ws_on_adv_evt(
     }
 }
 
-static void ws_services_init(void)
+static void ws_services_init(
+    const bool *enabled)
 {
-       uint32_t err_code;
+    uint32_t err_code;
 
-       // Initialize WMS Service.
-       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], ws_on_threshold_write, ws_on_enabled_write);
-       err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], ws_on_threshold_write, ws_on_enabled_write);
-       APP_ERROR_CHECK(err_code);
+    // Initialize WMS Service.
+   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], enabled[WS_WINDOW_1], ws_on_threshold_write, ws_on_enabled_write);
+   APP_ERROR_CHECK(err_code);
+   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], enabled[WS_WINDOW_2], ws_on_threshold_write, ws_on_enabled_write);
+   APP_ERROR_CHECK(err_code);
 }
 
 static void ws_conn_params_init(void)

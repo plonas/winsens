@@ -12,8 +12,8 @@
 #include "nrf_delay.h"
 #include "app_error.h"
 #include "app_scheduler.h"
-#include "hwal/ws_adc_adapter.h"
 #include "hwal/ws_task_queue.h"
+#include "ws_configuration.h"
 #define NRF_LOG_MODULE_NAME "MAIN"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -23,6 +23,7 @@ int main(void)
     WINSENS_Status_e status = WINSENS_ERROR;
     uint32_t err_code;
     WS_Server_t server;
+    const WS_Configuration_t *config = NULL;
 
     status = WS_TaskQueueInit();
     if (WINSENS_OK != status) return -1;
@@ -32,9 +33,12 @@ int main(void)
 
     NRF_LOG_INFO("main in\n");
 
+    WS_ConfigurationInit(); //todo handle return value
+    config = WS_ConfigurationGet();
+
 //    WS_ServerStubInit(&server); //todo handle return value
-    WS_ServerBtInit(&server); //todo handle return value
-    status = WINSENS_Init(&server);
+    WS_ServerBtInit(&server, config); //todo handle return value
+    status = WINSENS_Init(&server, config);
     if (WINSENS_OK != status) return -1;
 
     while (true)

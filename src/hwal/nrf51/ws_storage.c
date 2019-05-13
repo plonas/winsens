@@ -97,7 +97,7 @@ WINSENS_Status_e WS_StorageRead(
     }
     else
     {
-        return WINSENS_ERROR;
+        return WINSENS_NOT_FOUND;
     }
 
     return WINSENS_OK;

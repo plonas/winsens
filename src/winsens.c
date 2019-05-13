@@ -7,6 +7,7 @@
 
 #include "winsens.h"
 #include "ws_window_state.h"
+#include "ws_configuration_write.h"
 
 #include "nrf_delay.h"
 #define NRF_LOG_MODULE_NAME "WINSENS"
@@ -22,24 +23,39 @@ static void WS_ServerCallback(
     WS_ServerEvent_t event);
 
 WS_Server_t *ws_server = NULL;
+const WS_Configuration_t *ws_config = NULL;
+
 
 WINSENS_Status_e WINSENS_Init(
-    WS_Server_t *server)
+    WS_Server_t *server,
+    const WS_Configuration_t *config)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
     NRF_LOG_INFO("WINSENS_Init\n");
 
     ws_server = server;
+    ws_config = config;
 
     // init a window state
     status = WS_WindowStateInit();
-    WS_WindowStateSubscribe(WS_WINDOW_1, WS_WindowStateCallback);
-    WS_WindowStateSubscribe(WS_WINDOW_2, WS_WindowStateCallback);
-    server->subscribe(server, WS_WINDOW_1, WS_ServerCallback);
-    server->subscribe(server, WS_WINDOW_2, WS_ServerCallback);
+    if (WINSENS_OK != status)
+    {
+        return status;
+    }
 
-    return status;
+    if (config->windowEnabled[WS_WINDOW_1])
+    {
+        WS_WindowStateSubscribe(WS_WINDOW_1, WS_WindowStateCallback);
+        server->subscribe(server, WS_WINDOW_1, WS_ServerCallback);
+    }
+    if (config->windowEnabled[WS_WINDOW_2])
+    {
+        WS_WindowStateSubscribe(WS_WINDOW_2, WS_WindowStateCallback);
+        server->subscribe(server, WS_WINDOW_2, WS_ServerCallback);
+    }
+
+    return WINSENS_OK;
 }
 
 void WINSENS_Deinit()
@@ -67,9 +83,37 @@ static void WS_ServerCallback(
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
             WS_WindowStateConfigure(window, event.value.threshold); // todo handle return value
             break;
+
         case WS_SERVER_EVENT_TYPE_ENABLED_UPDATE:
-            ws_server->enable(ws_server, window, event.value.enabled); // todo handle return value
+        {
+            WS_Configuration_t newConfig = *ws_config;
+
+            if (ws_config->windowEnabled[window] != event.value.enabled)
+            {
+                newConfig.windowEnabled[window] = event.value.enabled;
+                WS_ConfigurationSet(&newConfig);
+                if (newConfig.windowEnabled[window])
+                {
+                    WS_WindowStateSubscribe(window, WS_WindowStateCallback);
+                }
+                else
+                {
+                    WS_WindowStateUnsubscribe(window, WS_WindowStateCallback);
+                }
+
+                //todo restart the server
+
+                if (newConfig.windowEnabled[WS_WINDOW_1])
+                {
+                    ws_server->subscribe(ws_server, WS_WINDOW_1, WS_ServerCallback);
+                }
+                if (newConfig.windowEnabled[WS_WINDOW_2])
+                {
+                    ws_server->subscribe(ws_server, WS_WINDOW_2, WS_ServerCallback);
+                }
+            }
             break;
+        }
         default:
             break;
     }

@@ -16,6 +16,7 @@ typedef enum
 {
     WINSENS_OK,
     WINSENS_ERROR,
+    WINSENS_NOT_FOUND,
     WINSENS_NO_RESOURCES,
 
 } WINSENS_Status_e;

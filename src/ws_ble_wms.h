@@ -53,10 +53,9 @@ typedef struct ws_ble_wms
 #define WS_BLE_CHAR_HANDLES_INIT            {BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID, BLE_GATT_HANDLE_INVALID}
 #define WS_BLE_WMS_INIT                     {BLE_CONN_HANDLE_INVALID, 0x0000, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_CHAR_HANDLES_INIT, WS_BLE_CHAR_HANDLES_INIT, NULL, NULL, WS_BLE_WMS_STATE_UNKNOWN, 0x0000, false}
 
-uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, ws_ble_wms_threshold_write_f on_threshold_write, ws_ble_wms_enabled_write_f on_enabled_write);
+uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms, bool enabled, ws_ble_wms_threshold_write_f on_threshold_write, ws_ble_wms_enabled_write_f on_enabled_write);
 
 uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e state);
-uint32_t ws_ble_wms_enable(ws_ble_wms_t *p_wms, bool enable);
 
 void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
 
