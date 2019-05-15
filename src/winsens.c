@@ -101,7 +101,7 @@ static void WS_ServerCallback(
                     WS_WindowStateUnsubscribe(window, WS_WindowStateCallback);
                 }
 
-                //todo restart the server
+                ws_server->reset(ws_server);
 
                 if (newConfig.windowEnabled[WS_WINDOW_1])
                 {

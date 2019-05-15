@@ -77,6 +77,8 @@ static void ws_ServerUnsubscribe(
     WS_Server_t *server,
     WS_Window_e windowId,
     WS_ServerCallback_f callback);
+static void ws_ServerBtReset(
+    WS_Server_t *server);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
 static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value);
@@ -145,6 +147,7 @@ WINSENS_Status_e WS_ServerBtInit(
     server->updateWindowState = ws_ServerBtUpdateWindowState;
     server->subscribe = ws_ServerSubscribe;
     server->unsubscribe = ws_ServerUnsubscribe;
+    server->reset = ws_ServerBtReset;
     server->deinit = ws_ServerBtDeinit;
     return WINSENS_OK;
 }
@@ -180,6 +183,13 @@ static void ws_ServerUnsubscribe(
     }
 
     ws_callbacks[windowId] = NULL;
+}
+
+static void ws_ServerBtReset(
+    WS_Server_t *server)
+{
+    softdevice_handler_sd_disable();
+    ws_ble_stack_init();
 }
 
 static void ws_ServerBtDeinit(
