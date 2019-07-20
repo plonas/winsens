@@ -21,7 +21,7 @@ static void ws_on_disconnect(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 static void ws_on_write(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 
 
-uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
+uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
 {
     uint8_t             i;
     uint32_t            err_code;
@@ -45,11 +45,14 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_thresh
 
     for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
     {
-        p_cs->enabled[i] = enabled[i];
+        p_cs->enabled[i] = config->windowEnabled[i];
+        p_cs->threshold[i] = config->windowThreshold[i];
+
         ws_cs_enabled_char_add(p_cs, i);
         ws_cs_threshold_char_add(p_cs, i);
     }
 
+    p_cs->apply = false;
     ws_cs_apply_char_add(p_cs);
 
     return NRF_SUCCESS;

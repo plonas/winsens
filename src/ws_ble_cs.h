@@ -9,6 +9,7 @@
 #define WS_BLE_CS_H_
 
 #include "winsens_types.h"
+#include "ws_configuration.h"
 #include "ble.h"
 #include "ble_gatts.h"
 
@@ -47,7 +48,7 @@ typedef struct ws_ble_cs
 } ws_ble_cs_t;
 #define WS_BLE_CS_INIT                      {BLE_CONN_HANDLE_INVALID, 0x0000, {WS_BLE_CHAR_HANDLES_INIT}, {WS_BLE_CHAR_HANDLES_INIT}, WS_BLE_CHAR_HANDLES_INIT, NULL, NULL, NULL, {0}, {false}, false}
 
-uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write);
+uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write);
 
 void ws_ble_cs_on_ble_evt(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 

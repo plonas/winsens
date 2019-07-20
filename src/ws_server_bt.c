@@ -103,7 +103,7 @@ static void ws_advertising_init(void);
 static void ws_on_adv_evt(
     ble_adv_evt_t ble_adv_evt);
 static void ws_services_init(
-    const bool *enabled);
+    const WS_Configuration_t *config);
 static void ws_conn_params_init(void);
 static void ws_on_conn_params_evt(
     ble_conn_params_evt_t * p_evt);
@@ -140,7 +140,7 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_timers_init();
     ws_ble_stack_init();
     ws_gap_params_init();
-    ws_services_init(config->windowEnabled);
+    ws_services_init(config);
     ws_advertising_init();
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
@@ -561,20 +561,20 @@ static void ws_on_adv_evt(
 }
 
 static void ws_services_init(
-    const bool *enabled)
+    const WS_Configuration_t *config)
 {
     uint32_t err_code;
 
     // Initialize CS Service
-    ws_ble_cs_init(&ws_cs, enabled, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
+    ws_ble_cs_init(&ws_cs, config, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
 
     // Initialize WMS Service.
-    if (enabled[WS_WINDOW_1])
+    if (config->windowEnabled[WS_WINDOW_1])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1]);
         APP_ERROR_CHECK(err_code);
     }
-    if (enabled[WS_WINDOW_2])
+    if (config->windowEnabled[WS_WINDOW_2])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2]);
         APP_ERROR_CHECK(err_code);
