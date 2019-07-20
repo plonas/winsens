@@ -14,13 +14,14 @@
 
 static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window);
 static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window);
+static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs);
 
 static void ws_on_connect(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 static void ws_on_disconnect(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 static void ws_on_write(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt);
 
 
-uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write)
+uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
 {
     uint8_t             i;
     uint32_t            err_code;
@@ -31,6 +32,7 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_thresh
 
     p_cs->on_threshold_write = on_threshold_write;
     p_cs->on_enabled_write = on_enabled_write;
+    p_cs->on_apply_write = on_apply_write;
 
     service_uuid.uuid = BLE_UUID_CS_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
@@ -47,6 +49,8 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const bool *enabled, ws_ble_cs_thresh
         ws_cs_enabled_char_add(p_cs, i);
         ws_cs_threshold_char_add(p_cs, i);
     }
+
+    ws_cs_apply_char_add(p_cs);
 
     return NRF_SUCCESS;
 }
@@ -199,6 +203,66 @@ static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
     return NRF_SUCCESS;
 }
 
+static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs)
+{
+    //Add a custom characteristic UUID
+    uint32_t            err_code;
+    ble_uuid_t          char_uuid;
+    ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
+
+    NRF_LOG_INFO("ws_cs_apply_char_add\n");
+
+    char_uuid.uuid = BLE_UUID_CS_APPLY_CHARACTERISTC_UUID;
+    err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\n", err_code);
+
+    //Add read/write properties to our characteristic
+    ble_gatts_char_md_t char_md;
+    memset(&char_md, 0, sizeof(char_md));
+    char_md.char_props.read = 0;
+    char_md.char_props.write = 1;
+
+    //Configuring Client Characteristic Configuration Descriptor metadata and add to char_md structure
+    ble_gatts_attr_md_t cccd_md;
+    memset(&cccd_md, 0, sizeof(cccd_md));
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+    cccd_md.vloc                = BLE_GATTS_VLOC_STACK;
+    char_md.p_cccd_md           = &cccd_md;
+    char_md.char_props.notify   = 0;
+
+    //Configure the attribute metadata
+    ble_gatts_attr_md_t attr_md;
+    memset(&attr_md, 0, sizeof(attr_md));
+    attr_md.vloc = BLE_GATTS_VLOC_STACK;
+
+    //Set read/write security levels to our characteristic
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
+
+    //Configure the characteristic value attribute
+    ble_gatts_attr_t attr_char_value;
+    memset(&attr_char_value, 0, sizeof(attr_char_value));
+    attr_char_value.p_uuid = &char_uuid;
+    attr_char_value.p_attr_md = &attr_md;
+
+    //Set characteristic length in number of bytes
+    attr_char_value.max_len     = sizeof(bool);
+    attr_char_value.init_len    = sizeof(bool);
+    attr_char_value.p_value     = (uint8_t*) &p_cs->apply;
+
+    //Add our new characteristic to the service
+    err_code = sd_ble_gatts_characteristic_add(p_cs->service_handle,
+                                       &char_md,
+                                       &attr_char_value,
+                                       &p_cs->apply_char_handles);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\n", err_code);
+
+    return NRF_SUCCESS;
+}
+
 static void ws_on_connect(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt)
 {
     p_cs->conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
@@ -247,6 +311,12 @@ static void ws_on_write(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt)
             if (p_cs->on_threshold_write)
             {
                 p_cs->on_threshold_write(WS_WINDOW_2, *((uint16_t *) p_evt_write->data));
+            }
+            break;
+        case BLE_UUID_CS_APPLY_CHARACTERISTC_UUID:
+            if (p_cs->on_apply_write)
+            {
+                p_cs->on_apply_write();
             }
             break;
 

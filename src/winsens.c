@@ -47,13 +47,13 @@ WINSENS_Status_e WINSENS_Init(
     if (config->windowEnabled[WS_WINDOW_1])
     {
         WS_WindowStateSubscribe(WS_WINDOW_1, WS_WindowStateCallback);
-        server->subscribe(server, WS_WINDOW_1, WS_ServerCallback);
     }
     if (config->windowEnabled[WS_WINDOW_2])
     {
         WS_WindowStateSubscribe(WS_WINDOW_2, WS_WindowStateCallback);
-        server->subscribe(server, WS_WINDOW_2, WS_ServerCallback);
     }
+
+    server->subscribe(server, WS_ServerCallback);
 
     return WINSENS_OK;
 }
@@ -61,8 +61,7 @@ WINSENS_Status_e WINSENS_Init(
 void WINSENS_Deinit()
 {
     NRF_LOG_INFO("WINSENS_Deinit\n");
-    ws_server->unsubscribe(ws_server, WS_WINDOW_2, WS_ServerCallback);
-    ws_server->unsubscribe(ws_server, WS_WINDOW_1, WS_ServerCallback);
+    ws_server->unsubscribe(ws_server, WS_ServerCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
     WS_WindowStateDeinit();
@@ -100,20 +99,14 @@ static void WS_ServerCallback(
                 {
                     WS_WindowStateUnsubscribe(window, WS_WindowStateCallback);
                 }
-
-                ws_server->reset(ws_server);
-
-                if (newConfig.windowEnabled[WS_WINDOW_1])
-                {
-                    ws_server->subscribe(ws_server, WS_WINDOW_1, WS_ServerCallback);
-                }
-                if (newConfig.windowEnabled[WS_WINDOW_2])
-                {
-                    ws_server->subscribe(ws_server, WS_WINDOW_2, WS_ServerCallback);
-                }
             }
             break;
         }
+
+        case WS_SERVER_EVENT_TYPE_APPLY:
+            ws_server->reset(ws_server);
+            break;
+
         default:
             break;
     }

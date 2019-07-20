@@ -17,6 +17,7 @@ typedef enum
 {
     WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE,
     WS_SERVER_EVENT_TYPE_ENABLED_UPDATE,
+    WS_SERVER_EVENT_TYPE_APPLY,
 
 } WS_ServerEventType_e;
 
@@ -35,8 +36,8 @@ typedef struct
 typedef void (*WS_ServerCallback_f)(WS_Window_e window, WS_ServerEvent_t event);
 
 typedef void (*WS_ServerUpdateWindowState_f)(struct WS_Server *server, WS_Window_e windowId, WS_WindowState_e state);
-typedef WINSENS_Status_e (*WS_ServerSubscribe_f)(struct WS_Server *server, WS_Window_e windowId, WS_ServerCallback_f callback);
-typedef void (*WS_ServerUnsubscribe_f)(struct WS_Server *server, WS_Window_e windowId, WS_ServerCallback_f callback);
+typedef WINSENS_Status_e (*WS_ServerSubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
+typedef void (*WS_ServerUnsubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
 typedef void (*WS_ServerReset_f)(struct WS_Server *server);
 typedef void (*WS_ServerDeinit_f)(struct WS_Server *server);
 
