@@ -7,6 +7,7 @@
 
 #include "ws_server_bt.h"
 #include "ws_ble_wms.h"
+#include "ws_ble_cs.h"
 
 #include "nordic_common.h"
 #include "nrf.h"
@@ -81,8 +82,8 @@ static void ws_ServerBtReset(
     WS_Server_t *server);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
-static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value);
-static void ws_on_enabled_write(ws_ble_wms_t *wms, bool value);
+static void ws_on_threshold_write(WS_Window_e window, uint16_t value);
+static void ws_on_enabled_write(WS_Window_e window, bool value);
 
 static void ws_timers_init(void);
 static void ws_ble_stack_init(void);
@@ -117,6 +118,7 @@ static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VEN
 
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
 static ws_ble_wms_t ws_wms[WS_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
+static ws_ble_cs_t ws_cs;
 static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
 
 
@@ -224,32 +226,16 @@ static ws_ble_wms_state_e ws_convertWindowState(
     return (ws_ble_wms_state_e) state;
 }
 
-static void ws_on_threshold_write(ws_ble_wms_t *wms, uint16_t value)
+static void ws_on_threshold_write(WS_Window_e window, uint16_t value)
 {
-    uint32_t i;
-
-    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
-    {
-        if (wms == &ws_wms[i])
-        {
-            WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE, {value}};
-            ws_callbacks[i](i, e);
-        }
-    }
+    WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE, {value}};
+    ws_callbacks[window](window, e);
 }
 
-static void ws_on_enabled_write(ws_ble_wms_t *wms, bool value)
+static void ws_on_enabled_write(WS_Window_e window, bool value)
 {
-    uint32_t i;
-
-    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
-    {
-        if (wms == &ws_wms[i])
-        {
-            WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_ENABLED_UPDATE, {value}};
-            ws_callbacks[i](i, e);
-        }
-    }
+    WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_ENABLED_UPDATE, {value}};
+    ws_callbacks[window](window, e);
 }
 
 static void ws_timers_init(void)
@@ -556,10 +542,13 @@ static void ws_services_init(
 {
     uint32_t err_code;
 
+    // Initialize CS Service
+    ws_ble_cs_init(&ws_cs, enabled, ws_on_threshold_write, ws_on_enabled_write);
+
     // Initialize WMS Service.
-   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1], enabled[WS_WINDOW_1], ws_on_threshold_write, ws_on_enabled_write);
+   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1]);
    APP_ERROR_CHECK(err_code);
-   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2], enabled[WS_WINDOW_2], ws_on_threshold_write, ws_on_enabled_write);
+   err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2]);
    APP_ERROR_CHECK(err_code);
 }
 
