@@ -13,6 +13,7 @@
 typedef struct
 {
     bool windowEnabled[WS_WINDOWS_NUMBER];
+    uint16_t windowThreshold[WS_WINDOWS_NUMBER];
 
 } WS_Configuration_t;
 

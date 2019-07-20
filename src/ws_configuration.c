@@ -12,9 +12,11 @@
 
 #define WS_CONFIGURATION_STORAGE_ID             0xA100
 
+#define WS_CONFIGURATION_THRESHOLD_DEFAULT      400
 
 static WS_Configuration_t ws_configuration = {
-    { true, false }
+    { true, false },
+    { WS_CONFIGURATION_THRESHOLD_DEFAULT, WS_CONFIGURATION_THRESHOLD_DEFAULT }
 };
 
 

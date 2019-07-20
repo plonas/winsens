@@ -80,8 +80,14 @@ static void WS_ServerCallback(
 {
     switch (event.eventType) {
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
+        {
+            WS_Configuration_t newConfig = *ws_config;
+            newConfig.windowThreshold[window] = event.value.threshold;
+            WS_ConfigurationSet(&newConfig);
+
             WS_WindowStateConfigure(window, event.value.threshold); // todo handle return value
             break;
+        }
 
         case WS_SERVER_EVENT_TYPE_ENABLED_UPDATE:
         {
@@ -91,6 +97,7 @@ static void WS_ServerCallback(
             {
                 newConfig.windowEnabled[window] = event.value.enabled;
                 WS_ConfigurationSet(&newConfig);
+
                 if (newConfig.windowEnabled[window])
                 {
                     WS_WindowStateSubscribe(window, WS_WindowStateCallback);
