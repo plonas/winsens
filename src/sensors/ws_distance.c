@@ -29,7 +29,7 @@ void WS_DistanceDeinit(void)
     WS_AdcAdapterDeinit();
 }
 
-WINSENS_Status_e WS_DistanceStart(
+WINSENS_Status_e WS_DistanceEnable(
     WS_AdcAdapterChannelId_e channelId,
     WS_DistanceCallback_f callback)
 {
@@ -46,13 +46,23 @@ WINSENS_Status_e WS_DistanceStart(
     return status;
 }
 
-void WS_DistanceStop(
+void WS_DistanceDisable(
     WS_AdcAdapterChannelId_e channelId)
 {
     WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId)
 
     WS_AdcAdapterDisableChannel(channelId);
     callbacks[channelId] = NULL;
+}
+
+WINSENS_Status_e WS_DistanceStart(void)
+{
+    return WS_AdcAdapterStart();
+}
+
+void WS_DistanceStop(void)
+{
+    WS_AdcAdapterStop();
 }
 
 static void WS_AdcEventHandler(

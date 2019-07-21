@@ -146,6 +146,7 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_peer_manager_init(ws_erase_bonds);
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+    NRF_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     server->updateWindowState = ws_ServerBtUpdateWindowState;
@@ -193,6 +194,7 @@ static void ws_ServerUnsubscribe(
 static void ws_ServerBtReset(
     WS_Server_t *server)
 {
+    NRF_LOG_INFO("Stack reset\n");
     softdevice_handler_sd_disable();
     ws_ble_stack_init();
 }

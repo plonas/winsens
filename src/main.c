@@ -35,10 +35,13 @@ int main(void)
 
     WS_ConfigurationInit(); //todo handle return value
     config = WS_ConfigurationGet();
+    NRF_LOG_FLUSH();
 
 //    WS_ServerStubInit(&server); //todo handle return value
     WS_ServerBtInit(&server, config); //todo handle return value
+    NRF_LOG_FLUSH();
     status = WINSENS_Init(&server, config);
+    NRF_LOG_FLUSH();
     if (WINSENS_OK != status) return -1;
 
     while (true)

@@ -78,6 +78,8 @@ static void WS_ServerCallback(
     WS_Window_e window,
     WS_ServerEvent_t event)
 {
+    NRF_LOG_INFO("WS_ServerCallback event: %d\n", event.eventType);
+
     switch (event.eventType) {
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
         {

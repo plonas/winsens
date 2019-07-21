@@ -121,24 +121,26 @@ static WINSENS_Status_e WS_StartDistanceSensors(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    status = WS_DistanceStart(WS_ADC_ADAPTER_CHANNEL_1, WS_DistanceCallback);
+    status = WS_DistanceEnable(WS_ADC_ADAPTER_CHANNEL_1, WS_DistanceCallback);
     if (WINSENS_OK != status)
     {
         return status;
     }
 
-    status = WS_DistanceStart(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
+    status = WS_DistanceEnable(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
     if (WINSENS_OK != status)
     {
-        WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_1);
+        WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_1);
         return status;
     }
 
-    return status;
+    return WS_DistanceStart();
 }
 
 static void WS_StopDistanceSensors(void)
 {
-    WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_2);
-    WS_DistanceStop(WS_ADC_ADAPTER_CHANNEL_1);
+    WS_DistanceStop();
+
+    WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_2);
+    WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_1);
 }

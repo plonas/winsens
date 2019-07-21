@@ -20,11 +20,15 @@ WINSENS_Status_e WS_DistanceInit(void);
 
 void WS_DistanceDeinit(void);
 
-WINSENS_Status_e WS_DistanceStart(
+WINSENS_Status_e WS_DistanceEnable(
     WS_AdcAdapterChannelId_e channelId,
     WS_DistanceCallback_f callback);
 
-void WS_DistanceStop(
+void WS_DistanceDisable(
     WS_AdcAdapterChannelId_e channelId);
+
+WINSENS_Status_e WS_DistanceStart(void);
+
+void WS_DistanceStop(void);
 
 #endif /* WS_DISTANCE_H_ */

@@ -40,4 +40,8 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
 void WS_AdcAdapterDisableChannel(
     WS_AdcAdapterChannelId_e channelId);
 
+WINSENS_Status_e WS_AdcAdapterStart(void);
+
+void WS_AdcAdapterStop(void);
+
 #endif /* WS_ADC_ADAPTER_H_ */
