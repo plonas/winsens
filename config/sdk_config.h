@@ -788,7 +788,7 @@
 // <i> Must be power of 2
 
 #ifndef NRF_LOG_DEFERRED_BUFSIZE
-#define NRF_LOG_DEFERRED_BUFSIZE 1024
+#define NRF_LOG_DEFERRED_BUFSIZE 256 //1024
 #endif
 
 #endif //NRF_LOG_DEFERRED
@@ -904,7 +904,7 @@
 // <i> if it is bigger than default RTT buffer size.
 
 #ifndef NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE
-#define NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE 2048
+#define NRF_LOG_BACKEND_RTT_OUTPUT_BUFFER_SIZE 512 // 2048
 #endif
 
 #endif //NRF_LOG_BACKEND_SERIAL_USES_RTT
