@@ -113,7 +113,7 @@ static void WS_ServerCallback(
         }
 
         case WS_SERVER_EVENT_TYPE_APPLY:
-            ws_server->reset(ws_server);
+            ws_server->reset(ws_server, ws_config);
             break;
 
         default:

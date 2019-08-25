@@ -18,6 +18,7 @@
 
 #define NRF_LOG_MODULE_NAME "SERVER_BT"
 #include "nrf_log.h"
+#include "nrf_log_ctrl.h"
 
 #include "ble.h"
 #include "peer_manager.h"
@@ -79,7 +80,8 @@ static void ws_ServerUnsubscribe(
     WS_Server_t *server,
     WS_ServerCallback_f callback);
 static void ws_ServerBtReset(
-    WS_Server_t *server);
+    WS_Server_t *server,
+    const WS_Configuration_t *config);
 static ws_ble_wms_state_e ws_convertWindowState(
     WS_WindowState_e state);
 static void ws_update_subscribers(WS_Window_e window, WS_ServerEvent_t event);
@@ -144,6 +146,9 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_advertising_init();
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
+    err_code = pm_register(ws_pm_evt_handler);
+    NRF_LOG_DEBUG("pm_register: %lu\n", err_code);
+    APP_ERROR_CHECK(err_code);
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     NRF_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
@@ -154,6 +159,7 @@ WINSENS_Status_e WS_ServerBtInit(
     server->unsubscribe = ws_ServerUnsubscribe;
     server->reset = ws_ServerBtReset;
     server->deinit = ws_ServerBtDeinit;
+
     return WINSENS_OK;
 }
 
@@ -192,11 +198,30 @@ static void ws_ServerUnsubscribe(
 }
 
 static void ws_ServerBtReset(
-    WS_Server_t *server)
+    WS_Server_t *server,
+    const WS_Configuration_t *config)
 {
+    uint32_t err_code;
+
+    err_code = ble_conn_params_stop();
+    NRF_LOG_DEBUG("ble_conn_params_stop: %lu\n", err_code);
+
     NRF_LOG_INFO("Stack reset\n");
     softdevice_handler_sd_disable();
     ws_ble_stack_init();
+    NRF_LOG_FLUSH();
+    ws_gap_params_init();
+    ws_services_init(config);
+    ws_advertising_init();
+    NRF_LOG_FLUSH();
+    ws_conn_params_init();
+    ble_conn_state_init();
+
+    NRF_LOG_FLUSH();
+    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+    NRF_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
+    APP_ERROR_CHECK(err_code);
+    NRF_LOG_FLUSH();
 }
 
 static void ws_ServerBtDeinit(
@@ -347,12 +372,15 @@ static void ws_peer_manager_init(
     ble_gap_sec_params_t sec_param;
     ret_code_t           err_code;
 
+    ble_conn_state_init();
     err_code = pm_init();
+    NRF_LOG_DEBUG("pm_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     if (erase_bonds)
     {
         err_code = pm_peers_delete();
+        NRF_LOG_DEBUG("pm_peers_delete: %lu\n", err_code);
         APP_ERROR_CHECK(err_code);
     }
 
@@ -374,10 +402,6 @@ static void ws_peer_manager_init(
 
     err_code = pm_sec_params_set(&sec_param);
     NRF_LOG_DEBUG("pm_sec_params_set: %lu\n", err_code);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = pm_register(ws_pm_evt_handler);
-    NRF_LOG_DEBUG("pm_register: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -712,4 +736,5 @@ static void ws_on_ble_evt(
     }
 
     ws_ble_wms_on_ble_evt(&ws_wms[WS_WINDOW_1], p_ble_evt);
+    ws_ble_cs_on_ble_evt(&ws_cs, p_ble_evt);
 }
