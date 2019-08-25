@@ -9,7 +9,6 @@
 //#include "ws_server_stub.h"
 #include "ws_server_bt.h"
 
-#include "nrf_delay.h"
 #include "app_error.h"
 #include "app_scheduler.h"
 #include "hwal/ws_task_queue.h"
