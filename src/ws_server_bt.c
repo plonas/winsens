@@ -96,8 +96,6 @@ static void ws_timers_init(void);
 static void ws_ble_stack_init(void);
 static void ws_ble_evt_dispatch(
     ble_evt_t * p_ble_evt);
-static void ws_sys_evt_dispatch(
-    uint32_t sys_evt);
 static void ws_peer_manager_init(
     bool erase_bonds);
 static void ws_pm_evt_handler(
@@ -130,6 +128,7 @@ static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                       
 static ws_ble_wms_t ws_wms[WS_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
 static ws_ble_cs_t ws_cs;
 static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
+static WS_Configuration_t ws_config = { 0 };
 
 
 WINSENS_Status_e WS_ServerBtInit(
@@ -145,16 +144,23 @@ WINSENS_Status_e WS_ServerBtInit(
     }
     memset(ws_callbacks, 0, sizeof(WS_ServerCallback_f) * WS_SUBSCRIBERS_NUMBER);
 
+    if (config)
+    {
+        ws_config = *config;
+    }
+
     ws_timers_init();
     ws_ble_stack_init();
     ws_gap_params_init();
-    ws_services_init(config);
-    ws_advertising_init();
+
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
     err_code = pm_register(ws_pm_evt_handler);
     NRF_LOG_DEBUG("pm_register: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
+
+    ws_services_init(&ws_config);
+    ws_advertising_init();
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     NRF_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
@@ -273,6 +279,7 @@ static void ws_on_enabled_write(WS_Window_e window, bool value)
     WS_ServerEvent_t e;
     e.eventType = WS_SERVER_EVENT_TYPE_ENABLED_UPDATE;
     e.value.enabled = value;
+    NRF_LOG_INFO("ws_on_enabled_write %u\n", value);
     ws_update_subscribers(window, e);
 }
 
@@ -327,10 +334,6 @@ static void ws_ble_stack_init(void)
     // Register with the SoftDevice handler module for BLE events.
     err_code = softdevice_ble_evt_handler_set(ws_ble_evt_dispatch);
     APP_ERROR_CHECK(err_code);
-
-    // Register with the SoftDevice handler module for BLE events.
-    err_code = softdevice_sys_evt_handler_set(ws_sys_evt_dispatch);
-    APP_ERROR_CHECK(err_code);
 }
 
 static void ws_ble_evt_dispatch(ble_evt_t * p_ble_evt)
@@ -346,18 +349,6 @@ static void ws_ble_evt_dispatch(ble_evt_t * p_ble_evt)
        ble_xxs_on_ble_evt(&m_xxs, p_ble_evt);
        ble_yys_on_ble_evt(&m_yys, p_ble_evt);
      */
-}
-
-static void ws_sys_evt_dispatch(uint32_t sys_evt)
-{
-    // Dispatch the system event to the fstorage module, where it will be
-    // dispatched to the Flash Data Storage (FDS) module.
-    fs_sys_event_handler(sys_evt);
-
-    // Dispatch to the Advertising module last, since it will check if there are any
-    // pending flash operations in fstorage. Let fstorage process system events first,
-    // so that it can report correctly to the Advertising module.
-    ble_advertising_on_sys_evt(sys_evt);
 }
 
 static void ws_peer_manager_init(

@@ -12,16 +12,17 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include <stdlib.h>
+#include "fstorage.h"
 
 
 #define WS_STORAGE_WORD_SIZE                (sizeof(uint32_t))
-#define WS_STORAGE_FILE_ID                  0xB00B
+#define WS_STORAGE_FILE_ID                  0x000B
 #define WS_STORAGE_RECORDS_BUFFER_LENGTH    8
 
 
 static bool isValidRecordId(
     WS_StorageRecordId_t recordId);
-bool isValidDataSize(
+static bool isValidDataSize(
     uint32_t size);
 
 static void ws_fds_evt_handler(
@@ -45,6 +46,7 @@ WINSENS_Status_e WS_StorageInit(void)
     {
         return WINSENS_ERROR;
     }
+//    while (!ws_operationComplete);
 
     for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
@@ -65,7 +67,7 @@ WINSENS_Status_e WS_StorageRead(
 {
     fds_record_desc_t record_desc;
     fds_flash_record_t flash_record;
-    fds_find_token_t ftok;
+    fds_find_token_t ftok = { 0, 0 };
 
     if (!isValidRecordId(recordId) ||
         !isValidDataSize(size))
@@ -80,14 +82,8 @@ WINSENS_Status_e WS_StorageRead(
             return WINSENS_ERROR;
         }
 
-        if (size < (flash_record.p_header->tl.length_words * WS_STORAGE_WORD_SIZE))
-        {
-            (void) fds_record_close(&record_desc);
-            return WINSENS_ERROR;
-        }
-
         // Access the record through the flash_record structure.
-        memcpy(data, flash_record.p_data, flash_record.p_header->tl.length_words * WS_STORAGE_WORD_SIZE);
+        memcpy(data, flash_record.p_data, MIN(size, flash_record.p_header->tl.length_words * WS_STORAGE_WORD_SIZE));
 
         // Close the record when done.
         if (fds_record_close(&record_desc) != FDS_SUCCESS)
@@ -112,9 +108,10 @@ WINSENS_Status_e WS_StorageWrite(
     fds_record_t        *record = NULL;
     fds_record_desc_t   record_desc;
     fds_record_chunk_t  *record_chunk = NULL;
-    fds_find_token_t    ftok;
+    fds_find_token_t    ftok = { 0, 0 };
     void                *dataCopy = NULL;
     uint_fast8_t        i = 0;
+    uint32_t            sizeInWords;
 
     if (!isValidRecordId(recordId) ||
         !isValidDataSize(size))
@@ -122,15 +119,22 @@ WINSENS_Status_e WS_StorageWrite(
         return WINSENS_ERROR;
     }
 
-    record = malloc(sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
-    record_chunk = (fds_record_chunk_t *) (record + sizeof(fds_record_t));
-    dataCopy = record_chunk + sizeof(fds_record_chunk_t);
+    sizeInWords = size / WS_STORAGE_WORD_SIZE;
+    if (size % WS_STORAGE_WORD_SIZE)
+    {
+        sizeInWords++;
+    }
 
+    record = malloc(sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + (sizeInWords * WS_STORAGE_WORD_SIZE));
+    record_chunk = ((void *) record) + sizeof(fds_record_t);
+    dataCopy = ((void *) record_chunk) + sizeof(fds_record_chunk_t);
+
+    memset(dataCopy, 0, sizeInWords * WS_STORAGE_WORD_SIZE);
     memcpy(dataCopy, data, size);
 
     // Set up data
     record_chunk->p_data         = dataCopy;
-    record_chunk->length_words   = size / WS_STORAGE_WORD_SIZE;
+    record_chunk->length_words   = sizeInWords;
 
     // Set up record
     record->file_id         = WS_STORAGE_FILE_ID;
@@ -138,10 +142,25 @@ WINSENS_Status_e WS_StorageWrite(
     record->data.p_chunks   = record_chunk;
     record->data.num_chunks = 1;
 
+    // Store the record and free it in the callback
+    for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
+    {
+        if (NULL == ws_recordsBuffer[i])
+        {
+            ws_recordsBuffer[i] = record;
+            break;
+        }
+    }
+    if (WS_STORAGE_RECORDS_BUFFER_LENGTH == i)
+    {
+        NRF_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
+    }
+
     ret = fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok);
     if (FDS_SUCCESS == ret)
     {
         ret = fds_record_update(&record_desc, record);
+        NRF_LOG_FLUSH();
         if (FDS_SUCCESS != ret)
         {
             free(record);
@@ -158,18 +177,7 @@ WINSENS_Status_e WS_StorageWrite(
         }
     }
 
-    // Store the record and free it in the callback
-    for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
-    {
-        if (NULL == ws_recordsBuffer[i])
-        {
-            ws_recordsBuffer[i] = record;
-        }
-    }
-    if (WS_STORAGE_RECORDS_BUFFER_LENGTH == i)
-    {
-        NRF_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
-    }
+    NRF_LOG_FLUSH();
 
     return WINSENS_OK;
 }
@@ -185,7 +193,7 @@ static bool isValidRecordId(
     return true;
 }
 
-bool isValidDataSize(
+static bool isValidDataSize(
     uint32_t size)
 {
     if ((FDS_VIRTUAL_PAGE_SIZE - 14) < size)
@@ -199,6 +207,8 @@ bool isValidDataSize(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
+    NRF_LOG_DEBUG("ws_fds_evt_handler %d\n", p_fds_evt->id);
+
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
@@ -211,7 +221,6 @@ static void ws_fds_evt_handler(
         case FDS_EVT_WRITE:
         {
             uint_fast8_t i = 0;
-
             for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
             {
                 if (p_fds_evt->write.record_key == ws_recordsBuffer[i]->key)
@@ -252,6 +261,11 @@ static void ws_fds_evt_handler(
             break;
         }
 
+        case FDS_EVT_DEL_FILE:
+        case FDS_EVT_DEL_RECORD:
+            (void) fds_gc();
+            break;
+
         case FDS_EVT_GC:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
@@ -262,4 +276,6 @@ static void ws_fds_evt_handler(
         default:
             break;
     }
+
+    NRF_LOG_FLUSH();
 }

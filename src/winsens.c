@@ -97,6 +97,7 @@ static void WS_ServerCallback(
 
             if (ws_config->windowEnabled[window] != event.value.enabled)
             {
+                NRF_LOG_FLUSH();
                 newConfig.windowEnabled[window] = event.value.enabled;
                 WS_ConfigurationSet(&newConfig);
 
@@ -109,11 +110,17 @@ static void WS_ServerCallback(
                     WS_WindowStateUnsubscribe(window, WS_WindowStateCallback);
                 }
             }
+            else
+            {
+            }
+
+            NRF_LOG_FLUSH();
             break;
         }
 
         case WS_SERVER_EVENT_TYPE_APPLY:
             ws_server->reset(ws_server, ws_config);
+            NRF_LOG_FLUSH();
             break;
 
         default:
