@@ -58,7 +58,7 @@
 #define DEVICE_NAME                     "WinSensDev"                                /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "DamianPłonek"                              /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
-#define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout in units of seconds. */
+#define APP_ADV_TIMEOUT_IN_SECONDS      60                                          /**< The advertising timeout in units of seconds. */
 
 #define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN + 2        /**< Reply when unsupported features are requested. */
 
@@ -112,7 +112,7 @@ static void ws_on_conn_params_evt(
     ble_conn_params_evt_t * p_evt);
 static void ws_conn_params_error_handler(
     uint32_t nrf_error);
-static void ws_sleep_mode_enter(void);
+//static void ws_sleep_mode_enter(void);
 static void ws_on_ble_evt(
     ble_evt_t * p_ble_evt);
 static void ws_ServerBtResetHandler(
@@ -563,7 +563,9 @@ static void ws_on_adv_evt(
             break;
 
         case BLE_ADV_EVT_IDLE:
-            ws_sleep_mode_enter();
+            NRF_LOG_INFO("BLE_ADV_EVT_IDLE\r\n");
+            ble_advertising_start(BLE_ADV_MODE_FAST);
+//            ws_sleep_mode_enter();
             break;
 
         default:
@@ -629,15 +631,16 @@ static void ws_conn_params_error_handler(
     APP_ERROR_HANDLER(nrf_error);
 }
 
-static void ws_sleep_mode_enter(void)
-{
-    uint32_t err_code;
-
-    NRF_LOG_INFO("Going into sleep mode\n");
-    // Go to system-off mode (this function will not return; wakeup will cause a reset).
-    err_code = sd_power_system_off();
-    APP_ERROR_CHECK(err_code);
-}
+//static void ws_sleep_mode_enter(void)
+//{
+//    uint32_t err_code;
+//
+//    NRF_LOG_INFO("Going into sleep mode\n");
+//    NRF_LOG_FLUSH();
+//    // Go to system-off mode (this function will not return; wakeup will cause a reset).
+//    err_code = sd_power_system_off();
+//    APP_ERROR_CHECK(err_code);
+//}
 
 static void ws_on_ble_evt(
     ble_evt_t * p_ble_evt)
@@ -647,14 +650,18 @@ static void ws_on_ble_evt(
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("Disconnected.\r\n");
+            NRF_LOG_INFO("BLE_GAP_EVT_DISCONNECTED\r\n");
             ws_conn_handle = BLE_CONN_HANDLE_INVALID;
             break; // BLE_GAP_EVT_DISCONNECTED
 
         case BLE_GAP_EVT_CONNECTED:
-            NRF_LOG_INFO("Connected.\r\n");
+            NRF_LOG_INFO("BLE_GAP_EVT_CONNECTED\r\n");
             ws_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             break; // BLE_GAP_EVT_CONNECTED
+
+        case BLE_GAP_EVT_TIMEOUT:
+            NRF_LOG_DEBUG("BLE_GAP_EVT_TIMEOUT %u.\r\n", p_ble_evt->evt.gap_evt.params.timeout.src);
+            break;
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
