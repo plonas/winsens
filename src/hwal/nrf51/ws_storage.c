@@ -6,13 +6,14 @@
  */
 
 
-#include "hwal/ws_storage.h"
+#include "ws_storage.h"
+#define WS_LOG_MODULE_NAME "STRG"
+#include "ws_log.h"
+
 #include "fds.h"
-#define NRF_LOG_MODULE_NAME "STORAGE"
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
-#include <stdlib.h>
 #include "fstorage.h"
+
+#include <stdlib.h>
 
 
 #define WS_STORAGE_WORD_SIZE                (sizeof(uint32_t))
@@ -153,14 +154,14 @@ WINSENS_Status_e WS_StorageWrite(
     }
     if (WS_STORAGE_RECORDS_BUFFER_LENGTH == i)
     {
-        NRF_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
+        WS_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
     }
 
     ret = fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok);
     if (FDS_SUCCESS == ret)
     {
         ret = fds_record_update(&record_desc, record);
-        NRF_LOG_FLUSH();
+        WS_LOG_FLUSH();
         if (FDS_SUCCESS != ret)
         {
             free(record);
@@ -177,7 +178,7 @@ WINSENS_Status_e WS_StorageWrite(
         }
     }
 
-    NRF_LOG_FLUSH();
+    WS_LOG_FLUSH();
 
     return WINSENS_OK;
 }
@@ -207,14 +208,14 @@ static bool isValidDataSize(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
-    NRF_LOG_DEBUG("ws_fds_evt_handler %d\n", p_fds_evt->id);
+    WS_LOG_DEBUG("ws_fds_evt_handler %d\n", p_fds_evt->id);
 
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                NRF_LOG_ERROR("Initialization failed\n");
+                WS_LOG_ERROR("Initialization failed\n");
             }
             break;
 
@@ -232,7 +233,7 @@ static void ws_fds_evt_handler(
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                NRF_LOG_ERROR("Storage write failed\n");
+                WS_LOG_ERROR("Storage write failed\n");
             }
 
             (void) fds_gc();
@@ -254,7 +255,7 @@ static void ws_fds_evt_handler(
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                NRF_LOG_ERROR("Storage update failed\n");
+                WS_LOG_ERROR("Storage update failed\n");
             }
 
             (void) fds_gc();
@@ -269,7 +270,7 @@ static void ws_fds_evt_handler(
         case FDS_EVT_GC:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                NRF_LOG_ERROR("Storage GC failed\n");
+                WS_LOG_ERROR("Storage GC failed\n");
             }
             break;
 
@@ -277,5 +278,5 @@ static void ws_fds_evt_handler(
             break;
     }
 
-    NRF_LOG_FLUSH();
+    WS_LOG_FLUSH();
 }

@@ -8,15 +8,13 @@
 #include "hwal/ws_adc_adapter.h"
 #include "hwal/ws_task_queue.h"
 #include "utils/utils.h"
+#define WS_LOG_MODULE_NAME "ADCA"
+#include "ws_log.h"
 
 #include "nrf.h"
 #include "nrf_drv_adc.h"
 #include "nrf_drv_ppi.h"
 #include "nrf_drv_timer.h"
-#include "app_error.h"
-#define NRF_LOG_MODULE_NAME "ADC_ADAPTER"
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
 
 #include <string.h>
 
@@ -150,10 +148,10 @@ WINSENS_Status_e WS_AdcAdapterStart(void)
 
     // Start sampling
     err_code = nrf_drv_adc_buffer_convert(ws_adc_buffer, ws_active_adc_channels_num);
-    NRF_LOG_INFO("nrf_drv_adc_buffer_convert: %lu\n", err_code);
+    WS_LOG_INFO("nrf_drv_adc_buffer_convert: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
     err_code = nrf_drv_ppi_channel_enable(ws_ppiChannelAdc);
-    NRF_LOG_INFO("nrf_drv_ppi_channel_enable: %lu\n", err_code);
+    WS_LOG_INFO("nrf_drv_ppi_channel_enable: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
     nrf_drv_timer_enable(&ws_timer);
 
@@ -179,7 +177,7 @@ static void WS_AdcAdapterIrqHandler(
 
         if (ws_active_adc_channels_num != event->data.done.size)
         {
-            NRF_LOG_ERROR("Active channels #%u but got %u reads\r\n", ws_active_adc_channels_num, event->data.done.size);
+            WS_LOG_ERROR("Active channels #%u but got %u reads\r\n", ws_active_adc_channels_num, event->data.done.size);
             return;
         }
 
@@ -191,7 +189,7 @@ static void WS_AdcAdapterIrqHandler(
             status = WS_TaskQueueAdd(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
             if (WINSENS_OK != status)
             {
-                NRF_LOG_ERROR("WS_TaskQueueAdd failed\n");
+                WS_LOG_ERROR("WS_TaskQueueAdd failed\n");
             }
         }
 
@@ -214,7 +212,7 @@ static void WS_AdcAdapterEventHandler(
     }
     else
     {
-        NRF_LOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
+        WS_LOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
     }
 }
 
@@ -222,5 +220,5 @@ static void WS_TimerCallback(
     nrf_timer_event_t eventType,
     void* context)
 {
-    NRF_LOG_DEBUG("WS_TimerCallback\n");
+    WS_LOG_DEBUG("WS_TimerCallback\n");
 }

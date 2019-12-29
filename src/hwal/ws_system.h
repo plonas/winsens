@@ -5,11 +5,11 @@
  *      Author: Damian Plonek
  */
 
-#ifndef SRC_WS_SYSTEM_H_
-#define SRC_WS_SYSTEM_H_
+#ifndef WS_SYSTEM_H_
+#define WS_SYSTEM_H_
 
 #include "winsens_types.h"
 
 WINSENS_Status_e WS_SystemInit(void);
 
-#endif /* SRC_WS_SYSTEM_H_ */
+#endif /* WS_SYSTEM_H_ */

@@ -7,11 +7,11 @@
 
 
 #include "ws_ble_wms.h"
+#define WS_LOG_MODULE_NAME "LEWM"
+#include "ws_log.h"
+
 #include "nrf_error.h"
-#include "app_error.h"
 #include "ble_srv_common.h"
-#define NRF_LOG_MODULE_NAME "BLE_WMS"
-#include "nrf_log.h"
 
 #include <memory.h>
 
@@ -28,7 +28,7 @@ uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms)
     ble_uuid_t          service_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    NRF_LOG_INFO("ws_ble_wms_init\n");
+    WS_LOG_INFO("ws_ble_wms_init\n");
 
     service_uuid.uuid = BLE_UUID_WMS_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
@@ -49,14 +49,14 @@ uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e 
     uint32_t err_code = NRF_SUCCESS;
     ble_gatts_value_t gatts_value;
 
-    NRF_LOG_INFO("ws_ble_window_state_update\n");
+    WS_LOG_INFO("ws_ble_window_state_update\n");
 
     if (NULL == p_wms)
     {
         return NRF_ERROR_NULL;
     }
 
-    NRF_LOG_INFO("ws_ble_window_state_update state %hu last state %hu\n", state, p_wms->last_state);
+    WS_LOG_INFO("ws_ble_window_state_update state %hu last state %hu\n", state, p_wms->last_state);
 
     if (state != p_wms->last_state)
     {
@@ -123,7 +123,7 @@ void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
             break;
 
         default:
-            NRF_LOG_DEBUG("ws_ble_wms_on_ble_evt event %u\n", p_ble_evt->header.evt_id);
+            WS_LOG_DEBUG("ws_ble_wms_on_ble_evt event %u\n", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }
@@ -136,12 +136,12 @@ static uint32_t ws_wms_state_char_add(ws_ble_wms_t *p_wms)
     ble_uuid_t          char_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    NRF_LOG_INFO("ws_wms_state_char_add\n");
+    WS_LOG_INFO("ws_wms_state_char_add\n");
 
     char_uuid.uuid = BLE_UUID_WMS_STATE_CHARACTERISTC_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
     APP_ERROR_CHECK(err_code);
-    NRF_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\n", err_code);
+    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\n", err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -184,7 +184,7 @@ static uint32_t ws_wms_state_char_add(ws_ble_wms_t *p_wms)
                                        &attr_char_value,
                                        &p_wms->state_char_handles);
     APP_ERROR_CHECK(err_code);
-    NRF_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\n", err_code);
+    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\n", err_code);
 
     return NRF_SUCCESS;
 }

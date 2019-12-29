@@ -8,11 +8,11 @@
 #include "winsens.h"
 #include "ws_window_state.h"
 #include "ws_configuration_write.h"
+#define WS_LOG_MODULE_NAME "WNSN"
+#include "ws_log.h"
 
 #include "nrf_delay.h"
-#define NRF_LOG_MODULE_NAME "WINSENS"
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
+
 
 
 static void WS_WindowStateCallback(
@@ -32,7 +32,7 @@ WINSENS_Status_e WINSENS_Init(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    NRF_LOG_INFO("WINSENS_Init\n");
+    WS_LOG_INFO("WINSENS_Init\n");
 
     ws_server = server;
     ws_config = config;
@@ -60,7 +60,7 @@ WINSENS_Status_e WINSENS_Init(
 
 void WINSENS_Deinit()
 {
-    NRF_LOG_INFO("WINSENS_Deinit\n");
+    WS_LOG_INFO("WINSENS_Deinit\n");
     ws_server->unsubscribe(ws_server, WS_ServerCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
@@ -78,7 +78,7 @@ static void WS_ServerCallback(
     WS_Window_e window,
     WS_ServerEvent_t event)
 {
-    NRF_LOG_INFO("WS_ServerCallback event: %d\n", event.eventType);
+    WS_LOG_INFO("WS_ServerCallback event: %d\n", event.eventType);
 
     switch (event.eventType) {
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
@@ -97,7 +97,7 @@ static void WS_ServerCallback(
 
             if (ws_config->windowEnabled[window] != event.value.enabled)
             {
-                NRF_LOG_FLUSH();
+                WS_LOG_FLUSH();
                 newConfig.windowEnabled[window] = event.value.enabled;
                 WS_ConfigurationSet(&newConfig);
 
@@ -114,13 +114,13 @@ static void WS_ServerCallback(
             {
             }
 
-            NRF_LOG_FLUSH();
+            WS_LOG_FLUSH();
             break;
         }
 
         case WS_SERVER_EVENT_TYPE_APPLY:
             ws_server->reset(ws_server, ws_config);
-            NRF_LOG_FLUSH();
+            WS_LOG_FLUSH();
             break;
 
         default:

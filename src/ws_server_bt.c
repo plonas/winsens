@@ -8,7 +8,9 @@
 #include "ws_server_bt.h"
 #include "ws_ble_wms.h"
 #include "ws_ble_cs.h"
-#include "hwal/ws_task_queue.h"
+#include "ws_task_queue.h"
+#define WS_LOG_MODULE_NAME "SVBT"
+#include "ws_log.h"
 
 #include "nordic_common.h"
 #include "nrf.h"
@@ -17,11 +19,6 @@
 #include "fstorage.h"
 #include "app_timer.h"
 #include "nrf_delay.h"
-
-#define NRF_LOG_MODULE_NAME "SERVER_BT"
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
-
 #include "ble.h"
 #include "peer_manager.h"
 #include "ble_advertising.h"
@@ -156,14 +153,14 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
     err_code = pm_register(ws_pm_evt_handler);
-    NRF_LOG_DEBUG("pm_register: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_register: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     ws_services_init(&ws_config);
     ws_advertising_init();
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    NRF_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
+    WS_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     server->updateWindowState = ws_ServerBtUpdateWindowState;
@@ -215,12 +212,12 @@ static void ws_ServerBtReset(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    NRF_LOG_DEBUG("ws_ServerBtReset\n");
+    WS_LOG_DEBUG("ws_ServerBtReset\n");
 
     status = WS_TaskQueueAdd(NULL, 0, ws_ServerBtResetHandler);
     if (WINSENS_OK != status)
     {
-        NRF_LOG_ERROR("WS_TaskQueueAdd failed\n");
+        WS_LOG_ERROR("WS_TaskQueueAdd failed\n");
     }
 }
 
@@ -279,7 +276,7 @@ static void ws_on_enabled_write(WS_Window_e window, bool value)
     WS_ServerEvent_t e;
     e.eventType = WS_SERVER_EVENT_TYPE_ENABLED_UPDATE;
     e.value.enabled = value;
-    NRF_LOG_INFO("ws_on_enabled_write %u\n", value);
+    WS_LOG_INFO("ws_on_enabled_write %u\n", value);
     ws_update_subscribers(window, e);
 }
 
@@ -359,13 +356,13 @@ static void ws_peer_manager_init(
 
     ble_conn_state_init();
     err_code = pm_init();
-    NRF_LOG_DEBUG("pm_init: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     if (erase_bonds)
     {
         err_code = pm_peers_delete();
-        NRF_LOG_DEBUG("pm_peers_delete: %lu\n", err_code);
+        WS_LOG_DEBUG("pm_peers_delete: %lu\n", err_code);
         APP_ERROR_CHECK(err_code);
     }
 
@@ -386,7 +383,7 @@ static void ws_peer_manager_init(
     sec_param.kdist_peer.id  = 1;
 
     err_code = pm_sec_params_set(&sec_param);
-    NRF_LOG_DEBUG("pm_sec_params_set: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_sec_params_set: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -399,12 +396,12 @@ static void ws_pm_evt_handler(
     {
         case PM_EVT_BONDED_PEER_CONNECTED:
         {
-            NRF_LOG_INFO("Connected to a previously bonded device.\r\n");
+            WS_LOG_INFO("Connected to a previously bonded device.\r\n");
         } break;
 
         case PM_EVT_CONN_SEC_SUCCEEDED:
         {
-            NRF_LOG_INFO("Connection secured. Role: %d. conn_handle: %d, Procedure: %d\r\n",
+            WS_LOG_INFO("Connection secured. Role: %d. conn_handle: %d, Procedure: %d\r\n",
                          ble_conn_state_role(p_evt->conn_handle),
                          p_evt->conn_handle,
                          p_evt->params.conn_sec_succeeded.procedure);
@@ -519,7 +516,7 @@ static void ws_gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    NRF_LOG_INFO("sd_ble_gap_ppcp_set: %lu\n", err_code);
+    WS_LOG_INFO("sd_ble_gap_ppcp_set: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -549,7 +546,7 @@ static void ws_advertising_init(void)
     options.ble_adv_fast_timeout  = APP_ADV_TIMEOUT_IN_SECONDS;
 
     err_code = ble_advertising_init(&advdata, &srdata, &options, ws_on_adv_evt, NULL);
-    NRF_LOG_DEBUG("ble_advertising_init: %lu\n", err_code);
+    WS_LOG_DEBUG("ble_advertising_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -559,11 +556,11 @@ static void ws_on_adv_evt(
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-            NRF_LOG_INFO("Fast advertising\r\n");
+            WS_LOG_INFO("Fast advertising\r\n");
             break;
 
         case BLE_ADV_EVT_IDLE:
-            NRF_LOG_INFO("BLE_ADV_EVT_IDLE\r\n");
+            WS_LOG_INFO("BLE_ADV_EVT_IDLE\r\n");
             ble_advertising_start(BLE_ADV_MODE_FAST);
 //            ws_sleep_mode_enter();
             break;
@@ -611,7 +608,7 @@ static void ws_conn_params_init(void)
     cp_init.error_handler                  = ws_conn_params_error_handler;
 
     err_code = ble_conn_params_init(&cp_init);
-    NRF_LOG_INFO("ble_conn_params_init: %lu\n", err_code);
+    WS_LOG_INFO("ble_conn_params_init: %lu\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -635,8 +632,8 @@ static void ws_conn_params_error_handler(
 //{
 //    uint32_t err_code;
 //
-//    NRF_LOG_INFO("Going into sleep mode\n");
-//    NRF_LOG_FLUSH();
+//    WS_LOG_INFO("Going into sleep mode\n");
+//    WS_LOG_FLUSH();
 //    // Go to system-off mode (this function will not return; wakeup will cause a reset).
 //    err_code = sd_power_system_off();
 //    APP_ERROR_CHECK(err_code);
@@ -650,22 +647,22 @@ static void ws_on_ble_evt(
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("BLE_GAP_EVT_DISCONNECTED\r\n");
+            WS_LOG_INFO("BLE_GAP_EVT_DISCONNECTED\r\n");
             ws_conn_handle = BLE_CONN_HANDLE_INVALID;
             break; // BLE_GAP_EVT_DISCONNECTED
 
         case BLE_GAP_EVT_CONNECTED:
-            NRF_LOG_INFO("BLE_GAP_EVT_CONNECTED\r\n");
+            WS_LOG_INFO("BLE_GAP_EVT_CONNECTED\r\n");
             ws_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             break; // BLE_GAP_EVT_CONNECTED
 
         case BLE_GAP_EVT_TIMEOUT:
-            NRF_LOG_DEBUG("BLE_GAP_EVT_TIMEOUT %u.\r\n", p_ble_evt->evt.gap_evt.params.timeout.src);
+            WS_LOG_DEBUG("BLE_GAP_EVT_TIMEOUT %u.\r\n", p_ble_evt->evt.gap_evt.params.timeout.src);
             break;
 
         case BLE_GATTC_EVT_TIMEOUT:
             // Disconnect on GATT Client timeout event.
-            NRF_LOG_DEBUG("GATT Client Timeout.\r\n");
+            WS_LOG_DEBUG("GATT Client Timeout.\r\n");
             err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
                                              BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
@@ -673,7 +670,7 @@ static void ws_on_ble_evt(
 
         case BLE_GATTS_EVT_TIMEOUT:
             // Disconnect on GATT Server timeout event.
-            NRF_LOG_DEBUG("GATT Server Timeout.\r\n");
+            WS_LOG_DEBUG("GATT Server Timeout.\r\n");
             err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
                                              BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
@@ -722,7 +719,7 @@ static void ws_on_ble_evt(
 #endif
 
         default:
-            NRF_LOG_DEBUG("ws_on_ble_evt event %u\n", p_ble_evt->header.evt_id);
+            WS_LOG_DEBUG("ws_on_ble_evt event %u\n", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }

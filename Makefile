@@ -73,6 +73,8 @@ SRC_FILES += \
 INC_FOLDERS += \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/config \
+  $(PROJ_DIR)/src/hwal \
+  $(PROJ_DIR)/src/hwal/nrf51 \
   $(SDK_ROOT)/components/device \
   $(SDK_ROOT)/components/toolchain/cmsis/include \
   $(SDK_ROOT)/components/toolchain/gcc \
