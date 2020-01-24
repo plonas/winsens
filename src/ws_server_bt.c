@@ -153,14 +153,14 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_conn_params_init();
     ws_peer_manager_init(ws_erase_bonds);
     err_code = pm_register(ws_pm_evt_handler);
-    WS_LOG_DEBUG("pm_register: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_register: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     ws_services_init(&ws_config);
     ws_advertising_init();
 
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    WS_LOG_DEBUG("ble_advertising_start: %lu\n", err_code);
+    WS_LOG_DEBUG("ble_advertising_start: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     server->updateWindowState = ws_ServerBtUpdateWindowState;
@@ -168,7 +168,7 @@ WINSENS_Status_e WS_ServerBtInit(
     server->unsubscribe = ws_ServerUnsubscribe;
     server->reset = ws_ServerBtReset;
     server->deinit = ws_ServerBtDeinit;
-
+    WS_LOG_FLUSH();
     return WINSENS_OK;
 }
 
@@ -212,12 +212,12 @@ static void ws_ServerBtReset(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    WS_LOG_DEBUG("ws_ServerBtReset\n");
+    WS_LOG_DEBUG("ws_ServerBtReset\r\n");
 
     status = WS_TaskQueueAdd(NULL, 0, ws_ServerBtResetHandler);
     if (WINSENS_OK != status)
     {
-        WS_LOG_ERROR("WS_TaskQueueAdd failed\n");
+        WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
     }
 }
 
@@ -276,7 +276,7 @@ static void ws_on_enabled_write(WS_Window_e window, bool value)
     WS_ServerEvent_t e;
     e.eventType = WS_SERVER_EVENT_TYPE_ENABLED_UPDATE;
     e.value.enabled = value;
-    WS_LOG_INFO("ws_on_enabled_write %u\n", value);
+    WS_LOG_INFO("ws_on_enabled_write %u\r\n", value);
     ws_update_subscribers(window, e);
 }
 
@@ -356,13 +356,13 @@ static void ws_peer_manager_init(
 
     ble_conn_state_init();
     err_code = pm_init();
-    WS_LOG_DEBUG("pm_init: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_init: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 
     if (erase_bonds)
     {
         err_code = pm_peers_delete();
-        WS_LOG_DEBUG("pm_peers_delete: %lu\n", err_code);
+        WS_LOG_DEBUG("pm_peers_delete: %lu\r\n", err_code);
         APP_ERROR_CHECK(err_code);
     }
 
@@ -383,7 +383,7 @@ static void ws_peer_manager_init(
     sec_param.kdist_peer.id  = 1;
 
     err_code = pm_sec_params_set(&sec_param);
-    WS_LOG_DEBUG("pm_sec_params_set: %lu\n", err_code);
+    WS_LOG_DEBUG("pm_sec_params_set: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -516,7 +516,7 @@ static void ws_gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    WS_LOG_INFO("sd_ble_gap_ppcp_set: %lu\n", err_code);
+    WS_LOG_INFO("sd_ble_gap_ppcp_set: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -546,7 +546,7 @@ static void ws_advertising_init(void)
     options.ble_adv_fast_timeout  = APP_ADV_TIMEOUT_IN_SECONDS;
 
     err_code = ble_advertising_init(&advdata, &srdata, &options, ws_on_adv_evt, NULL);
-    WS_LOG_DEBUG("ble_advertising_init: %lu\n", err_code);
+    WS_LOG_DEBUG("ble_advertising_init: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -608,7 +608,7 @@ static void ws_conn_params_init(void)
     cp_init.error_handler                  = ws_conn_params_error_handler;
 
     err_code = ble_conn_params_init(&cp_init);
-    WS_LOG_INFO("ble_conn_params_init: %lu\n", err_code);
+    WS_LOG_INFO("ble_conn_params_init: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -632,7 +632,7 @@ static void ws_conn_params_error_handler(
 //{
 //    uint32_t err_code;
 //
-//    WS_LOG_INFO("Going into sleep mode\n");
+//    WS_LOG_INFO("Going into sleep mode\r\n");
 //    WS_LOG_FLUSH();
 //    // Go to system-off mode (this function will not return; wakeup will cause a reset).
 //    err_code = sd_power_system_off();
@@ -719,7 +719,7 @@ static void ws_on_ble_evt(
 #endif
 
         default:
-            WS_LOG_DEBUG("ws_on_ble_evt event %u\n", p_ble_evt->header.evt_id);
+            WS_LOG_DEBUG("ws_on_ble_evt event %u\r\n", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }

@@ -30,7 +30,7 @@ WINSENS_Status_e WS_ConfigurationInit(void)
     }
 
     status = WS_StorageRead(WS_CONFIGURATION_STORAGE_ID, sizeof(WS_Configuration_t), (uint8_t *) &ws_configuration);
-    WS_LOG_INFO("WS_ConfigurationInit status %u\n", status);
+    WS_LOG_INFO("WS_ConfigurationInit status %u\r\n", status);
     WS_LOG_FLUSH();
     if (WINSENS_NOT_FOUND == status)
     {
@@ -44,7 +44,7 @@ WINSENS_Status_e WS_ConfigurationInit(void)
 const WS_Configuration_t * WS_ConfigurationGet(void)
 {
     WINSENS_Status_e status = WS_StorageRead(WS_CONFIGURATION_STORAGE_ID, sizeof(WS_Configuration_t), (uint8_t *) &ws_configuration);
-    WS_LOG_INFO("WS_ConfigurationGet status %u\n", status);
+    WS_LOG_INFO("WS_ConfigurationGet status %u\r\n", status);
     WS_LOG_FLUSH();
     return &ws_configuration;
 }
@@ -53,7 +53,7 @@ WINSENS_Status_e WS_ConfigurationSet(
     const WS_Configuration_t *configuration)
 {
     WINSENS_Status_e status = WS_StorageWrite(WS_CONFIGURATION_STORAGE_ID, sizeof(WS_Configuration_t), (uint8_t *) configuration);
-    WS_LOG_INFO("WS_ConfigurationSet status %u\n", status);
+    WS_LOG_INFO("WS_ConfigurationSet status %u\r\n", status);
     WS_LOG_FLUSH();
     if (WINSENS_OK == status)
     {

@@ -1,11 +1,11 @@
 PROJECT_NAME     := winSens
-TARGETS          := nrf51422_xxac
+TARGETS          := nrf51822_xxac
 OUTPUT_DIRECTORY := ../$(PROJECT_NAME)_build
 
 SDK_ROOT := C:/Damian/dev/nRF5_SDK_12.3.0_d7731ad
 PROJ_DIR := .
 
-$(OUTPUT_DIRECTORY)/nrf51422_xxac.out: \
+$(OUTPUT_DIRECTORY)/nrf51822_xxac.out: \
   LINKER_SCRIPT := nrf51_memory.ld
 
 # Source files common to all targets
@@ -116,11 +116,12 @@ CFLAGS += -DSWI_DISABLE0
 #CFLAGS += -DBSP_DEFINES_ONLY
 CFLAGS += -DS130
 CFLAGS += -DBLE_STACK_SUPPORT_REQD
-CFLAGS += -DNRF51422
+CFLAGS += -DNRF51822
 CFLAGS += -DNRF_SD_BLE_API_VERSION=2
 CFLAGS += -mcpu=cortex-m0
 CFLAGS += -mthumb -mabi=aapcs
-CFLAGS +=  -Wall -Werror -O0 -g3 -ggdb
+#CFLAGS +=  -Wall -Werror
+CFLAGS +=  -O3 -g3 -ggdb
 CFLAGS += -mfloat-abi=soft
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -137,7 +138,7 @@ ASMFLAGS += -DSWI_DISABLE0
 ASMFLAGS += -DNRF51
 ASMFLAGS += -DS130
 ASMFLAGS += -DBLE_STACK_SUPPORT_REQD
-ASMFLAGS += -DNRF51422
+ASMFLAGS += -DNRF51822
 ASMFLAGS += -DNRF_SD_BLE_API_VERSION=2
 #ASMFLAGS += -DBSP_DEFINES_ONLY
 

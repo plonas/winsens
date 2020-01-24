@@ -22,20 +22,20 @@ int main(void)
 
     err_code = WS_LOG_INIT(NULL);
     APP_ERROR_CHECK(err_code);
-    WS_LOG_DEBUG("main in");
+    WS_LOG_DEBUG("main in\r\n");
 
     status = WS_SystemInit();
     if (WINSENS_OK != status) return -1;
-    WS_LOG_DEBUG("WS_SystemInit: %u, \n", status);
+    WS_LOG_DEBUG("WS_SystemInit: %u, \r\n", status);
 
     status = WS_TaskQueueInit();
     if (WINSENS_OK != status) return -1;
 
     status = WS_ConfigurationInit(); //todo handle return value
-    WS_LOG_DEBUG("WS_ConfigurationInit: %u, \n", status);
+    WS_LOG_DEBUG("WS_ConfigurationInit: %u, \r\n", status);
 
     config = WS_ConfigurationGet();
-    WS_LOG_INFO("enabled: %u, enabled: %u\n", config->windowEnabled[0], config->windowEnabled[1]);
+    WS_LOG_INFO("enabled: %u, enabled: %u\r\n", config->windowEnabled[0], config->windowEnabled[1]);
     WS_LOG_FLUSH();
 
 //    WS_ServerStubInit(&server); //todo handle return value
@@ -55,6 +55,6 @@ int main(void)
     WINSENS_Deinit();
     server.deinit(&server);
 
-    WS_LOG_INFO("main out\n");
+    WS_LOG_INFO("main out\r\n");
     return 0;
 }

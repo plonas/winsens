@@ -148,10 +148,10 @@ WINSENS_Status_e WS_AdcAdapterStart(void)
 
     // Start sampling
     err_code = nrf_drv_adc_buffer_convert(ws_adc_buffer, ws_active_adc_channels_num);
-    WS_LOG_INFO("nrf_drv_adc_buffer_convert: %lu\n", err_code);
+    WS_LOG_INFO("nrf_drv_adc_buffer_convert: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
     err_code = nrf_drv_ppi_channel_enable(ws_ppiChannelAdc);
-    WS_LOG_INFO("nrf_drv_ppi_channel_enable: %lu\n", err_code);
+    WS_LOG_INFO("nrf_drv_ppi_channel_enable: %lu\r\n", err_code);
     APP_ERROR_CHECK(err_code);
     nrf_drv_timer_enable(&ws_timer);
 
@@ -189,7 +189,7 @@ static void WS_AdcAdapterIrqHandler(
             status = WS_TaskQueueAdd(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
             if (WINSENS_OK != status)
             {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed\n");
+                WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
             }
         }
 
@@ -220,5 +220,5 @@ static void WS_TimerCallback(
     nrf_timer_event_t eventType,
     void* context)
 {
-    WS_LOG_DEBUG("WS_TimerCallback\n");
+    WS_LOG_DEBUG("WS_TimerCallback\r\n");
 }
