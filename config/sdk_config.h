@@ -794,6 +794,15 @@
 #endif //NRF_LOG_DEFERRED
 // </e>
 
+// <q> NRF_LOG_ALLOW_OVERFLOW - Configures behavior when circular buffer is full.
+
+// <i> If set then oldest logs are overwritten. Otherwise a
+// <i> marker is injected informing about overflow.
+
+#ifndef NRF_LOG_ALLOW_OVERFLOW
+#define NRF_LOG_ALLOW_OVERFLOW 1
+#endif
+
 // <q> NRF_LOG_USES_TIMESTAMP  - Enable timestamping
 
 
@@ -950,7 +959,7 @@
 //==========================================================
 // <o> SEGGER_RTT_CONFIG_BUFFER_SIZE_UP - Size of upstream buffer.
 #ifndef SEGGER_RTT_CONFIG_BUFFER_SIZE_UP
-#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 512
+#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 64
 #endif
 
 // <o> SEGGER_RTT_CONFIG_MAX_NUM_UP_BUFFERS - Size of upstream buffer.
