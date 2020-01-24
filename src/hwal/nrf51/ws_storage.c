@@ -17,9 +17,24 @@
 
 
 #define WS_STORAGE_WORD_SIZE                (sizeof(uint32_t))
+#define WS_STORAGE_DATA_BUF_SIZE            (10 * (WS_STORAGE_WORD_SIZE))
 #define WS_STORAGE_FILE_ID                  0x000B
-#define WS_STORAGE_RECORDS_BUFFER_LENGTH    8
+#define WS_STORAGE_RECORDS_BUFFER_LENGTH    4
 
+#define WS_STORAGE_FDS_RECORD_INIT(p_chunk)                                         { WS_STORAGE_FILE_ID, 0x0000, { (p_chunk), 0x0001 } }
+#define WS_STORAGE_FDS_RECORD_CHUNK_INIT(p_data, size_in_words)                     { p_data, size_in_words }
+#define WS_STORAGE_DATA_WRAPPER_INIT(p_wrapper)                                     ((WS_StorageDataWrapper_t) { WS_STORAGE_FDS_RECORD_INIT(&(p_wrapper)->chunk), WS_STORAGE_FDS_RECORD_CHUNK_INIT(&(p_wrapper)->data, 0x0000), false, { 0x00 } })
+#define WS_STORAGE_FDS_RECORD_SET_DATA(p_wrapper_m, key_m, p_data_m, size_m)        do{ memcpy(&(p_wrapper_m)->data, p_data_m, MIN(size_m, WS_STORAGE_DATA_BUF_SIZE)); (p_wrapper_m)->chunk.p_data = (p_wrapper_m)->data; (p_wrapper_m)->chunk.length_words = MIN(size_m, WS_STORAGE_DATA_BUF_SIZE) / WS_STORAGE_WORD_SIZE; if (MIN(size_m, WS_STORAGE_DATA_BUF_SIZE) % WS_STORAGE_WORD_SIZE) { (p_wrapper_m)->chunk.length_words++; } (p_wrapper_m)->record.key = key_m; }while(0)
+#define WS_STORAGE_FDS_RECORD_GET_KEY(p_wrapper_m)                                  ((p_wrapper_m)->record.key)
+
+
+typedef struct
+{
+    fds_record_t record;
+    fds_record_chunk_t chunk;
+    bool used;
+    uint8_t data[WS_STORAGE_DATA_BUF_SIZE];
+} WS_StorageDataWrapper_t;
 
 static bool isValidRecordId(
     WS_StorageRecordId_t recordId);
@@ -29,7 +44,7 @@ static bool isValidDataSize(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt);
 
-static fds_record_t *ws_recordsBuffer[WS_STORAGE_RECORDS_BUFFER_LENGTH] = {NULL};
+static WS_StorageDataWrapper_t ws_recordsBuffer[WS_STORAGE_RECORDS_BUFFER_LENGTH];
 
 
 WINSENS_Status_e WS_StorageInit(void)
@@ -51,7 +66,7 @@ WINSENS_Status_e WS_StorageInit(void)
 
     for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
-        ws_recordsBuffer[i] = NULL;
+        ws_recordsBuffer[i] = WS_STORAGE_DATA_WRAPPER_INIT(&ws_recordsBuffer[i]);
     }
 
     return WINSENS_OK;
@@ -106,13 +121,9 @@ WINSENS_Status_e WS_StorageWrite(
     uint8_t* data)
 {
     ret_code_t          ret = FDS_ERR_INTERNAL;
-    fds_record_t        *record = NULL;
     fds_record_desc_t   record_desc;
-    fds_record_chunk_t  *record_chunk = NULL;
     fds_find_token_t    ftok = { 0, 0 };
-    void                *dataCopy = NULL;
     uint_fast8_t        i = 0;
-    uint32_t            sizeInWords;
 
     if (!isValidRecordId(recordId) ||
         !isValidDataSize(size))
@@ -120,60 +131,38 @@ WINSENS_Status_e WS_StorageWrite(
         return WINSENS_ERROR;
     }
 
-    sizeInWords = size / WS_STORAGE_WORD_SIZE;
-    if (size % WS_STORAGE_WORD_SIZE)
-    {
-        sizeInWords++;
-    }
-
-    record = malloc(sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + (sizeInWords * WS_STORAGE_WORD_SIZE));
-    record_chunk = ((void *) record) + sizeof(fds_record_t);
-    dataCopy = ((void *) record_chunk) + sizeof(fds_record_chunk_t);
-
-    memset(dataCopy, 0, sizeInWords * WS_STORAGE_WORD_SIZE);
-    memcpy(dataCopy, data, size);
-
-    // Set up data
-    record_chunk->p_data         = dataCopy;
-    record_chunk->length_words   = sizeInWords;
-
-    // Set up record
-    record->file_id         = WS_STORAGE_FILE_ID;
-    record->key             = recordId;
-    record->data.p_chunks   = record_chunk;
-    record->data.num_chunks = 1;
-
     // Store the record and free it in the callback
     for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
-        if (NULL == ws_recordsBuffer[i])
+        if (!ws_recordsBuffer[i].used)
         {
-            ws_recordsBuffer[i] = record;
+            WS_STORAGE_FDS_RECORD_SET_DATA(&ws_recordsBuffer[i], recordId, data, size);
+            ws_recordsBuffer[i].used = true;
             break;
         }
     }
     if (WS_STORAGE_RECORDS_BUFFER_LENGTH == i)
     {
-        WS_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
+        WS_LOG_ERROR("Memory leak while writing to a storage (%u bytes)\r\n", sizeof(fds_record_t) + sizeof(fds_record_chunk_t) + size);
     }
 
     ret = fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok);
     if (FDS_SUCCESS == ret)
     {
-        ret = fds_record_update(&record_desc, record);
+        ret = fds_record_update(&record_desc, &ws_recordsBuffer[i].record);
         WS_LOG_FLUSH();
         if (FDS_SUCCESS != ret)
         {
-            free(record);
+            ws_recordsBuffer[i].used = false;
             return WINSENS_ERROR;
         }
     }
     else
     {
-        ret = fds_record_write(&record_desc, record);
+        ret = fds_record_write(&record_desc, &ws_recordsBuffer[i].record);
         if (FDS_SUCCESS != ret)
         {
-            free(record);
+            ws_recordsBuffer[i].used = false;
             return WINSENS_ERROR;
         }
     }
@@ -208,14 +197,14 @@ static bool isValidDataSize(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
-    WS_LOG_DEBUG("ws_fds_evt_handler %d\n", p_fds_evt->id);
+    WS_LOG_DEBUG("ws_fds_evt_handler %d\r\n", p_fds_evt->id);
 
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Initialization failed\n");
+                WS_LOG_ERROR("Initialization failed\r\n");
             }
             break;
 
@@ -224,16 +213,15 @@ static void ws_fds_evt_handler(
             uint_fast8_t i = 0;
             for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
             {
-                if (p_fds_evt->write.record_key == ws_recordsBuffer[i]->key)
+                if (p_fds_evt->write.record_key == WS_STORAGE_FDS_RECORD_GET_KEY(&ws_recordsBuffer[i]))
                 {
-                    free(ws_recordsBuffer[i]);
-                    ws_recordsBuffer[i] = NULL;
+                    ws_recordsBuffer[i].used = false;
                 }
             }
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage write failed\n");
+                WS_LOG_ERROR("Storage write failed\r\n");
             }
 
             (void) fds_gc();
@@ -246,16 +234,15 @@ static void ws_fds_evt_handler(
 
             for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
             {
-                if (p_fds_evt->write.record_key == ws_recordsBuffer[i]->key)
+                if (p_fds_evt->write.record_key == WS_STORAGE_FDS_RECORD_GET_KEY(&ws_recordsBuffer[i]))
                 {
-                    free(ws_recordsBuffer[i]);
-                    ws_recordsBuffer[i] = NULL;
+                    ws_recordsBuffer[i].used = false;
                 }
             }
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage update failed\n");
+                WS_LOG_ERROR("Storage update failed\r\n");
             }
 
             (void) fds_gc();
@@ -270,7 +257,7 @@ static void ws_fds_evt_handler(
         case FDS_EVT_GC:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage GC failed\n");
+                WS_LOG_ERROR("Storage GC failed\r\n");
             }
             break;
 
