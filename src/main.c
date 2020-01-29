@@ -36,14 +36,11 @@ int main(void)
 
     config = WS_ConfigurationGet();
     WS_LOG_INFO("enabled: %u, enabled: %u\r\n", config->windowEnabled[0], config->windowEnabled[1]);
-    WS_LOG_FLUSH();
 
 //    WS_ServerStubInit(&server); //todo handle return value
     WS_ServerBtInit(&server, config); //todo handle return value
-    WS_LOG_FLUSH();
 
     status = WINSENS_Init(&server, config);
-    WS_LOG_FLUSH();
     if (WINSENS_OK != status) return -1;
 
     while (true)

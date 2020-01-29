@@ -784,6 +784,24 @@
 #define NRF_LOG_DEFERRED 1
 #endif
 #if  NRF_LOG_DEFERRED
+
+// <o> NRF_LOG_BUFSIZE - Size of the buffer for storing logs (in bytes).
+
+// <i> Must be power of 2 and multiple of 4.
+// <i> If NRF_LOG_DEFERRED = 0 then buffer size can be reduced to minimum.
+// <128=> 128
+// <256=> 256
+// <512=> 512
+// <1024=> 1024
+// <2048=> 2048
+// <4096=> 4096
+// <8192=> 8192
+// <16384=> 16384
+
+#ifndef NRF_LOG_BUFSIZE
+#define NRF_LOG_BUFSIZE 1024
+#endif
+
 // <o> NRF_LOG_DEFERRED_BUFSIZE - Size of the buffer for logs in words.
 // <i> Must be power of 2
 

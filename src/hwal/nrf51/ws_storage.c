@@ -150,7 +150,6 @@ WINSENS_Status_e WS_StorageWrite(
     if (FDS_SUCCESS == ret)
     {
         ret = fds_record_update(&record_desc, &ws_recordsBuffer[i].record);
-        WS_LOG_FLUSH();
         if (FDS_SUCCESS != ret)
         {
             ws_recordsBuffer[i].used = false;
@@ -166,8 +165,6 @@ WINSENS_Status_e WS_StorageWrite(
             return WINSENS_ERROR;
         }
     }
-
-    WS_LOG_FLUSH();
 
     return WINSENS_OK;
 }
@@ -264,6 +261,4 @@ static void ws_fds_evt_handler(
         default:
             break;
     }
-
-    WS_LOG_FLUSH();
 }

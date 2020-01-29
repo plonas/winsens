@@ -23,6 +23,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hwal/nrf51/ws_task_queue.c \
   $(PROJ_DIR)/src/hwal/nrf51/ws_storage.c \
   $(PROJ_DIR)/src/hwal/nrf51/ws_system.c \
+  $(PROJ_DIR)/src/hwal/nrf51/ws_digital_input.c \
   $(SDK_ROOT)/components/drivers_nrf/hal/nrf_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/adc/nrf_drv_adc.c \
   $(SDK_ROOT)/components/drivers_nrf/timer/nrf_drv_timer.c \
@@ -121,7 +122,7 @@ CFLAGS += -DNRF_SD_BLE_API_VERSION=2
 CFLAGS += -mcpu=cortex-m0
 CFLAGS += -mthumb -mabi=aapcs
 #CFLAGS +=  -Wall -Werror
-CFLAGS +=  -O3 -g3 -ggdb
+CFLAGS +=  -O0 -g3 -ggdb
 CFLAGS += -mfloat-abi=soft
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -154,12 +155,12 @@ LDFLAGS += --specs=nano.specs -lc -lnosys
 .PHONY: $(TARGETS) default all clean help flash flash_softdevice
 
 # Default target - first one defined
-default: nrf51422_xxac
+default: nrf51822_xxac
 
 # Print all targets that can be built
 help:
 	@echo following targets are available:
-	@echo 	nrf51422_xxac
+	@echo 	nrf51822_xxac
 
 TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
@@ -168,7 +169,7 @@ include $(TEMPLATE_PATH)/Makefile.common
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
-flash: $(OUTPUT_DIRECTORY)/nrf51422_xxac.hex
+flash: $(OUTPUT_DIRECTORY)/nrf51822_xxac.hex
 	@echo Flashing: $<
 	nrfjprog --program $< -f nrf51 --sectorerase
 	nrfjprog --reset -f nrf51

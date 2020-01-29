@@ -168,7 +168,6 @@ WINSENS_Status_e WS_ServerBtInit(
     server->unsubscribe = ws_ServerUnsubscribe;
     server->reset = ws_ServerBtReset;
     server->deinit = ws_ServerBtDeinit;
-    WS_LOG_FLUSH();
     return WINSENS_OK;
 }
 
@@ -633,7 +632,6 @@ static void ws_conn_params_error_handler(
 //    uint32_t err_code;
 //
 //    WS_LOG_INFO("Going into sleep mode\r\n");
-//    WS_LOG_FLUSH();
 //    // Go to system-off mode (this function will not return; wakeup will cause a reset).
 //    err_code = sd_power_system_off();
 //    APP_ERROR_CHECK(err_code);
