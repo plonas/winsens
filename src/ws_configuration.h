@@ -10,10 +10,14 @@
 
 #include "winsens_types.h"
 
+#define WS_CONFIGURATION_ADDR_LEN       6
+
 typedef struct
 {
     bool windowEnabled[WS_WINDOWS_NUMBER];
     uint16_t windowThreshold[WS_WINDOWS_NUMBER];
+    bool bonded;
+    uint8_t address[WS_CONFIGURATION_ADDR_LEN];
 
 } WS_Configuration_t;
 

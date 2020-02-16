@@ -17,7 +17,9 @@
 
 static WS_Configuration_t ws_configuration = {
     { true, false },
-    { WS_CONFIGURATION_THRESHOLD_DEFAULT, WS_CONFIGURATION_THRESHOLD_DEFAULT }
+    { WS_CONFIGURATION_THRESHOLD_DEFAULT, WS_CONFIGURATION_THRESHOLD_DEFAULT },
+    false,
+    { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }
 };
 
 
