@@ -8,6 +8,7 @@
 
 #include "hwal/ws_system.h"
 #include "hwal/ws_digital_input.h"
+#include "hwal/ws_timer.h"
 #include "softdevice_handler.h"
 #include "ws_configuration_write.h"
 #include "winsens_config.h"
@@ -23,15 +24,23 @@ static void ws_sys_evt_dispatch(
 static void WS_DigitalInputCallback(
     WS_DigitalInputPin_t pin,
     bool on);
+static void WS_TimerCallback(
+    WS_TimerId_t timerId);
 
+static WS_TimerId_t ws_systemTimer = 0;
+static uint32_t ws_timeCounter = 0;
 
 WINSENS_Status_e WS_SystemInit(void)
 {
     uint32_t err_code = softdevice_sys_evt_handler_set(ws_sys_evt_dispatch);
     APP_ERROR_CHECK(err_code);
 
-    WS_DigitalInputPinCfg_t btnPinCfg = WS_DIGITAL_INPUT_PAIR_BTN_CFG;
+    WS_TimerInit();
     WS_DigitalInputInit();
+
+    WS_TimerSetTimer(1, WS_TimerCallback, &ws_systemTimer);
+
+    WS_DigitalInputPinCfg_t btnPinCfg = WS_DIGITAL_INPUT_PAIR_BTN_CFG;
     WS_DigitalInputSetPinConfig(WS_DIGITAL_INPUT_PAIR_BTN, btnPinCfg);
     WS_DigitalInputRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_DigitalInputCallback);
 
@@ -41,7 +50,15 @@ WINSENS_Status_e WS_SystemInit(void)
 void WS_SystemDeinit(void)
 {
     WS_DigitalInputUnregisterCallback(WS_DIGITAL_INPUT_PAIR_BTN);
+    WS_TimerCancel(ws_systemTimer);
+
     WS_DigitalInputDeinit();
+    WS_TimerDeinit();
+}
+
+uint32_t WS_SystemGetTime(void)
+{
+    return ws_timeCounter;
 }
 
 static void ws_sys_evt_dispatch(uint32_t sys_evt)
@@ -70,3 +87,10 @@ static void WS_DigitalInputCallback(
         WS_ConfigurationSet(&newConfig);
     }
 }
+
+static void WS_TimerCallback(
+    WS_TimerId_t timerId)
+{
+    ++ws_timeCounter;
+}
+
