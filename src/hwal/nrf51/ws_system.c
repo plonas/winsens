@@ -16,6 +16,7 @@
 
 #include "fstorage.h"
 #include "softdevice_handler.h"
+#include "ble_advertising.h"
 
 
 #define NRF_CLOCK_LFCLKSRC      {.source        = NRF_CLOCK_LF_SRC_XTAL,            \
