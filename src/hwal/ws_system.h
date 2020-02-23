@@ -13,6 +13,6 @@
 WINSENS_Status_e WS_SystemInit(void);
 void WS_SystemDeinit(void);
 
-uint32_t WS_SystemGetTime(void);
+uint32_t WS_SystemGetTime(void); // in 100ms units
 
 #endif /* WS_SYSTEM_H_ */

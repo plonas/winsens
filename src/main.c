@@ -13,6 +13,7 @@
 #define WS_LOG_MODULE_NAME "MAIN"
 #include "ws_log.h"
 
+
 int main(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
