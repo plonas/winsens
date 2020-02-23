@@ -22,4 +22,9 @@
 #define WS_LOG_INFO(...)                WS_LOG_INFO_INTERNAL(__VA_ARGS__)
 #define WS_LOG_DEBUG(...)               WS_LOG_DEBUG_INTERNAL(__VA_ARGS__)
 
+#define WS_LOG_ERROR_CHECK(s)           do{ if (WINSENS_OK != s) { WS_LOG_ERROR_INTERNAL(#s "(%u) != WINSENS_OK\r\n", s) } }while(0)
+#define WS_LOG_WARNING_CHECK(s)         do{ if (WINSENS_OK != s) { WS_LOG_WARNING_INTERNAL(#s "(%u) != WINSENS_OK\r\n", s) } }while(0)
+#define WS_LOG_INFO_CHECK(s)            do{ if (WINSENS_OK != s) { WS_LOG_INFO_INTERNAL(#s "(%u) != WINSENS_OK\r\n", s) } }while(0)
+#define WS_LOG_DEBUG_CHECK(s)           do{ if (WINSENS_OK != s) { WS_LOG_DEBUG_INTERNAL(#s "(%u) != WINSENS_OK\r\n", s) } }while(0)
+
 #endif /* WS_LOG_H_ */
