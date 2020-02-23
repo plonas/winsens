@@ -23,17 +23,17 @@
 
 #define WS_STORAGE_FDS_RECORD_INIT(p_chunk)                                         { WS_STORAGE_FILE_ID, 0x0000, { (p_chunk), 0x0001 } }
 #define WS_STORAGE_FDS_RECORD_CHUNK_INIT(p_data, size_in_words)                     { p_data, size_in_words }
-#define WS_STORAGE_DATA_WRAPPER_INIT(p_wrapper)                                     ((WS_StorageDataWrapper_t) { WS_STORAGE_FDS_RECORD_INIT(&(p_wrapper)->chunk), WS_STORAGE_FDS_RECORD_CHUNK_INIT(&(p_wrapper)->data, 0x0000), false, { 0x00 } })
+#define WS_STORAGE_DATA_WRAPPER_INIT(p_wrapper)                                     ((WS_StorageDataWrapper_t) { { 0x00 }, WS_STORAGE_FDS_RECORD_INIT(&(p_wrapper)->chunk), WS_STORAGE_FDS_RECORD_CHUNK_INIT(&(p_wrapper)->data, 0x0000), false })
 #define WS_STORAGE_FDS_RECORD_SET_DATA(p_wrapper_m, key_m, p_data_m, size_m)        do{ memcpy(&(p_wrapper_m)->data, p_data_m, MIN(size_m, WS_STORAGE_DATA_BUF_SIZE)); (p_wrapper_m)->chunk.p_data = (p_wrapper_m)->data; (p_wrapper_m)->chunk.length_words = MIN(size_m, WS_STORAGE_DATA_BUF_SIZE) / WS_STORAGE_WORD_SIZE; if (MIN(size_m, WS_STORAGE_DATA_BUF_SIZE) % WS_STORAGE_WORD_SIZE) { (p_wrapper_m)->chunk.length_words++; } (p_wrapper_m)->record.key = key_m; }while(0)
 #define WS_STORAGE_FDS_RECORD_GET_KEY(p_wrapper_m)                                  ((p_wrapper_m)->record.key)
 
-
 typedef struct
 {
+    uint8_t data[WS_STORAGE_DATA_BUF_SIZE];
     fds_record_t record;
     fds_record_chunk_t chunk;
     bool used;
-    uint8_t data[WS_STORAGE_DATA_BUF_SIZE];
+
 } WS_StorageDataWrapper_t;
 
 static bool isValidRecordId(
@@ -45,7 +45,6 @@ static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt);
 
 static WS_StorageDataWrapper_t ws_recordsBuffer[WS_STORAGE_RECORDS_BUFFER_LENGTH];
-
 
 WINSENS_Status_e WS_StorageInit(void)
 {
@@ -62,7 +61,6 @@ WINSENS_Status_e WS_StorageInit(void)
     {
         return WINSENS_ERROR;
     }
-//    while (!ws_operationComplete);
 
     for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
@@ -91,7 +89,8 @@ WINSENS_Status_e WS_StorageRead(
         return WINSENS_ERROR;
     }
 
-    if (fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok) == FDS_SUCCESS)
+    ret_code_t ret = fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok);
+    if (ret == FDS_SUCCESS)
     {
         if (fds_record_open(&record_desc, &flash_record) != FDS_SUCCESS)
         {
@@ -153,6 +152,7 @@ WINSENS_Status_e WS_StorageWrite(
         if (FDS_SUCCESS != ret)
         {
             ws_recordsBuffer[i].used = false;
+            WS_LOG_ERROR("fds_record_update\r\n");
             return WINSENS_ERROR;
         }
     }
@@ -162,6 +162,7 @@ WINSENS_Status_e WS_StorageWrite(
         if (FDS_SUCCESS != ret)
         {
             ws_recordsBuffer[i].used = false;
+            WS_LOG_ERROR("fds_record_write %d\r\n", ret);
             return WINSENS_ERROR;
         }
     }
@@ -194,14 +195,14 @@ static bool isValidDataSize(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
-    WS_LOG_DEBUG("ws_fds_evt_handler %d\r\n", p_fds_evt->id);
+//    WS_LOG_DEBUG("ws_fds_evt_handler %d\r\n", p_fds_evt->id);
 
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Initialization failed\r\n");
+//                WS_LOG_ERROR("Initialization failed\r\n");
             }
             break;
 
@@ -218,7 +219,7 @@ static void ws_fds_evt_handler(
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage write failed\r\n");
+//                WS_LOG_ERROR("Storage write failed\r\n");
             }
 
             (void) fds_gc();
@@ -239,7 +240,7 @@ static void ws_fds_evt_handler(
 
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage update failed\r\n");
+//                WS_LOG_ERROR("Storage update failed\r\n");
             }
 
             (void) fds_gc();
@@ -254,7 +255,7 @@ static void ws_fds_evt_handler(
         case FDS_EVT_GC:
             if (FDS_SUCCESS != p_fds_evt->result)
             {
-                WS_LOG_ERROR("Storage GC failed\r\n");
+//                WS_LOG_ERROR("Storage GC failed\r\n");
             }
             break;
 
