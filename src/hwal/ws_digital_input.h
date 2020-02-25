@@ -10,11 +10,9 @@
 
 #include "winsens_types.h"
 
-#define WS_DIGITAL_INPUT_PIN_INVALID        0xFFFFFFFF
+#define WS_DIGITAL_INPUT_PIN_INVALID        (-1)
 #define WS_DIGITAL_INPUT_PIN_CFG_INIT       { WS_DIGITAL_INPUT_PULL_NONE }
 
-
-typedef uint32_t WS_DigitalInputPin_t;
 
 typedef enum
 {
@@ -24,27 +22,29 @@ typedef enum
 
 } WS_DigitalInputPullUpDown_e;
 
+typedef enum {
+    WS_DIGITAL_INPUT_PAIR_BTN = 1,
+
+} WS_DigitalInputPins_e;
+
 typedef struct
 {
+    WS_DigitalInputPins_e pin;
     WS_DigitalInputPullUpDown_e pullUpDown;
 
 } WS_DigitalInputPinCfg_t;
 
-typedef void (*WS_DigitalInputCallback_f)(WS_DigitalInputPin_t pin, bool on);
+typedef void (*WS_DigitalInputCallback_f)(WS_DigitalInputPins_e pin, bool on);
 
 
 WINSENS_Status_e WS_DigitalInputInit(void);
 
 void WS_DigitalInputDeinit(void);
 
-WINSENS_Status_e WS_DigitalInputSetPinConfig(
-    WS_DigitalInputPin_t pin,
-    WS_DigitalInputPinCfg_t pinCfg);
-
 WINSENS_Status_e WS_DigitalInputRegisterCallback(
-    WS_DigitalInputPin_t pin,
+    WS_DigitalInputPins_e pin,
     WS_DigitalInputCallback_f callback);
 void WS_DigitalInputUnregisterCallback(
-    WS_DigitalInputPin_t pin);
+    WS_DigitalInputPins_e pin);
 
 #endif /* WS_DIGITAL_INPUT_H_ */

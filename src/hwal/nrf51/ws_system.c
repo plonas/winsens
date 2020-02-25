@@ -8,6 +8,7 @@
 
 #include "hwal/ws_system.h"
 #include "hwal/ws_digital_input.h"
+#include "hwal/ws_button.h"
 #include "hwal/ws_timer.h"
 #include "ws_configuration_write.h"
 #include "winsens_config.h"
@@ -33,8 +34,8 @@
 static void ws_sys_evt_dispatch(
     uint32_t sys_evt);
 static void WS_DigitalInputCallback(
-    WS_DigitalInputPin_t pin,
-    bool on);
+    WS_DigitalInputPins_e pin,
+    WS_ButtonPushType_e pushType);
 static void WS_TimerCallback(
     WS_TimerId_t timerId);
 
@@ -74,14 +75,13 @@ WINSENS_Status_e WS_SystemInit(void)
     WS_LOG_ERROR_CHECK(status);
     status = WS_DigitalInputInit();
     WS_LOG_ERROR_CHECK(status);
+    status = WS_ButtonInit();
+    WS_LOG_ERROR_CHECK(status);
 
     status = WS_TimerSetTimer(1, WS_TimerCallback, &ws_systemTimer);
     WS_LOG_ERROR_CHECK(status);
 
-    WS_DigitalInputPinCfg_t btnPinCfg = WS_DIGITAL_INPUT_PAIR_BTN_CFG;
-    status = WS_DigitalInputSetPinConfig(WS_DIGITAL_INPUT_PAIR_BTN, btnPinCfg);
-    WS_LOG_ERROR_CHECK(status);
-    status = WS_DigitalInputRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_DigitalInputCallback);
+    status = WS_ButtonRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_DigitalInputCallback);
     WS_LOG_ERROR_CHECK(status);
 
     return (NRF_SUCCESS == err_code) ? WINSENS_OK : WINSENS_ERROR;
@@ -114,33 +114,20 @@ static void ws_sys_evt_dispatch(uint32_t sys_evt)
 }
 
 static void WS_DigitalInputCallback(
-    WS_DigitalInputPin_t pin,
-    bool on)
+    WS_DigitalInputPins_e pin,
+    WS_ButtonPushType_e pushType)
 {
-    static uint32_t onTime = 0;
-    uint32_t duration = 0;
-
-    if (on)
+    if (WS_DIGITAL_INPUT_PAIR_BTN == pin &&
+        WS_BUTTON_PUSH_LONG == pushType)
     {
-        onTime = WS_SystemGetTime();
-    }
-    else
-    {
-        duration = WS_SystemGetTime() - onTime;
-    }
-
-    if (WS_SYSTEM_BUTTON_HOLD_DURATION > duration)
-    {
-        return;
-    }
-
-    const WS_Configuration_t *config = WS_ConfigurationGet();
-    if (config->bonded)
-    {
-        WS_Configuration_t newConfig = *config;
-        newConfig.bonded = false;
-        memset(&newConfig.address, 0xFF, WS_CONFIGURATION_ADDR_LEN);
-        WS_ConfigurationSet(&newConfig);
+        const WS_Configuration_t *config = WS_ConfigurationGet();
+        if (config->bonded)
+        {
+            WS_Configuration_t newConfig = *config;
+            newConfig.bonded = false;
+            memset(&newConfig.address, 0xFF, WS_CONFIGURATION_ADDR_LEN);
+            WS_ConfigurationSet(&newConfig);
+        }
     }
 }
 
