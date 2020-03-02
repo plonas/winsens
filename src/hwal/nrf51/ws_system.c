@@ -8,9 +8,8 @@
 
 #include "hwal/ws_system.h"
 #include "hwal/ws_digital_input.h"
-#include "hwal/ws_button.h"
 #include "hwal/ws_timer.h"
-#include "ws_configuration_write.h"
+#include "hwal/ws_button.h"
 #include "winsens_config.h"
 #define WS_LOG_MODULE_NAME " SYS"
 #include "ws_log.h"
@@ -33,9 +32,6 @@
 
 static void ws_sys_evt_dispatch(
     uint32_t sys_evt);
-static void WS_DigitalInputCallback(
-    WS_DigitalInputPins_e pin,
-    WS_ButtonPushType_e pushType);
 static void WS_TimerCallback(
     WS_TimerId_t timerId);
 
@@ -81,15 +77,12 @@ WINSENS_Status_e WS_SystemInit(void)
     status = WS_TimerSetTimer(1, WS_TimerCallback, &ws_systemTimer);
     WS_LOG_ERROR_CHECK(status);
 
-    status = WS_ButtonRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_DigitalInputCallback);
-    WS_LOG_ERROR_CHECK(status);
-
     return (NRF_SUCCESS == err_code) ? WINSENS_OK : WINSENS_ERROR;
 }
 
 void WS_SystemDeinit(void)
 {
-    WS_DigitalInputUnregisterCallback(WS_DIGITAL_INPUT_PAIR_BTN);
+    WS_ButtonDeinit();
     WS_TimerCancel(ws_systemTimer);
 
     WS_DigitalInputDeinit();
@@ -111,24 +104,6 @@ static void ws_sys_evt_dispatch(uint32_t sys_evt)
     // pending flash operations in fstorage. Let fstorage process system events first,
     // so that it can report correctly to the Advertising module.
     ble_advertising_on_sys_evt(sys_evt);
-}
-
-static void WS_DigitalInputCallback(
-    WS_DigitalInputPins_e pin,
-    WS_ButtonPushType_e pushType)
-{
-    if (WS_DIGITAL_INPUT_PAIR_BTN == pin &&
-        WS_BUTTON_PUSH_LONG == pushType)
-    {
-        const WS_Configuration_t *config = WS_ConfigurationGet();
-        if (config->bonded)
-        {
-            WS_Configuration_t newConfig = *config;
-            newConfig.bonded = false;
-            memset(&newConfig.address, 0xFF, WS_CONFIGURATION_ADDR_LEN);
-            WS_ConfigurationSet(&newConfig);
-        }
-    }
 }
 
 static void WS_TimerCallback(

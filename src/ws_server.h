@@ -40,6 +40,8 @@ typedef void (*WS_ServerUpdateWindowState_f)(struct WS_Server *server, WS_Window
 typedef WINSENS_Status_e (*WS_ServerSubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
 typedef void (*WS_ServerUnsubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
 typedef void (*WS_ServerReset_f)(struct WS_Server *server, const WS_Configuration_t *config);
+typedef WINSENS_Status_e (*WS_ServerDisconnect_f)(void);
+typedef WINSENS_Status_e (*WS_ServerDeletePeers_f)(void);
 typedef void (*WS_ServerDeinit_f)(struct WS_Server *server);
 
 
@@ -49,6 +51,8 @@ typedef struct WS_Server
     WS_ServerSubscribe_f subscribe;
     WS_ServerUnsubscribe_f unsubscribe;
     WS_ServerReset_f reset;
+    WS_ServerDisconnect_f disconnect;
+    WS_ServerDeletePeers_f deletePeers;
     WS_ServerDeinit_f deinit;
 
 } WS_Server_t;
