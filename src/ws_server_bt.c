@@ -62,6 +62,53 @@
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
 
+typedef enum
+{
+    WS_SERVER_BT_CONN_STATE_UNKNOWN,
+    WS_SERVER_BT_CONN_STATE_CONNECTED,
+    WS_SERVER_BT_CONN_STATE_CONNECTING,
+    WS_SERVER_BT_CONN_STATE_DISCONNECTED,
+    WS_SERVER_BT_CONN_STATE_DISCONNECTING,
+    WS_SERVER_BT_CONN_STATE_ADVERISING,
+
+} WS_ServerBtConnectionState_e;
+
+typedef enum
+{
+    WS_SERVER_BT_BOND_STATE_UNKNOWN,
+    WS_SERVER_BT_BOND_STATE_BONDED,
+    WS_SERVER_BT_BOND_STATE_BONDING,
+    WS_SERVER_BT_BOND_STATE_NOT_BONDED,
+    WS_SERVER_BT_BOND_STATE_UNBONDING,
+
+} WS_ServerBtBondState_e;
+
+typedef enum
+{
+    WS_SERVER_BT_EVENT_CONNECT,
+    WS_SERVER_BT_EVENT_CONNECTED,
+    WS_SERVER_BT_EVENT_DISCONNECT,
+    WS_SERVER_BT_EVENT_DISCONNECTED,
+    WS_SERVER_BT_EVENT_ADVERTISE,
+    WS_SERVER_BT_EVENT_ADVERTISING_STOPPED,
+
+    WS_SERVER_BT_EVENT_UNBOND,
+    WS_SERVER_BT_EVENT_UNBONDED,
+    WS_SERVER_BT_EVENT_BOND,
+    WS_SERVER_BT_EVENT_BONDED,
+
+} WS_ServerBtEvent_e;
+
+typedef struct
+{
+    WS_ServerBtEvent_e event;
+    union
+    {
+        uint16_t connectionHandle;
+    } data;
+
+} WS_ServerBtEvent_t;
+
 static WINSENS_Status_e WS_ServerBtDisconnect(void);
 static WINSENS_Status_e WS_ServerBtDeletePeers(void);
 static void ws_ServerBtDeinit(
@@ -116,6 +163,51 @@ static void WS_ButtonCallback(
     WS_DigitalInputPins_e pin,
     WS_ButtonPushType_e pushType);
 
+static void WS_HandleStateEvent(
+    WS_ServerBtEvent_t event);
+static void WS_ChangeConnState(
+    WS_ServerBtConnectionState_e newState,
+    WS_ServerBtEvent_t event);
+static void WS_ChangeBondState(
+    WS_ServerBtBondState_e newState,
+    WS_ServerBtEvent_t event);
+static void WS_ConnectedOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_ConnectingOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_DisconnectedOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_DisconnectingOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_AdvertisingOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_ConnectedOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_ConnectingOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_DisconnectedOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_DisconnectingOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_AdvertisingOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_BondedOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_BondingOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_NotBondedOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_UnbondingOnExit(
+    WS_ServerBtEvent_t event);
+static void WS_BondedOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_BondingOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_NotBondedOnEnter(
+    WS_ServerBtEvent_t event);
+static void WS_UnbondingOnEnter(
+    WS_ServerBtEvent_t event);
+
 
 static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
 static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
@@ -126,6 +218,8 @@ static ws_ble_wms_t ws_wms[WS_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
 static ws_ble_cs_t ws_cs;
 static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
 static WS_Configuration_t ws_config = { 0 };
+static WS_ServerBtConnectionState_e ws_connectionState = WS_SERVER_BT_CONN_STATE_UNKNOWN;
+static WS_ServerBtBondState_e ws_bondState = WS_SERVER_BT_BOND_STATE_UNKNOWN;
 
 
 WINSENS_Status_e WS_ServerBtInit(
@@ -176,6 +270,8 @@ WINSENS_Status_e WS_ServerBtInit(
 
     WINSENS_Status_e status = WS_ButtonRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_ButtonCallback);
     WS_LOG_ERROR_CHECK(status);
+
+    ws_connectionState = WS_SERVER_BT_CONN_STATE_DISCONNECTED;
 
     return status;
 }
@@ -235,46 +331,23 @@ static WINSENS_Status_e WS_ServerBtDisconnect(void)
 
     WS_LOG_DEBUG("WS_ServerBtDisconnect\r\n");
 
-    if (BLE_CONN_HANDLE_INVALID == ws_conn_handle)
+    if (WS_SERVER_BT_CONN_STATE_CONNECTED != ws_connectionState)
     {
         return WINSENS_NOT_FOUND;
     }
 
-    err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_LOCAL_HOST_TERMINATED_CONNECTION);
-    if (NRF_SUCCESS != err_code)
-    {
-        return WINSENS_ERROR;
-    }
+    WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_DISCONNECT, ws_conn_handle };
+    WS_HandleStateEvent(e);
 
     return WINSENS_OK;
 }
 
 static WINSENS_Status_e WS_ServerBtDeletePeers(void)
 {
-    uint32_t err_code;
-
     WS_LOG_DEBUG("WS_ServerBtDeletePeers\r\n");
 
-    if (ws_connectable)
-    {
-        return WINSENS_OK;
-    }
-
-    if (BLE_CONN_HANDLE_INVALID != ws_conn_handle)
-    {
-        WS_ServerBtDisconnect();
-    }
-
-    err_code = pm_peers_delete();
-    if (NRF_SUCCESS != err_code)
-    {
-        WS_LOG_DEBUG("pm_peers_delete: %lu\r\n", err_code);
-        return WINSENS_ERROR;
-    }
-
-    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    WS_LOG_DEBUG("ble_advertising_start: %lu\r\n", err_code);
-
+    WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_UNBOND, 0 };
+    WS_HandleStateEvent(e);
     return WINSENS_OK;
 }
 
@@ -294,7 +367,7 @@ static void ws_ServerBtUpdateWindowState(
     WS_Window_e windowId,
     WS_WindowState_e state)
 {
-    if (BLE_CONN_HANDLE_INVALID == ws_conn_handle)
+    if (WS_SERVER_BT_CONN_STATE_CONNECTED != ws_connectionState)
     {
         return;
     }
@@ -478,7 +551,8 @@ static void ws_pm_evt_handler(
 
         case PM_EVT_PEERS_DELETE_SUCCEEDED:
         {
-            advertising_start();
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_UNBONDED, 0 };
+            WS_HandleStateEvent(e);
         } break;
 
         case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
@@ -594,14 +668,18 @@ static void ws_on_adv_evt(
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
+        {
             WS_LOG_INFO("Fast advertising\r\n");
-            ws_connectable = true;
             break;
+        }
 
         case BLE_ADV_EVT_IDLE:
+        {
             WS_LOG_INFO("BLE_ADV_EVT_IDLE\r\n");
-            ws_connectable = false;
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_ADVERTISING_STOPPED, 0 };
+            WS_HandleStateEvent(e);
             break;
+        }
 
         default:
             break;
@@ -684,34 +762,42 @@ static void ws_on_ble_evt(
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
+        {
             WS_LOG_INFO("BLE_GAP_EVT_DISCONNECTED\r\n");
-            ws_conn_handle = BLE_CONN_HANDLE_INVALID;
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_DISCONNECTED, 0 };
+            WS_HandleStateEvent(e);
             break; // BLE_GAP_EVT_DISCONNECTED
+        }
 
         case BLE_GAP_EVT_CONNECTED:
+        {
             WS_LOG_INFO("BLE_GAP_EVT_CONNECTED\r\n");
-            ws_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_CONNECTED, p_ble_evt->evt.gap_evt.conn_handle };
+            WS_HandleStateEvent(e);
             break; // BLE_GAP_EVT_CONNECTED
+        }
 
         case BLE_GAP_EVT_TIMEOUT:
             WS_LOG_DEBUG("BLE_GAP_EVT_TIMEOUT %u.\r\n", p_ble_evt->evt.gap_evt.params.timeout.src);
             break;
 
         case BLE_GATTC_EVT_TIMEOUT:
+        {
             // Disconnect on GATT Client timeout event.
             WS_LOG_DEBUG("GATT Client Timeout.\r\n");
-            err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            APP_ERROR_CHECK(err_code);
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_DISCONNECT, p_ble_evt->evt.gattc_evt.conn_handle };
+            WS_HandleStateEvent(e);
             break; // BLE_GATTC_EVT_TIMEOUT
+        }
 
         case BLE_GATTS_EVT_TIMEOUT:
+        {
             // Disconnect on GATT Server timeout event.
             WS_LOG_DEBUG("GATT Server Timeout.\r\n");
-            err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            APP_ERROR_CHECK(err_code);
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_DISCONNECT, p_ble_evt->evt.gatts_evt.conn_handle };
+            WS_HandleStateEvent(e);
             break; // BLE_GATTS_EVT_TIMEOUT
+        }
 
         case BLE_EVT_USER_MEM_REQUEST:
             err_code = sd_ble_user_mem_reply(p_ble_evt->evt.gattc_evt.conn_handle, NULL);
@@ -769,6 +855,7 @@ static void ws_ServerBtResetHandler(
     void *p_event_data,
     uint16_t event_size)
 {
+    //todo move it to the system module
     nrf_delay_ms(500);
     sd_nvic_SystemReset();
 }
@@ -780,32 +867,400 @@ static void WS_ButtonCallback(
     if (WS_DIGITAL_INPUT_PAIR_BTN == pin &&
         WS_BUTTON_PUSH_LONG == pushType)
     {
-        uint32_t err_code = NRF_ERROR_INTERNAL;
+        WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_UNBOND, 0 };
+        WS_HandleStateEvent(e);
+    }
+}
 
-        if (BLE_CONN_HANDLE_INVALID != ws_conn_handle)
+static void WS_HandleStateEvent(
+        WS_ServerBtEvent_t event)
+{
+    WS_ServerBtEvent_e e = event.event;
+    bool handled = true;
+
+    switch(ws_connectionState)
+    {
+    case WS_SERVER_BT_CONN_STATE_CONNECTED:
+        if (WS_SERVER_BT_EVENT_DISCONNECT == e)
         {
-            err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_LOCAL_HOST_TERMINATED_CONNECTION);
-            if (NRF_SUCCESS != err_code)
+            uint32_t err_code = sd_ble_gap_disconnect(event.data.connectionHandle,
+                                                      BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+            APP_ERROR_CHECK(err_code);
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_DISCONNECTING, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_CONNECTING:
+        if (WS_SERVER_BT_EVENT_CONNECTED == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_CONNECTED, event);
+        }
+        else if (WS_SERVER_BT_EVENT_DISCONNECTED == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_DISCONNECTED, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTED:
+        if (WS_SERVER_BT_EVENT_CONNECT == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_CONNECTING, event);
+        }
+        else if (WS_SERVER_BT_EVENT_ADVERTISE == e)
+        {
+            if (WS_SERVER_BT_BOND_STATE_NOT_BONDED == ws_bondState)
             {
-                return;
+                WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_ADVERISING, event);
+                advertising_start();
             }
         }
-
-        if (!ws_connectable)
+        else if (WS_SERVER_BT_EVENT_CONNECTED == e)
         {
-            err_code = pm_peers_delete();
-            WS_LOG_DEBUG("pm_peers_delete: %lu\r\n", err_code);
-            APP_ERROR_CHECK(err_code);
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_CONNECTED, event);
         }
-
-        const WS_Configuration_t *config = WS_ConfigurationGet();
-        if (config->bonded)
+        else
         {
-            WS_Configuration_t newConfig = *config;
-            newConfig.bonded = false;
-            memset(&newConfig.address, 0xFF, WS_CONFIGURATION_ADDR_LEN);
-            WS_ConfigurationSet(&newConfig);
+            handled = false;
         }
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTING:
+        if (WS_SERVER_BT_EVENT_DISCONNECTED == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_DISCONNECTED, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_ADVERISING:
+        if (WS_SERVER_BT_EVENT_ADVERTISING_STOPPED == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_DISCONNECTED, event);
+        }
+        else if (WS_SERVER_BT_EVENT_CONNECTED == e)
+        {
+            WS_ChangeConnState(WS_SERVER_BT_CONN_STATE_CONNECTED, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    default:
+        {
+            handled = false;
+        }
+        break;
     }
+
+    if (!handled)
+    {
+        WS_LOG_WARNING("Event %d in conn state %d not handled\r\n", event.event, ws_connectionState);
+    }
+    handled = true;
+
+    switch(ws_bondState)
+    {
+    case WS_SERVER_BT_BOND_STATE_BONDED:
+        if (WS_SERVER_BT_EVENT_UNBOND == e)
+        {
+            WS_ChangeBondState(WS_SERVER_BT_BOND_STATE_UNBONDING, event);
+            WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_DISCONNECT, ws_conn_handle };
+            WS_HandleStateEvent(e);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_BONDING:
+        if (WS_SERVER_BT_EVENT_BONDED == e)
+        {
+            WS_ChangeBondState(WS_SERVER_BT_BOND_STATE_BONDED, event);
+        }
+        else if (WS_SERVER_BT_EVENT_UNBONDED == e)
+        {
+            WS_ChangeBondState(WS_SERVER_BT_BOND_STATE_NOT_BONDED, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_NOT_BONDED:
+        if (WS_SERVER_BT_EVENT_BOND == e)
+        {
+            WS_ChangeBondState(WS_SERVER_BT_BOND_STATE_BONDING, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_UNBONDING:
+        if (WS_SERVER_BT_EVENT_DISCONNECTED == e)
+        {
+            if (0 < pm_peer_count())
+            {
+                uint32_t err_code = pm_peers_delete();
+                if (NRF_SUCCESS != err_code)
+                {
+                    WS_LOG_DEBUG("pm_peers_delete: %lu\r\n", err_code);
+                }
+            }
+            else
+            {
+                WS_ServerBtEvent_t e = { WS_SERVER_BT_EVENT_UNBONDED, 0 };
+                WS_HandleStateEvent(e);
+            }
+        }
+        else if (WS_SERVER_BT_EVENT_UNBONDED == e)
+        {
+            WS_ChangeBondState(WS_SERVER_BT_BOND_STATE_NOT_BONDED, event);
+        }
+        else
+        {
+            handled = false;
+        }
+        break;
+
+    default:
+        {
+            handled = false;
+        }
+        break;
+    }
+
+    if (!handled)
+    {
+        WS_LOG_WARNING("Event %d in bond state %d not handled\r\n", event.event, ws_bondState);
+    }
+}
+
+static void WS_ChangeConnState(
+    WS_ServerBtConnectionState_e newState,
+    WS_ServerBtEvent_t event)
+{
+    switch(ws_connectionState)
+    {
+    case WS_SERVER_BT_CONN_STATE_CONNECTED:
+        WS_ConnectedOnExit(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_CONNECTING:
+        WS_ConnectingOnExit(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTED:
+        WS_DisconnectedOnExit(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTING:
+        WS_DisconnectingOnExit(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_ADVERISING:
+        WS_AdvertisingOnExit(event);
+        break;
+
+    default:
+        break;
+    }
+
+    ws_connectionState = newState;
+
+    switch(ws_connectionState)
+    {
+    case WS_SERVER_BT_CONN_STATE_CONNECTED:
+        WS_ConnectedOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_CONNECTING:
+        WS_ConnectingOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTED:
+        WS_DisconnectedOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_DISCONNECTING:
+        WS_DisconnectingOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_CONN_STATE_ADVERISING:
+        WS_AdvertisingOnEnter(event);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void WS_ChangeBondState(
+    WS_ServerBtBondState_e newState,
+    WS_ServerBtEvent_t event)
+{
+    switch(ws_bondState)
+    {
+    case WS_SERVER_BT_BOND_STATE_BONDED:
+        WS_BondedOnExit(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_BONDING:
+        WS_BondingOnExit(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_NOT_BONDED:
+        WS_NotBondedOnExit(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_UNBONDING:
+        WS_UnbondingOnExit(event);
+        break;
+
+    default:
+        break;
+    }
+
+    ws_bondState = newState;
+
+    switch(ws_bondState)
+    {
+    case WS_SERVER_BT_BOND_STATE_BONDED:
+        WS_BondedOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_BONDING:
+        WS_BondingOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_NOT_BONDED:
+        WS_NotBondedOnEnter(event);
+        break;
+
+    case WS_SERVER_BT_BOND_STATE_UNBONDING:
+        WS_UnbondingOnEnter(event);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void WS_ConnectedOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_ConnectingOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_DisconnectedOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_DisconnectingOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_AdvertisingOnExit(
+    WS_ServerBtEvent_t event)
+{
+    ws_connectable = false;
+}
+
+static void WS_ConnectedOnEnter(
+    WS_ServerBtEvent_t event)
+{
+    ws_conn_handle = event.data.connectionHandle;
+}
+
+static void WS_ConnectingOnEnter(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_DisconnectedOnEnter(
+    WS_ServerBtEvent_t event)
+{
+    ws_conn_handle = BLE_CONN_HANDLE_INVALID;
+}
+
+static void WS_DisconnectingOnEnter(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_AdvertisingOnEnter(
+    WS_ServerBtEvent_t event)
+{
+    ws_connectable = true;
+}
+
+static void WS_BondedOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_BondingOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_NotBondedOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_UnbondingOnExit(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_BondedOnEnter(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_BondingOnEnter(
+    WS_ServerBtEvent_t event)
+{
+}
+
+static void WS_NotBondedOnEnter(
+    WS_ServerBtEvent_t event)
+{
+    const WS_Configuration_t *config = WS_ConfigurationGet();
+    if (config->bonded)
+    {
+        WS_Configuration_t newConfig = *config;
+        newConfig.bonded = false;
+        memset(&newConfig.address, 0xFF, WS_CONFIGURATION_ADDR_LEN);
+        WS_ConfigurationSet(&newConfig);
+    }
+}
+
+static void WS_UnbondingOnEnter(
+    WS_ServerBtEvent_t event)
+{
 }
 
