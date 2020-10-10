@@ -60,7 +60,7 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
 
     // init a timer
     ws_timer = WS_TimerGetNativeTimer();
-    nrf_drv_timer_extended_compare(ws_timer, NRF_TIMER_CC_CHANNEL1, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
+//    nrf_drv_timer_extended_compare(ws_timer, NRF_TIMER_CC_CHANNEL1, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
 
     // init ADC
     ret_code = nrf_drv_adc_init(&config, WS_AdcAdapterIrqHandler);
@@ -73,7 +73,7 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     err_code = nrf_drv_ppi_channel_alloc(&ws_ppiChannelAdc);
     APP_ERROR_CHECK(err_code);
     err_code = nrf_drv_ppi_channel_assign(ws_ppiChannelAdc,
-                                          nrf_drv_timer_event_address_get(ws_timer, NRF_TIMER_EVENT_COMPARE1),
+                                          nrf_drv_timer_event_address_get(ws_timer, NRF_TIMER_EVENT_COMPARE0),
                                           nrf_drv_adc_start_task_get());
     APP_ERROR_CHECK(err_code);
 
