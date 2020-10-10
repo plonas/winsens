@@ -80,7 +80,6 @@ void ws_ble_cs_on_ble_evt(ws_ble_cs_t *p_cs, ble_evt_t *p_ble_evt)
             break;
 
         default:
-            WS_LOG_DEBUG("ws_ble_cs_on_ble_evt event %u\r\n", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }

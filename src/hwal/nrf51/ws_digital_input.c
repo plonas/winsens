@@ -94,10 +94,12 @@ WINSENS_Status_e WS_DigitalInputRegisterCallback(
             ret_code_t ret = nrf_drv_gpiote_in_init(pin, &config, WS_DigitalInputIrqHandler);
             if (NRF_SUCCESS != ret)
             {
+                WS_LOG_ERROR("nrf_drv_gpiote_in_init failed\r\n");
                 return WINSENS_ERROR;
             }
             nrf_drv_gpiote_in_event_enable(pin, true);
 
+            ws_pinCallbacks[i].pin = pin;
             ws_pinCallbacks[i].callback = callback;
             ws_pinCallbacks[i].status =  nrf_drv_gpiote_in_is_set(pin);
 
@@ -157,7 +159,7 @@ static void WS_DigitalInputEventHandler(
     UNUSED_PARAMETER(event_size);
 
     ws_pinCallbacks[i].status = !ws_pinCallbacks[i].status;
-    ws_pinCallbacks[i].callback(i, ws_pinCallbacks[i].status);
+    ws_pinCallbacks[i].callback(ws_pinCallbacks[i].pin, ws_pinCallbacks[i].status);
 }
 
 static nrf_gpio_pin_pull_t WS_ConvertPullUpDown(

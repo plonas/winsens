@@ -123,7 +123,6 @@ void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
             break;
 
         default:
-            WS_LOG_DEBUG("ws_ble_wms_on_ble_evt event %u\r\n", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }

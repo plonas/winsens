@@ -8,6 +8,8 @@
 #include "ws_button.h"
 #include "button_config.h"
 #include "ws_system.h"
+#define WS_LOG_MODULE_NAME "BUTN"
+#include "ws_log.h"
 
 
 #define WS_BUTTON_PINS_NUMBER               (sizeof(ws_buttonConfig) / sizeof(WS_DigitalInputPins_e))
@@ -20,7 +22,7 @@
 typedef struct {
     WS_DigitalInputPins_e pin;
     uint32_t onTime;
-    WS_ButtonCallback_f callback;
+    WS_EventHandler_f eventHandler;
 
 } WS_ButtonPinCallback_t;
 
@@ -48,7 +50,7 @@ void WS_ButtonDeinit(void)
 
 WINSENS_Status_e WS_ButtonRegisterCallback(
     WS_DigitalInputPins_e pin,
-    WS_ButtonCallback_f callback)
+    WS_EventHandler_f eventHandler)
 {
     uint32_t i;
     for (i = 0; i < WS_BUTTON_PINS_NUMBER; ++i)
@@ -56,7 +58,7 @@ WINSENS_Status_e WS_ButtonRegisterCallback(
         if (ws_buttonConfig[i] == pin)
         {
             ws_buttonCallbacks[i].pin = pin;
-            ws_buttonCallbacks[i].callback = callback;
+            ws_buttonCallbacks[i].eventHandler = eventHandler;
             WINSENS_Status_e status = WS_DigitalInputRegisterCallback(pin, WS_DigitalInputCallback);
             if (WINSENS_OK != status)
             {
@@ -89,10 +91,11 @@ static void WS_DigitalInputCallback(
     bool on)
 {
     uint32_t i;
+    WS_LOG_DEBUG("Button %u on %u\r\n", pin, on);
     for (i = 0; i < WS_BUTTON_PINS_NUMBER; ++i)
     {
         if (ws_buttonCallbacks[i].pin == pin &&
-            ws_buttonCallbacks[i].callback)
+            ws_buttonCallbacks[i].eventHandler)
         {
             uint32_t duration = 0;
 
@@ -106,18 +109,18 @@ static void WS_DigitalInputCallback(
                 duration = WS_SystemGetTime() - ws_buttonCallbacks[i].onTime;
             }
 
-            WS_ButtonPushType_e push = WS_BUTTON_PUSH_NORMAL;
+            WS_ButtonEvent_e push = WS_BUTTON_EVENT_NORMAL;
             if (WS_BUTTON_PUSH_VERY_LONG_DURATION <= duration)
             {
-                push = WS_BUTTON_PUSH_VERY_LONG;
+                push = WS_BUTTON_EVENT_VERY_LONG;
             }
             else if (WS_BUTTON_PUSH_LONG_DURATION <= duration)
             {
-                push = WS_BUTTON_PUSH_LONG;
+                push = WS_BUTTON_EVENT_LONG;
             }
             else if (WS_BUTTON_PUSH_NORMAL_DURATION <= duration)
             {
-                push = WS_BUTTON_PUSH_NORMAL;
+                push = WS_BUTTON_EVENT_NORMAL;
             }
             else
             {
@@ -125,7 +128,9 @@ static void WS_DigitalInputCallback(
                 return;
             }
 
-            ws_buttonCallbacks[i].callback(pin, push);
+            WS_LOG_DEBUG("xxx button xxx\r\n");
+            WS_Event_t e = { push, pin };
+            ws_buttonCallbacks[i].eventHandler(e);
         }
     }
 }

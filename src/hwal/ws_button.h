@@ -12,13 +12,11 @@
 
 
 typedef enum {
-    WS_BUTTON_PUSH_NORMAL, // 100ms
-    WS_BUTTON_PUSH_LONG, // 1500ms
-    WS_BUTTON_PUSH_VERY_LONG // 2500ms
+    WS_BUTTON_EVENT_NORMAL = (WS_MODULE_ID_BUTTON << 16), // 100ms
+    WS_BUTTON_EVENT_LONG, // 1500ms
+    WS_BUTTON_EVENT_VERY_LONG // 2500ms
 
-} WS_ButtonPushType_e;
-
-typedef void (*WS_ButtonCallback_f)(WS_DigitalInputPins_e pin, WS_ButtonPushType_e pushType);
+} WS_ButtonEvent_e;
 
 WINSENS_Status_e WS_ButtonInit(void);
 
@@ -26,7 +24,7 @@ void WS_ButtonDeinit(void);
 
 WINSENS_Status_e WS_ButtonRegisterCallback(
     WS_DigitalInputPins_e pin,
-    WS_ButtonCallback_f callback);
+    WS_EventHandler_f eventHandler);
 void WS_ButtonUnregisterCallback(
     WS_DigitalInputPins_e pin);
 
