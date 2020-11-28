@@ -13,6 +13,7 @@
 #include "winsens_config.h"
 #define WS_LOG_MODULE_NAME SYS
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 #include "nrf_sdh.h"
 #include "nrf_sdh_soc.h"
@@ -38,7 +39,7 @@ WINSENS_Status_e WS_SystemInit(void)
     WINSENS_Status_e status = WINSENS_ERROR;
 
     err_code = nrf_sdh_enable_request();
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
 
     // Register handlers for SoC events.

@@ -9,6 +9,7 @@
 #include "ws_ble.h"
 #define WS_LOG_MODULE_NAME LECS
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 #include "ble_srv_common.h"
 
@@ -28,7 +29,7 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_
     ble_uuid_t          service_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    WS_LOG_INFO("ws_ble_cs_init\r\n");
+    WS_LOG_INFO("ws_ble_cs_init");
 
     p_cs->on_threshold_write = on_threshold_write;
     p_cs->on_enabled_write = on_enabled_write;
@@ -36,14 +37,14 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_
 
     service_uuid.uuid = BLE_UUID_CS_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
-    WS_LOG_INFO("sd_ble_uuid_vs_add: %lu\r\n", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_INFO("sd_ble_uuid_vs_add: %lu", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
                                         &service_uuid,
                                         &p_cs->service_handle);
-    WS_LOG_INFO("sd_ble_gatts_service_add: %lu\r\n", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_INFO("sd_ble_gatts_service_add: %lu", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
     {
@@ -94,12 +95,12 @@ static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
     ble_uuid_t          char_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    WS_LOG_INFO("ws_cs_threshold_char_add\r\n");
+    WS_LOG_INFO("ws_cs_threshold_char_add");
 
     char_uuid.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + window;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu", err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -141,8 +142,8 @@ static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->threshold_char_handles[window]);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu", err_code);
 
     return NRF_SUCCESS;
 }
@@ -154,12 +155,12 @@ static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
     ble_uuid_t          char_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    WS_LOG_INFO("ws_cs_enabled_char_add\r\n");
+    WS_LOG_INFO("ws_cs_enabled_char_add");
 
     char_uuid.uuid = BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + window;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu", err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -201,8 +202,8 @@ static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->enabled_char_handles[window]);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu", err_code);
 
     return NRF_SUCCESS;
 }
@@ -214,12 +215,12 @@ static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs)
     ble_uuid_t          char_uuid;
     ble_uuid128_t       base_uuid = BLE_UUID_WMS_BASE_UUID;
 
-    WS_LOG_INFO("ws_cs_apply_char_add\r\n");
+    WS_LOG_INFO("ws_cs_apply_char_add");
 
     char_uuid.uuid = BLE_UUID_CS_APPLY_CHARACTERISTC_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu", err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -261,8 +262,8 @@ static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->apply_char_handles);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\r\n", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu", err_code);
 
     return NRF_SUCCESS;
 }
@@ -283,13 +284,13 @@ static void ws_on_write(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
     const ble_gatts_evt_write_t *p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
 //    WS_ASSERT(p_evt_write);
 
-    WS_LOG_DEBUG("ws_on_write auth_required: %u\r\n", p_evt_write->auth_required);
-    WS_LOG_DEBUG("ws_on_write data: 0x%x\r\n", *((uint16_t *) p_evt_write->data));
-    WS_LOG_DEBUG("ws_on_write handle: %u\r\n", p_evt_write->handle);
-    WS_LOG_DEBUG("ws_on_write len: %u\r\n", p_evt_write->len);
-    WS_LOG_DEBUG("ws_on_write offset: %u\r\n", p_evt_write->offset);
-    WS_LOG_DEBUG("ws_on_write op: %u\r\n", p_evt_write->op);
-    WS_LOG_DEBUG("ws_on_write uuid: 0x%x\r\n", p_evt_write->uuid.uuid);
+    WS_LOG_DEBUG("ws_on_write auth_required: %u", p_evt_write->auth_required);
+    WS_LOG_DEBUG("ws_on_write data: 0x%x", *((uint16_t *) p_evt_write->data));
+    WS_LOG_DEBUG("ws_on_write handle: %u", p_evt_write->handle);
+    WS_LOG_DEBUG("ws_on_write len: %u", p_evt_write->len);
+    WS_LOG_DEBUG("ws_on_write offset: %u", p_evt_write->offset);
+    WS_LOG_DEBUG("ws_on_write op: %u", p_evt_write->op);
+    WS_LOG_DEBUG("ws_on_write uuid: 0x%x", p_evt_write->uuid.uuid);
 
     switch (p_evt_write->uuid.uuid)
     {

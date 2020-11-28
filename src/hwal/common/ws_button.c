@@ -91,7 +91,7 @@ static void WS_DigitalInputCallback(
     bool on)
 {
     uint32_t i;
-    WS_LOG_DEBUG("Button %u on %u\r\n", pin, on);
+    WS_LOG_DEBUG("Button %u on %u", pin, on);
     for (i = 0; i < WS_BUTTON_PINS_NUMBER; ++i)
     {
         if (ws_buttonCallbacks[i].pin == pin &&
@@ -128,7 +128,7 @@ static void WS_DigitalInputCallback(
                 return;
             }
 
-            WS_LOG_DEBUG("xxx button xxx\r\n");
+            WS_LOG_DEBUG("xxx button xxx");
             WS_Event_t e = { { push }, { pin } };
             ws_buttonCallbacks[i].eventHandler(e);
         }

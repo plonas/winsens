@@ -29,7 +29,7 @@ WINSENS_Status_e WINSENS_Init(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    WS_LOG_INFO("WINSENS_Init\r\n");
+    WS_LOG_INFO("WINSENS_Init");
 
     ws_server = server;
     ws_config = config;
@@ -57,7 +57,7 @@ WINSENS_Status_e WINSENS_Init(
 
 void WINSENS_Deinit()
 {
-    WS_LOG_INFO("WINSENS_Deinit\r\n");
+    WS_LOG_INFO("WINSENS_Deinit");
     ws_server->unsubscribe(ws_server, WS_ServerCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
@@ -75,7 +75,7 @@ static void WS_ServerCallback(
     WS_Window_e window,
     WS_ServerEvent_t event)
 {
-    WS_LOG_INFO("WS_ServerCallback event: %d\r\n", event.eventType);
+    WS_LOG_INFO("WS_ServerCallback event: %d", event.eventType);
 
     switch (event.eventType) {
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:

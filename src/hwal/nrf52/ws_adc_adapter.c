@@ -11,6 +11,7 @@
 #include "utils/utils.h"
 #define WS_LOG_MODULE_NAME ADCA
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 //#include "nrfx.h"
 //#include "nrf_drv_saadc.h"
@@ -62,20 +63,20 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     // init a timer
     nrfx_timer_config_t timer_cfg = NRFX_TIMER_DEFAULT_CONFIG;
     err_code = nrfx_timer_init(&ws_timer, &timer_cfg, WS_TimerIrqHandler);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
     nrfx_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
 
     // init ADC
     err_code = nrfx_saadc_init(NRFX_SAADC_CONFIG_IRQ_PRIORITY);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     // init PPI
     err_code = nrfx_ppi_channel_alloc(&ws_ppiChannelAdc);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
     err_code = nrfx_ppi_channel_assign(ws_ppiChannelAdc,
                                        nrfx_timer_event_address_get(&ws_timer, NRF_TIMER_EVENT_COMPARE0),
                                        nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     return WINSENS_OK;
 }
@@ -107,11 +108,11 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
     // init the channel
     err_code = nrfx_saadc_channels_config(&ws_channels[channelId].nativeChannelConf, 1);
     WS_LOG_INFO("nrfx_saadc_channels_config: %lu", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     err_code = nrfx_saadc_simple_mode_set(channelId + 1, NRF_SAADC_RESOLUTION_8BIT, NRF_SAADC_OVERSAMPLE_DISABLED, WS_AdcAdapterIrqHandler); //todo bit mask
     WS_LOG_INFO("nrfx_saadc_simple_mode_set: %lu", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     return WINSENS_OK;
 }
@@ -133,8 +134,8 @@ void WS_AdcAdapterDisableChannel(
     if (ws_active_adc_channels_num)
     {
         // Start sampling
-        WS_APP_ERROR(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
-        WS_APP_ERROR(nrfx_ppi_channel_enable(ws_ppiChannelAdc));
+        WS_LOG_NRF_ERROR_CHECK(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
+        WS_LOG_NRF_ERROR_CHECK(nrfx_ppi_channel_enable(ws_ppiChannelAdc));
     }
 }
 
@@ -145,10 +146,10 @@ WINSENS_Status_e WS_AdcAdapterStart(void)
     // Start sampling
     err_code = nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num);
     WS_LOG_INFO("nrfx_adc_buffer_convert: %lu", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
     err_code = nrfx_ppi_channel_enable(ws_ppiChannelAdc);
-    WS_LOG_INFO("nrfx_ppi_channel_enable: %lu\r\n", err_code);
-    WS_APP_ERROR(err_code);
+    WS_LOG_INFO("nrfx_ppi_channel_enable: %lu", err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     return WINSENS_OK;
 }
@@ -171,7 +172,7 @@ static void WS_AdcAdapterIrqHandler(
 
         if (ws_active_adc_channels_num != event->data.done.size)
         {
-            WS_LOG_ERROR("Active channels #%u but got %u reads\r\n", ws_active_adc_channels_num, event->data.done.size);
+            WS_LOG_ERROR("Active channels #%u but got %u reads", ws_active_adc_channels_num, event->data.done.size);
             return;
         }
 
@@ -183,11 +184,11 @@ static void WS_AdcAdapterIrqHandler(
             status = WS_TaskQueueAdd(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
             if (WINSENS_OK != status)
             {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
+                WS_LOG_ERROR("WS_TaskQueueAdd failed");
             }
         }
 
-        WS_APP_ERROR(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
+        WS_LOG_NRF_ERROR_CHECK(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
     }
 }
 
@@ -212,6 +213,6 @@ static void WS_AdcAdapterEventHandler(
     }
     else
     {
-        WS_LOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
+        WS_LOG_ERROR("Missing channel's #%u callback", adcEvent->id);
     }
 }

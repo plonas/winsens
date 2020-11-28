@@ -12,6 +12,7 @@
 #include "ws_configuration.h"
 #define WS_LOG_MODULE_NAME MAIN
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 #include "boards.h"
 #include "app_timer.h"
@@ -38,26 +39,26 @@ static void WS_TimerIrqHandler(
 int main(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
-    uint32_t err_code;
+    ret_code_t err_code;
     WS_Server_t server;
     const WS_Configuration_t *config = NULL;
 
     err_code = WS_LOG_INIT(NULL);
-    WS_APP_ERROR(err_code);
-    WS_LOG_DEBUG("main in\r\n");
+    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_DEBUG("main in");
 
     status = WS_SystemInit();
     if (WINSENS_OK != status) return -1;
-    WS_LOG_DEBUG("WS_SystemInit: %u, \r\n", status);
+    WS_LOG_DEBUG("WS_SystemInit: %u", status);
 
     status = WS_TaskQueueInit();
     if (WINSENS_OK != status) return -1;
 
     status = WS_ConfigurationInit(); //todo handle return value
-    WS_LOG_DEBUG("WS_ConfigurationInit: %u, \r\n", status);
+    WS_LOG_DEBUG("WS_ConfigurationInit: %u", status);
 
     config = WS_ConfigurationGet();
-    WS_LOG_INFO("enabled: %u, enabled: %u\r\n", config->windowEnabled[0], config->windowEnabled[1]);
+    WS_LOG_INFO("enabled: %u, enabled: %u", config->windowEnabled[0], config->windowEnabled[1]);
 
     WS_LOG_FLUSH();
 //    WS_ServerStubInit(&server); //todo handle return value
@@ -70,10 +71,10 @@ int main(void)
     bsp_board_init(BSP_INIT_LEDS);
 
     err_code = app_timer_create(&ws_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     err_code = app_timer_start(ws_timer, APP_TIMER_TICKS(500), NULL);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     while (true)
     {
@@ -84,6 +85,6 @@ int main(void)
     WINSENS_Deinit();
     server.deinit(&server);
 
-    WS_LOG_INFO("main out\r\n");
+    WS_LOG_INFO("main out");
     return 0;
 }

@@ -147,7 +147,7 @@ WINSENS_Status_e WS_StorageWrite(
 
     if (WS_STORAGE_RECORDS_BUFFER_LENGTH == i)
     {
-        WS_LOG_ERROR("Queue is full\r\n");
+        WS_LOG_ERROR("Queue is full");
         return WINSENS_BUSY;
     }
 
@@ -158,7 +158,7 @@ WINSENS_Status_e WS_StorageWrite(
         if (NRF_SUCCESS != ret)
         {
             ws_recordsBuffer[i].used = false;
-            WS_LOG_ERROR("fds_record_update\r\n");
+            WS_LOG_ERROR("fds_record_update");
             return WINSENS_ERROR;
         }
     }
@@ -168,7 +168,7 @@ WINSENS_Status_e WS_StorageWrite(
         if (NRF_SUCCESS != ret)
         {
             ws_recordsBuffer[i].used = false;
-            WS_LOG_ERROR("fds_record_write %d\r\n", ret);
+            WS_LOG_ERROR("fds_record_write %d", ret);
             return WINSENS_NO_RESOURCES;
         }
     }
@@ -221,14 +221,14 @@ static bool setWriteData(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
-//    WS_LOG_DEBUG("ws_fds_evt_handler %d\r\n", p_fds_evt->id);
+//    WS_LOG_DEBUG("ws_fds_evt_handler %d", p_fds_evt->id);
 
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
             if (NRF_SUCCESS != p_fds_evt->result)
             {
-//                WS_LOG_ERROR("Initialization failed\r\n");
+//                WS_LOG_ERROR("Initialization failed");
             }
             break;
 
@@ -245,7 +245,7 @@ static void ws_fds_evt_handler(
 
             if (NRF_SUCCESS != p_fds_evt->result)
             {
-//                WS_LOG_ERROR("Storage write failed\r\n");
+//                WS_LOG_ERROR("Storage write failed");
             }
 
             (void) fds_gc();
@@ -266,7 +266,7 @@ static void ws_fds_evt_handler(
 
             if (NRF_SUCCESS != p_fds_evt->result)
             {
-//                WS_LOG_ERROR("Storage update failed\r\n");
+//                WS_LOG_ERROR("Storage update failed");
             }
 
             (void) fds_gc();
@@ -281,7 +281,7 @@ static void ws_fds_evt_handler(
         case FDS_EVT_GC:
             if (NRF_SUCCESS != p_fds_evt->result)
             {
-//                WS_LOG_ERROR("Storage GC failed\r\n");
+//                WS_LOG_ERROR("Storage GC failed");
             }
             break;
 

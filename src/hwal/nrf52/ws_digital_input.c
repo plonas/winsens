@@ -94,7 +94,7 @@ WINSENS_Status_e WS_DigitalInputRegisterCallback(
             ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)pin, &config, WS_DigitalInputIrqHandler);
             if (NRFX_SUCCESS != ret)
             {
-                WS_LOG_ERROR("nrf_drv_gpiote_in_init failed\r\n");
+                WS_LOG_ERROR("nrf_drv_gpiote_in_init failed");
                 return WINSENS_ERROR;
             }
             nrfx_gpiote_in_event_enable(pin, true);
@@ -143,7 +143,7 @@ static void WS_DigitalInputIrqHandler(
             status = WS_TaskQueueAdd(&i, sizeof(i), WS_DigitalInputEventHandler);
             if (WINSENS_OK != status)
             {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
+                WS_LOG_ERROR("WS_TaskQueueAdd failed");
             }
             break;
         }

@@ -9,6 +9,7 @@
 #include "ws_task_queue.h"
 #define WS_LOG_MODULE_NAME TIMR
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 #include "app_timer.h"
 
@@ -48,10 +49,10 @@ WINSENS_Status_e WS_TimerInit(void)
     ret_code_t err_code;
 
     err_code = app_timer_init();
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     err_code = app_timer_create(&ws_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
-    WS_APP_ERROR(err_code);
+    WS_LOG_NRF_ERROR_CHECK(err_code);
 
     return WINSENS_OK;
 }
