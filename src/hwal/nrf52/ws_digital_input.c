@@ -9,8 +9,9 @@
 #include "ws_digital_input.h"
 #include "digital_input_config.h"
 #define WS_LOG_MODULE_NAME DIN
-#include "ws_task_queue.h"
 #include "ws_log.h"
+#include "ws_log_nrf.h"
+#include "ws_task_queue.h"
 #include "nrf_gpio.h"
 #include "nrfx_gpiote.h"
 
@@ -48,16 +49,15 @@ WINSENS_Status_e WS_DigitalInputInit(void)
     if (1 == ws_initCount)
     {
         uint8_t i = 0;
+        nrfx_err_t err_code;
 
         for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
         {
             ws_pinCallbacks[i] = (WS_DigitalInputPinCallback_t) WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT;
         }
 
-        if (NRFX_SUCCESS != nrfx_gpiote_init())
-        {
-            return WINSENS_ERROR;
-        }
+        err_code = nrfx_gpiote_init();
+        WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
         for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
         {
@@ -92,11 +92,8 @@ WINSENS_Status_e WS_DigitalInputRegisterCallback(
             nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
             config.pull = WS_ConvertPullUpDown(ws_digitalInputConfig[i].pullUpDown);
             ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)pin, &config, WS_DigitalInputIrqHandler);
-            if (NRFX_SUCCESS != ret)
-            {
-                WS_LOG_ERROR("nrf_drv_gpiote_in_init failed");
-                return WINSENS_ERROR;
-            }
+            WS_NRF_ERROR_CHECK(ret, WINSENS_ERROR);
+
             nrfx_gpiote_in_event_enable(pin, true);
 
             ws_pinCallbacks[i].pin = pin;
@@ -141,10 +138,7 @@ static void WS_DigitalInputIrqHandler(
         if (pin == ws_pinCallbacks[i].pin)
         {
             status = WS_TaskQueueAdd(&i, sizeof(i), WS_DigitalInputEventHandler);
-            if (WINSENS_OK != status)
-            {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed");
-            }
+            WS_LOG_IF_WARNING(status, "WS_TaskQueueAdd failed");
             break;
         }
     }

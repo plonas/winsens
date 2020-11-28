@@ -43,38 +43,36 @@ int main(void)
     WS_Server_t server;
     const WS_Configuration_t *config = NULL;
 
-    err_code = WS_LOG_INIT(NULL);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
-    WS_LOG_DEBUG("main in");
+    WS_LOG_INIT(NULL);
 
     status = WS_SystemInit();
-    if (WINSENS_OK != status) return -1;
-    WS_LOG_DEBUG("WS_SystemInit: %u", status);
+    WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     status = WS_TaskQueueInit();
-    if (WINSENS_OK != status) return -1;
+    WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     status = WS_ConfigurationInit(); //todo handle return value
-    WS_LOG_DEBUG("WS_ConfigurationInit: %u", status);
+    WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     config = WS_ConfigurationGet();
-    WS_LOG_INFO("enabled: %u, enabled: %u", config->windowEnabled[0], config->windowEnabled[1]);
+    WS_LOG_INFO("Enabled: %u, enabled: %u", config->windowEnabled[0], config->windowEnabled[1]);
 
     WS_LOG_FLUSH();
-//    WS_ServerStubInit(&server); //todo handle return value
-    WS_ServerBtInit(&server, config); //todo handle return value
+//    WS_ServerStubInit(&server);
+    WS_ServerBtInit(&server, config);
+    WS_ERROR_CHECK(status, WINSENS_ERROR);
     WS_LOG_FLUSH();
 
     status = WINSENS_Init(&server, config);
-    if (WINSENS_OK != status) return -1;
+    WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     bsp_board_init(BSP_INIT_LEDS);
 
     err_code = app_timer_create(&ws_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_NRF_WARNING_CHECK(err_code);
 
     err_code = app_timer_start(ws_timer, APP_TIMER_TICKS(500), NULL);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_LOG_NRF_WARNING_CHECK(err_code);
 
     while (true)
     {

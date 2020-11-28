@@ -63,20 +63,20 @@ WINSENS_Status_e WS_AdcAdapterInit(void)
     // init a timer
     nrfx_timer_config_t timer_cfg = NRFX_TIMER_DEFAULT_CONFIG;
     err_code = nrfx_timer_init(&ws_timer, &timer_cfg, WS_TimerIrqHandler);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
     nrfx_timer_extended_compare(&ws_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
 
     // init ADC
     err_code = nrfx_saadc_init(NRFX_SAADC_CONFIG_IRQ_PRIORITY);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     // init PPI
     err_code = nrfx_ppi_channel_alloc(&ws_ppiChannelAdc);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
     err_code = nrfx_ppi_channel_assign(ws_ppiChannelAdc,
                                        nrfx_timer_event_address_get(&ws_timer, NRF_TIMER_EVENT_COMPARE0),
                                        nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     return WINSENS_OK;
 }
@@ -107,12 +107,11 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
 
     // init the channel
     err_code = nrfx_saadc_channels_config(&ws_channels[channelId].nativeChannelConf, 1);
-    WS_LOG_INFO("nrfx_saadc_channels_config: %lu", err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
     WS_LOG_NRF_ERROR_CHECK(err_code);
 
     err_code = nrfx_saadc_simple_mode_set(channelId + 1, NRF_SAADC_RESOLUTION_8BIT, NRF_SAADC_OVERSAMPLE_DISABLED, WS_AdcAdapterIrqHandler); //todo bit mask
-    WS_LOG_INFO("nrfx_saadc_simple_mode_set: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     return WINSENS_OK;
 }
@@ -133,9 +132,12 @@ void WS_AdcAdapterDisableChannel(
 
     if (ws_active_adc_channels_num)
     {
+        nrfx_err_t err_code;
         // Start sampling
-        WS_LOG_NRF_ERROR_CHECK(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
-        WS_LOG_NRF_ERROR_CHECK(nrfx_ppi_channel_enable(ws_ppiChannelAdc));
+        err_code = nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num);
+        WS_NRF_ERROR_CHECK(err_code, ;);
+        err_code = nrfx_ppi_channel_enable(ws_ppiChannelAdc);
+        WS_NRF_ERROR_CHECK(err_code, ;);
     }
 }
 
@@ -145,11 +147,9 @@ WINSENS_Status_e WS_AdcAdapterStart(void)
 
     // Start sampling
     err_code = nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num);
-    WS_LOG_INFO("nrfx_adc_buffer_convert: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
     err_code = nrfx_ppi_channel_enable(ws_ppiChannelAdc);
-    WS_LOG_INFO("nrfx_ppi_channel_enable: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     return WINSENS_OK;
 }
@@ -159,7 +159,8 @@ void WS_AdcAdapterStop(void)
     if (ws_active_adc_channels_num)
     {
         // Stop sampling
-        nrfx_ppi_channel_disable(ws_ppiChannelAdc);
+        nrfx_err_t err_code = nrfx_ppi_channel_disable(ws_ppiChannelAdc);
+        WS_NRF_ERROR_CHECK(err_code, ;);
     }
 }
 
@@ -188,7 +189,8 @@ static void WS_AdcAdapterIrqHandler(
             }
         }
 
-        WS_LOG_NRF_ERROR_CHECK(nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num));
+        nrfx_err_t err_code = nrfx_saadc_buffer_set(ws_adc_buffer, ws_active_adc_channels_num);
+        WS_LOG_NRF_ERROR_CHECK(err_code);
     }
 }
 

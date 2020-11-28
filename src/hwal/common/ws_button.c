@@ -57,14 +57,11 @@ WINSENS_Status_e WS_ButtonRegisterCallback(
     {
         if (ws_buttonConfig[i] == pin)
         {
+            WINSENS_Status_e status = WS_DigitalInputRegisterCallback(pin, WS_DigitalInputCallback);
+            WS_ERROR_CHECK(status, status);
+
             ws_buttonCallbacks[i].pin = pin;
             ws_buttonCallbacks[i].eventHandler = eventHandler;
-            WINSENS_Status_e status = WS_DigitalInputRegisterCallback(pin, WS_DigitalInputCallback);
-            if (WINSENS_OK != status)
-            {
-                ws_buttonCallbacks[i] = (WS_ButtonPinCallback_t) WS_BUTTON_CALLBACK_INIT;
-                return status;
-            }
 
             return WINSENS_OK;
         }
@@ -91,7 +88,6 @@ static void WS_DigitalInputCallback(
     bool on)
 {
     uint32_t i;
-    WS_LOG_DEBUG("Button %u on %u", pin, on);
     for (i = 0; i < WS_BUTTON_PINS_NUMBER; ++i)
     {
         if (ws_buttonCallbacks[i].pin == pin &&
@@ -128,7 +124,6 @@ static void WS_DigitalInputCallback(
                 return;
             }
 
-            WS_LOG_DEBUG("xxx button xxx");
             WS_Event_t e = { { push }, { pin } };
             ws_buttonCallbacks[i].eventHandler(e);
         }

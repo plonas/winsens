@@ -39,23 +39,24 @@ WINSENS_Status_e WS_SystemInit(void)
     WINSENS_Status_e status = WINSENS_ERROR;
 
     err_code = nrf_sdh_enable_request();
-    WS_LOG_NRF_ERROR_CHECK(err_code);
-
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     // Register handlers for SoC events.
     NRF_SDH_SOC_OBSERVER(m_soc_observer, APP_SOC_OBSERVER_PRIO, soc_evt_handler, NULL);
 
     status = WS_TimerInit();
-    WS_LOG_ERROR_CHECK(status);
+    WS_ERROR_CHECK(status, status);
+
     status = WS_DigitalInputInit();
-    WS_LOG_ERROR_CHECK(status);
+    WS_ERROR_CHECK(status, status);
+
     status = WS_ButtonInit();
-    WS_LOG_ERROR_CHECK(status);
+    WS_ERROR_CHECK(status, status);
 
     status = WS_TimerSetTimer(100, true, WS_TimerCallback, &ws_systemTimer);
-    WS_LOG_ERROR_CHECK(status);
+    WS_ERROR_CHECK(status, status);
 
-    return (NRF_SUCCESS == err_code) ? WINSENS_OK : WINSENS_ERROR;
+    return status;
 }
 
 void WS_SystemDeinit(void)

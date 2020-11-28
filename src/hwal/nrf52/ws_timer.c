@@ -49,10 +49,10 @@ WINSENS_Status_e WS_TimerInit(void)
     ret_code_t err_code;
 
     err_code = app_timer_init();
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     err_code = app_timer_create(&ws_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, WINSENS_ERROR);
 
     return WINSENS_OK;
 }
@@ -113,7 +113,8 @@ void WS_TimerCancel(
 
         if (0 == activeTimers)
         {
-            app_timer_stop(ws_timer);
+            ret_code_t ret = app_timer_stop(ws_timer);
+            WS_LOG_NRF_WARNING_CHECK(ret);
         }
     }
 }

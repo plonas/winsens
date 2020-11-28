@@ -10,6 +10,7 @@
 #include "utils/utils.h"
 #define WS_LOG_MODULE_NAME STRG
 #include "ws_log.h"
+#include "ws_log_nrf.h"
 
 #include "fds.h"
 
@@ -53,16 +54,10 @@ WINSENS_Status_e WS_StorageInit(void)
     uint_fast8_t i = 0;
 
     ret_code_t ret = fds_register(ws_fds_evt_handler);
-    if (ret != NRF_SUCCESS)
-    {
-        return WINSENS_ERROR;
-    }
+    WS_NRF_ERROR_CHECK(ret, WINSENS_ERROR);
 
     ret = fds_init();
-    if (ret != NRF_SUCCESS)
-    {
-        return WINSENS_ERROR;
-    }
+    WS_NRF_ERROR_CHECK(ret, WINSENS_ERROR);
 
     for (i = 0; i < WS_STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
@@ -90,30 +85,24 @@ WINSENS_Status_e WS_StorageRead(
     if (!isValidRecordId(recordId) ||
         !isValidDataSize(size))
     {
-        return WINSENS_ERROR;
+        WS_LOG_WARNING("Params validation failed");
+        return WINSENS_INVALID_PARAMS;
     }
 
 
     ret_code_t ret = fds_record_find(WS_STORAGE_FILE_ID, recordId, &record_desc, &ftok);
-    if (ret == NRF_SUCCESS)
-    {
-        if (fds_record_open(&record_desc, &flash_record) != NRF_SUCCESS)
-        {
-            return WINSENS_ERROR;
-        }
+    WS_NRF_INFO_CHECK(ret, WINSENS_NOT_FOUND);
 
-        memcpy(data, flash_record.p_data, MIN(size, (flash_record.p_header->length_words * WS_STORAGE_WORD_SIZE)));
-
-        // Close the record when done.
-        if (fds_record_close(&record_desc) != NRF_SUCCESS)
-        {
-            return WINSENS_ERROR;
-        }
-    }
-    else
+    if (fds_record_open(&record_desc, &flash_record) != NRF_SUCCESS)
     {
-        return WINSENS_NOT_FOUND;
+        return WINSENS_ERROR;
     }
+
+    memcpy(data, flash_record.p_data, MIN(size, (flash_record.p_header->length_words * WS_STORAGE_WORD_SIZE)));
+
+    // Close the record when done.
+    ret = fds_record_close(&record_desc);
+    WS_NRF_INFO_CHECK(ret, WINSENS_ERROR);
 
     return WINSENS_OK;
 }
@@ -221,15 +210,10 @@ static bool setWriteData(
 static void ws_fds_evt_handler(
     fds_evt_t const * const p_fds_evt)
 {
-//    WS_LOG_DEBUG("ws_fds_evt_handler %d", p_fds_evt->id);
-
     switch (p_fds_evt->id)
     {
         case FDS_EVT_INIT:
-            if (NRF_SUCCESS != p_fds_evt->result)
-            {
-//                WS_LOG_ERROR("Initialization failed");
-            }
+            WS_LOG_IF_WARNING(NRF_SUCCESS != p_fds_evt->result, "FDS_EVT_INIT failed");
             break;
 
         case FDS_EVT_WRITE:
@@ -243,10 +227,7 @@ static void ws_fds_evt_handler(
                 }
             }
 
-            if (NRF_SUCCESS != p_fds_evt->result)
-            {
-//                WS_LOG_ERROR("Storage write failed");
-            }
+            WS_LOG_IF_WARNING(NRF_SUCCESS != p_fds_evt->result, "FDS_EVT_WRITE failed");
 
             (void) fds_gc();
             break;
@@ -264,10 +245,7 @@ static void ws_fds_evt_handler(
                 }
             }
 
-            if (NRF_SUCCESS != p_fds_evt->result)
-            {
-//                WS_LOG_ERROR("Storage update failed");
-            }
+            WS_LOG_IF_WARNING(NRF_SUCCESS != p_fds_evt->result, "FDS_EVT_UPDATE failed");
 
             (void) fds_gc();
             break;
@@ -279,10 +257,7 @@ static void ws_fds_evt_handler(
             break;
 
         case FDS_EVT_GC:
-            if (NRF_SUCCESS != p_fds_evt->result)
-            {
-//                WS_LOG_ERROR("Storage GC failed");
-            }
+            WS_LOG_IF_WARNING(NRF_SUCCESS != p_fds_evt->result, "FDS_EVT_GC failed");
             break;
 
         default:

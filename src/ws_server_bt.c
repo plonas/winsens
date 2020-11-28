@@ -287,13 +287,12 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_ble_stack_init();
     ws_gap_params_init();
     err_code = nrf_ble_gatt_init(&m_gatt, gatt_evt_handler);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, err_code);
 
     ws_conn_params_init();
     ws_peer_manager_init(!config->bonded);
     err_code = pm_register(ws_pm_evt_handler);
-    WS_LOG_DEBUG("pm_register: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, err_code);
 
     ws_services_init(&ws_config);
     ws_advertising_init();
@@ -307,7 +306,7 @@ WINSENS_Status_e WS_ServerBtInit(
     server->deinit = ws_ServerBtDeinit;
 
     WINSENS_Status_e status = WS_ButtonRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_EventHandler);
-    WS_LOG_ERROR_CHECK(status);
+    WS_ERROR_CHECK(status, status);
 
     WS_ChangeState(&advertisingState);
 
@@ -354,19 +353,12 @@ static void ws_ServerBtReset(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    WS_LOG_DEBUG("ws_ServerBtReset");
-
     status = WS_TaskQueueAdd(NULL, 0, ws_ServerBtResetHandler);
-    if (WINSENS_OK != status)
-    {
-        WS_LOG_ERROR("WS_TaskQueueAdd failed");
-    }
+    WS_LOG_IF_WARNING(WINSENS_OK != status, "WS_TaskQueueAdd failed");
 }
 
 static WINSENS_Status_e WS_ServerBtDisconnect(void)
 {
-    WS_LOG_DEBUG("WS_ServerBtDisconnect");
-
     WS_ChangeState(&disconnectingState);
 
     return WINSENS_OK;
@@ -374,8 +366,6 @@ static WINSENS_Status_e WS_ServerBtDisconnect(void)
 
 static WINSENS_Status_e WS_ServerBtDeletePeers(void)
 {
-    WS_LOG_DEBUG("WS_ServerBtDeletePeers");
-
     WS_ChangeState(&unbondingState);
     return WINSENS_OK;
 }
@@ -459,11 +449,11 @@ static void ws_ble_stack_init(void)
     // Fetch the start address of the application RAM.
     uint32_t ram_start = 0;
     err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 
     // Enable BLE stack.
     err_code = nrf_sdh_ble_enable(&ram_start);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ws_on_ble_evt, NULL);
@@ -477,14 +467,12 @@ static void ws_peer_manager_init(
 
     ble_conn_state_init();
     err_code = pm_init();
-    WS_LOG_DEBUG("pm_init: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 
     if (erase_bonds)
     {
         err_code = pm_peers_delete();
-        WS_LOG_DEBUG("pm_peers_delete: %lu", err_code);
-        WS_LOG_NRF_ERROR_CHECK(err_code);
+        WS_NRF_ERROR_CHECK(err_code, ;);
     }
 
     memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
@@ -504,8 +492,7 @@ static void ws_peer_manager_init(
     sec_param.kdist_peer.id  = 1;
 
     err_code = pm_sec_params_set(&sec_param);
-    WS_LOG_DEBUG("pm_sec_params_set: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 }
 
 static void ws_pm_evt_handler(
@@ -626,7 +613,7 @@ static void ws_gap_params_init(void)
     err_code = sd_ble_gap_device_name_set(&sec_mode,
                                           (const uint8_t *)DEVICE_NAME,
                                           strlen(DEVICE_NAME));
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 
     /* YOUR_JOB: Use an appearance value matching the application's use case.
        err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
@@ -640,8 +627,7 @@ static void ws_gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    WS_LOG_INFO("sd_ble_gap_ppcp_set: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 }
 
 static void ws_advertising_init(void)
@@ -665,7 +651,7 @@ static void ws_advertising_init(void)
     init.evt_handler = ws_on_adv_evt;
 
     err_code = ble_advertising_init(&ws_advertising, &init);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 
     ble_advertising_conn_cfg_tag_set(&ws_advertising, APP_BLE_CONN_CFG_TAG);
 }
@@ -673,7 +659,8 @@ static void ws_advertising_init(void)
 static void ws_advertising_start(
     ble_gap_addr_t* addr)
 {
-    ble_advertising_start(&ws_advertising, BLE_ADV_MODE_FAST);
+    ret_code_t err_code = ble_advertising_start(&ws_advertising, BLE_ADV_MODE_FAST);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 }
 
 static void ws_on_adv_evt(
@@ -712,12 +699,12 @@ static void ws_services_init(
     if (config->windowEnabled[WS_WINDOW_1])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1]);
-        WS_LOG_NRF_ERROR_CHECK(err_code);
+        WS_LOG_NRF_WARNING_CHECK(err_code);
     }
     if (config->windowEnabled[WS_WINDOW_2])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2]);
-        WS_LOG_NRF_ERROR_CHECK(err_code);
+        WS_LOG_NRF_WARNING_CHECK(err_code);
     }
 }
 
@@ -738,8 +725,7 @@ static void ws_conn_params_init(void)
     cp_init.error_handler                  = ws_conn_params_error_handler;
 
     err_code = ble_conn_params_init(&cp_init);
-    WS_LOG_INFO("ble_conn_params_init: %lu", err_code);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
+    WS_NRF_ERROR_CHECK(err_code, ;);
 }
 
 static void ws_on_conn_params_evt(
@@ -748,8 +734,7 @@ static void ws_on_conn_params_evt(
     if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
     {
         uint32_t err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
-        WS_LOG_INFO("BLE_CONN_PARAMS_EVT_FAILED");
-        WS_LOG_NRF_ERROR_CHECK(err_code);
+        WS_LOG_NRF_WARNING_CHECK(err_code);
     }
 }
 
@@ -774,8 +759,6 @@ static void ws_on_ble_evt(
     void * p_context)
 {
     uint32_t err_code = NRF_SUCCESS;
-
-    WS_LOG_DEBUG("ws_on_ble_evt event %u", p_ble_evt->header.evt_id);
 
     switch (p_ble_evt->header.evt_id)
     {
@@ -846,7 +829,7 @@ static void ws_on_ble_evt(
                     auth_reply.params.write.gatt_status = APP_FEATURE_NOT_SUPPORTED;
                     err_code = sd_ble_gatts_rw_authorize_reply(p_ble_evt->evt.gatts_evt.conn_handle,
                                                                &auth_reply);
-                    WS_LOG_NRF_ERROR_CHECK(err_code);
+                    WS_LOG_NRF_WARNING_CHECK(err_code);
                 }
             }
         } break; // BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST
@@ -860,14 +843,14 @@ static void ws_on_ble_evt(
                 .tx_phys = BLE_GAP_PHY_AUTO,
             };
             err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
-            WS_LOG_NRF_ERROR_CHECK(err_code);
+            WS_LOG_NRF_WARNING_CHECK(err_code);
         } break;
 
 #if (NRF_SD_BLE_API_VERSION == 3)
         case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
             err_code = sd_ble_gatts_exchange_mtu_reply(p_ble_evt->evt.gatts_evt.conn_handle,
                                                        NRF_BLE_MAX_MTU_SIZE);
-            WS_LOG_NRF_ERROR_CHECK(err_code);
+            WS_LOG_NRF_WARNING_CHECK(err_code);
             break; // BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
 #endif
 
@@ -909,9 +892,9 @@ static bool ws_bond(
 {
     pm_peer_id_t peerId = PM_PEER_ID_INVALID;
     ret_code_t ret = pm_conn_secure(connHandle, false);
-    WS_LOG_NRF_ERROR_CHECK(ret);
+    WS_NRF_WARNING_CHECK(ret, false);
     ret = pm_peer_id_get(connHandle, &peerId);
-    WS_LOG_NRF_ERROR_CHECK(ret);
+    WS_NRF_WARNING_CHECK(ret, false);
     return ws_addToWhitelist(peerId);
 }
 
@@ -920,10 +903,7 @@ static void ws_removeAllBondings(void)
     if (0 < pm_peer_count())
     {
         uint32_t err_code = pm_peers_delete();
-        if (NRF_SUCCESS != err_code)
-        {
-            WS_LOG_DEBUG("pm_peers_delete: %lu", err_code);
-        }
+        WS_LOG_NRF_WARNING_CHECK(err_code);
     }
     else
     {
@@ -935,14 +915,14 @@ static bool ws_disconnect(
     uint16_t connHandle)
 {
     uint32_t err_code = sd_ble_gap_disconnect(connHandle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-    WS_LOG_NRF_ERROR_CHECK(err_code);
-    return NRF_SUCCESS == err_code;
+    WS_NRF_ERROR_CHECK(err_code, false);
+    return true;
 }
 
 static void WS_EventHandler(
     WS_Event_t event)
 {
-    WS_LOG_WARNING("WS_EventHandler %d", event.id);
+    WS_LOG_DEBUG("WS_EventHandler %d", event.id);
     ws_currentState->eventHandler(event);
 }
 
@@ -967,7 +947,7 @@ static void WS_ConnectedEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_ConnectedEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_ConnectedEventHandler not handled", event.id);
     }
 }
 
@@ -1007,7 +987,7 @@ static void WS_DisconnectedEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_DisconnectedEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_DisconnectedEventHandler not handled", event.id);
     }
 }
 
@@ -1020,7 +1000,7 @@ static void WS_DisconnectingEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_DisconnectingEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_DisconnectingEventHandler not handled", event.id);
     }
 }
 
@@ -1038,7 +1018,7 @@ static void WS_AdvertisingEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_AdvertisingEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_AdvertisingEventHandler not handled", event.id);
     }
 }
 
@@ -1055,7 +1035,7 @@ static void WS_BondingEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_BondingEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_BondingEventHandler not handled", event.id);
     }
 }
 
@@ -1072,7 +1052,7 @@ static void WS_UnbondingEventHandler(
     }
     else
     {
-        WS_LOG_WARNING("Event %d in WS_UnbondingEventHandler not handled", event.id);
+        WS_LOG_INFO("Event %d in WS_UnbondingEventHandler not handled", event.id);
     }
 }
 
@@ -1168,6 +1148,6 @@ static char const * WS_ConvertState(
     case WS_SERVER_BT_STATE_UNKNOWN: return WS_STRING(WS_SERVER_BT_STATE_UNKNOWN);
     }
 
-    return "unhandled state";
+    return "unknown state";
 }
 

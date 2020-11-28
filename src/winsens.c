@@ -29,17 +29,12 @@ WINSENS_Status_e WINSENS_Init(
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    WS_LOG_INFO("WINSENS_Init");
-
     ws_server = server;
     ws_config = config;
 
     // init a window state
     status = WS_WindowStateInit();
-    if (WINSENS_OK != status)
-    {
-        return status;
-    }
+    WS_ERROR_CHECK(status, status);
 
     if (config->windowEnabled[WS_WINDOW_1])
     {
@@ -57,7 +52,6 @@ WINSENS_Status_e WINSENS_Init(
 
 void WINSENS_Deinit()
 {
-    WS_LOG_INFO("WINSENS_Deinit");
     ws_server->unsubscribe(ws_server, WS_ServerCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_2, WS_WindowStateCallback);
     WS_WindowStateUnsubscribe(WS_WINDOW_1, WS_WindowStateCallback);
@@ -68,23 +62,23 @@ static void WS_WindowStateCallback(
     WS_Window_e window,
     WS_WindowState_e state)
 {
-    ws_server->updateWindowState(ws_server, window, state); // todo handle return value
+    ws_server->updateWindowState(ws_server, window, state);
 }
 
 static void WS_ServerCallback(
     WS_Window_e window,
     WS_ServerEvent_t event)
 {
-    WS_LOG_INFO("WS_ServerCallback event: %d", event.eventType);
-
     switch (event.eventType) {
         case WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE:
         {
             WS_Configuration_t newConfig = *ws_config;
             newConfig.windowThreshold[window] = event.value.threshold;
-            WS_ConfigurationSet(&newConfig);
+            WINSENS_Status_e status = WS_ConfigurationSet(&newConfig);
+            WS_LOG_WARNING_CHECK(status);
 
-            WS_WindowStateConfigure(window, event.value.threshold); // todo handle return value
+            status = WS_WindowStateConfigure(window, event.value.threshold);
+            WS_LOG_WARNING_CHECK(status);
             break;
         }
 
@@ -99,7 +93,8 @@ static void WS_ServerCallback(
 
                 if (newConfig.windowEnabled[window])
                 {
-                    WS_WindowStateSubscribe(window, WS_WindowStateCallback);
+                    WINSENS_Status_e status = WS_WindowStateSubscribe(window, WS_WindowStateCallback);
+                    WS_LOG_WARNING_CHECK(status);
                 }
                 else
                 {
