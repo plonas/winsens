@@ -44,6 +44,6 @@ uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms);
 
 uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e state);
 
-void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
+void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt);
 
 #endif /* WS_BLE_WMS_H_ */

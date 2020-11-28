@@ -11,25 +11,29 @@
 #include "ws_task_queue.h"
 #include "hwal/ws_button.h"
 #include "ws_configuration_write.h"
-#define WS_LOG_MODULE_NAME "SVBT"
+#define WS_LOG_MODULE_NAME SVBT
 #include "ws_log.h"
 #include "utils/utils.h"
 
 #include "nordic_common.h"
 #include "nrf.h"
 #include "nrf_sdm.h"
-#include "fds.h"
-#include "fstorage.h"
-#include "app_timer.h"
 #include "nrf_delay.h"
+#include "fds.h"
+#include "nrf_fstorage.h"
+#include "app_timer.h"
 #include "ble.h"
 #include "peer_manager.h"
+#include "ble_advdata.h"
 #include "ble_advertising.h"
 #include "ble_conn_state.h"
 #include "ble_srv_common.h"
 #include "ble_conn_params.h"
-#include "ble_stack_handler_types.h"
+#include "nrf_ble_gatt.h"
 #include "nrf_nvic.h"
+#include "nrf_sdh.h"
+#include "nrf_sdh_ble.h"
+#include "nrf_sdh_soc.h"
 
 
 #define WS_SUBSCRIBERS_NUMBER   1
@@ -50,19 +54,28 @@
 
 #define DEVICE_NAME                     "WinSensDev"                                /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "DamianPłonek"                              /**< Manufacturer. Will be passed to Device Information Service. */
-#define APP_ADV_INTERVAL                300                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
-#define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout in units of seconds. */
+#define APP_ADV_INTERVAL                128                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 80 ms). */
+#define APP_ADV_DURATION                0                                           /**< The advertising timeout in units of 10ms. */
 
 #define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN + 2        /**< Reply when unsupported features are requested. */
 
 #define APP_TIMER_PRESCALER             0                                           /**< Value of the RTC1 PRESCALER register. */
 #define APP_TIMER_OP_QUEUE_SIZE         4                                           /**< Size of timer operation queues. */
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000, APP_TIMER_PRESCALER)  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000, APP_TIMER_PRESCALER) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)  /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
+#define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
+#define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
+
 #define WS_WHITELIST_MAX_LEN            BLE_GAP_WHITELIST_ADDR_MAX_COUNT
+
+
+
+BLE_ADVERTISING_DEF(ws_advertising);                                 /**< Advertising module instance. */
+NRF_BLE_GATT_DEF(m_gatt);
+
 
 struct WS_ServerBtState_s;
 
@@ -135,8 +148,6 @@ static void ws_on_apply_write(void);
 
 static void ws_timers_init(void);
 static void ws_ble_stack_init(void);
-static void ws_ble_evt_dispatch(
-    ble_evt_t * p_ble_evt);
 static void ws_peer_manager_init(
     bool erase_bonds);
 static void ws_pm_evt_handler(
@@ -145,6 +156,8 @@ static void ws_gap_params_init(void);
 static void ws_advertising_init(void);
 static void ws_advertising_start(
     ble_gap_addr_t* addr);
+static void ws_on_adv_evt(
+    ble_adv_evt_t ble_adv_evt);
 static void ws_services_init(
     const WS_Configuration_t *config);
 static void ws_conn_params_init(void);
@@ -154,7 +167,8 @@ static void ws_conn_params_error_handler(
     uint32_t nrf_error);
 //static void ws_sleep_mode_enter(void);
 static void ws_on_ble_evt(
-    ble_evt_t * p_ble_evt);
+    ble_evt_t const * p_ble_evt,
+    void * p_context);
 static void ws_ServerBtResetHandler(
     void *p_event_data,
     uint16_t event_size);
@@ -177,8 +191,8 @@ static void WS_EmptyOnEnter(void) {}
 
 static void WS_ConnectedEventHandler(
     WS_Event_t event);
-static void WS_ConnectingEventHandler(
-    WS_Event_t event);
+//static void WS_ConnectingEventHandler(
+//    WS_Event_t event);
 static void WS_DisconnectedEventHandler(
     WS_Event_t event);
 static void WS_DisconnectingEventHandler(
@@ -195,14 +209,14 @@ static void WS_UnbondingEventHandler(
 static void WS_ChangeState(
     const WS_ServerBtState_t *newState);
 static void WS_ConnectedOnExit(void);
-static void WS_ConnectingOnExit(void);
+//static void WS_ConnectingOnExit(void);
 static void WS_DisconnectedOnExit(void);
 static void WS_DisconnectingOnExit(void);
 static void WS_AdvertisingOnExit(void);
 static void WS_BondingOnExit(void);
 static void WS_UnbondingOnExit(void);
 static void WS_ConnectedOnEnter(void);
-static void WS_ConnectingOnEnter(void);
+//static void WS_ConnectingOnEnter(void);
 static void WS_DisconnectedOnEnter(void);
 static void WS_DisconnectingOnEnter(void);
 static void WS_AdvertisingOnEnter(void);
@@ -214,7 +228,7 @@ static char const * WS_ConvertState(
 
 const static WS_ServerBtState_t unknownConnState = { WS_SERVER_BT_STATE_UNKNOWN, WS_EmptyEventHandler, WS_EmptyOnEnter, WS_EmptyOnExit };
 const static WS_ServerBtState_t connectedState = { WS_SERVER_BT_STATE_CONNECTED, WS_ConnectedEventHandler, WS_ConnectedOnEnter, WS_ConnectedOnExit };
-const static WS_ServerBtState_t connectingState = { WS_SERVER_BT_STATE_CONNECTING, WS_ConnectingEventHandler, WS_ConnectingOnEnter, WS_ConnectingOnExit };
+//const static WS_ServerBtState_t connectingState = { WS_SERVER_BT_STATE_CONNECTING, WS_ConnectingEventHandler, WS_ConnectingOnEnter, WS_ConnectingOnExit };
 const static WS_ServerBtState_t disconnectedState = { WS_SERVER_BT_STATE_DISCONNECTED, WS_DisconnectedEventHandler, WS_DisconnectedOnEnter, WS_DisconnectedOnExit };
 const static WS_ServerBtState_t disconnectingState = { WS_SERVER_BT_STATE_DISCONNECTING, WS_DisconnectingEventHandler, WS_DisconnectingOnEnter, WS_DisconnectingOnExit };
 const static WS_ServerBtState_t advertisingState = { WS_SERVER_BT_STATE_ADVERTISING, WS_AdvertisingEventHandler, WS_AdvertisingOnEnter, WS_AdvertisingOnExit };
@@ -222,7 +236,7 @@ const static WS_ServerBtState_t bondingState = { WS_SERVER_BT_STATE_BONDING, WS_
 const static WS_ServerBtState_t unbondingState = { WS_SERVER_BT_STATE_UNBONDING, WS_UnbondingEventHandler, WS_UnbondingOnEnter, WS_UnbondingOnExit };
 
 static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
-static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
+//static ble_uuid_t ws_sr_uuids[] = {{BLE_UUID_WMS_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}}; /**< Universally unique service identifiers. */
 
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
 static pm_peer_id_t ws_peer_id = PM_PEER_ID_INVALID;
@@ -235,12 +249,24 @@ static const WS_ServerBtState_t *ws_currentState = &unknownConnState;
 static pm_peer_id_t ws_whitelist[WS_WHITELIST_MAX_LEN] = {PM_PEER_ID_INVALID};
 
 
+/**@brief GATT module event handler.
+ */
+static void gatt_evt_handler(nrf_ble_gatt_t * p_gatt, nrf_ble_gatt_evt_t const * p_evt)
+{
+    if (p_evt->evt_id == NRF_BLE_GATT_EVT_ATT_MTU_UPDATED)
+    {
+        NRF_LOG_INFO("GATT ATT MTU on connection 0x%x changed to %d.",
+                     p_evt->conn_handle,
+                     p_evt->params.att_mtu_effective);
+    }
+}
+
 WINSENS_Status_e WS_ServerBtInit(
     WS_Server_t *server,
     const WS_Configuration_t *config)
 {
     uint32_t i = 0;
-    uint32_t err_code;
+    ret_code_t err_code;
 
     for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
     {
@@ -259,12 +285,14 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_timers_init();
     ws_ble_stack_init();
     ws_gap_params_init();
+    err_code = nrf_ble_gatt_init(&m_gatt, gatt_evt_handler);
+    WS_APP_ERROR(err_code);
 
     ws_conn_params_init();
     ws_peer_manager_init(!config->bonded);
     err_code = pm_register(ws_pm_evt_handler);
     WS_LOG_DEBUG("pm_register: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 
     ws_services_init(&ws_config);
     ws_advertising_init();
@@ -336,8 +364,6 @@ static void ws_ServerBtReset(
 
 static WINSENS_Status_e WS_ServerBtDisconnect(void)
 {
-    uint32_t err_code;
-
     WS_LOG_DEBUG("WS_ServerBtDisconnect\r\n");
 
     WS_ChangeState(&disconnectingState);
@@ -422,42 +448,24 @@ static void ws_on_apply_write(void)
 
 static void ws_timers_init(void)
 {
-
-    // Initialize timer module.
-    APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
-
-    // Create timers.
-
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       uint32_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
 }
 
 static void ws_ble_stack_init(void)
 {
-    uint32_t err_code;
+    ret_code_t err_code;
 
-    // Register with the SoftDevice handler module for BLE events.
-    err_code = softdevice_ble_evt_handler_set(ws_ble_evt_dispatch);
-    APP_ERROR_CHECK(err_code);
-}
+    // Configure the BLE stack using the default settings.
+    // Fetch the start address of the application RAM.
+    uint32_t ram_start = 0;
+    err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
+    WS_APP_ERROR(err_code);
 
-static void ws_ble_evt_dispatch(ble_evt_t * p_ble_evt)
-{
-    /** The Connection state module has to be fed BLE events in order to function correctly
-     * Remember to call ble_conn_state_on_ble_evt before calling any ble_conns_state_* functions. */
-    ble_conn_state_on_ble_evt(p_ble_evt);
-    pm_on_ble_evt(p_ble_evt);
-    ble_conn_params_on_ble_evt(p_ble_evt);
-    ws_on_ble_evt(p_ble_evt);
-    /*YOUR_JOB add calls to _on_ble_evt functions from each service your application is using
-       ble_xxs_on_ble_evt(&m_xxs, p_ble_evt);
-       ble_yys_on_ble_evt(&m_yys, p_ble_evt);
-     */
+    // Enable BLE stack.
+    err_code = nrf_sdh_ble_enable(&ram_start);
+    WS_APP_ERROR(err_code);
+
+    // Register a handler for BLE events.
+    NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ws_on_ble_evt, NULL);
 }
 
 static void ws_peer_manager_init(
@@ -469,13 +477,13 @@ static void ws_peer_manager_init(
     ble_conn_state_init();
     err_code = pm_init();
     WS_LOG_DEBUG("pm_init: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 
     if (erase_bonds)
     {
         err_code = pm_peers_delete();
         WS_LOG_DEBUG("pm_peers_delete: %lu\r\n", err_code);
-        APP_ERROR_CHECK(err_code);
+        WS_APP_ERROR(err_code);
     }
 
     memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
@@ -496,7 +504,7 @@ static void ws_peer_manager_init(
 
     err_code = pm_sec_params_set(&sec_param);
     WS_LOG_DEBUG("pm_sec_params_set: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 }
 
 static void ws_pm_evt_handler(
@@ -520,7 +528,7 @@ static void ws_pm_evt_handler(
                          p_evt->conn_handle,
                          p_evt->params.conn_sec_succeeded.procedure,
                          p_evt->peer_id);
-            WS_Event_t e = { WS_SERVER_BT_EVENT_BONDED, 0 };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_BONDED, .data = 0 };
             WS_EventHandler(e);
         } break;
 
@@ -532,7 +540,7 @@ static void ws_pm_evt_handler(
              * Sometimes, it cannot be restarted until the link is disconnected and reconnected.
              * Sometimes it is impossible, to secure the link, or the peer device does not support it.
              * How to handle this error is highly application dependent. */
-            WS_Event_t e = { WS_SERVER_BT_EVENT_UNBONDED, true };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_UNBONDED, .data = true };
             WS_EventHandler(e);
         } break;
 
@@ -553,13 +561,13 @@ static void ws_pm_evt_handler(
             }
             else
             {
-                APP_ERROR_CHECK(err_code);
+                WS_APP_ERROR(err_code);
             }
         } break;
 
         case PM_EVT_PEERS_DELETE_SUCCEEDED:
         {
-            WS_Event_t e = { WS_SERVER_BT_EVENT_UNBONDED, true };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_UNBONDED, .data = true };
             WS_EventHandler(e);
         } break;
 
@@ -572,27 +580,27 @@ static void ws_pm_evt_handler(
         case PM_EVT_PEER_DATA_UPDATE_FAILED:
         {
             // Assert.
-            APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
+            WS_APP_ERROR(p_evt->params.peer_data_update_failed.error);
         } break;
 
         case PM_EVT_PEER_DELETE_FAILED:
         {
             // Assert.
-            APP_ERROR_CHECK(p_evt->params.peer_delete_failed.error);
+            WS_APP_ERROR(p_evt->params.peer_delete_failed.error);
         } break;
 
         case PM_EVT_PEERS_DELETE_FAILED:
         {
             // Assert.
-            APP_ERROR_CHECK(p_evt->params.peers_delete_failed_evt.error);
-            WS_Event_t e = { WS_SERVER_BT_EVENT_UNBONDED, false };
+            WS_APP_ERROR(p_evt->params.peers_delete_failed_evt.error);
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_UNBONDED, .data = false };
             WS_EventHandler(e);
         } break;
 
         case PM_EVT_ERROR_UNEXPECTED:
         {
             // Assert.
-            APP_ERROR_CHECK(p_evt->params.error_unexpected.error);
+            WS_APP_ERROR(p_evt->params.error_unexpected.error);
         } break;
 
         case PM_EVT_CONN_SEC_START:
@@ -617,11 +625,11 @@ static void ws_gap_params_init(void)
     err_code = sd_ble_gap_device_name_set(&sec_mode,
                                           (const uint8_t *)DEVICE_NAME,
                                           strlen(DEVICE_NAME));
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 
     /* YOUR_JOB: Use an appearance value matching the application's use case.
        err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
-       APP_ERROR_CHECK(err_code); */
+       WS_APP_ERROR(err_code); */
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
@@ -632,58 +640,63 @@ static void ws_gap_params_init(void)
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     WS_LOG_INFO("sd_ble_gap_ppcp_set: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 }
 
 static void ws_advertising_init(void)
 {
-    uint32_t                err_code;
-    ble_advdata_t           advdata;
-    ble_advdata_t           srdata;
+    ret_code_t             err_code;
+    ble_advertising_init_t init;
 
-    memset(&advdata, 0, sizeof(advdata));
-    advdata.name_type               = BLE_ADVDATA_FULL_NAME;
-    advdata.include_appearance      = true;
-    advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
-    advdata.uuids_complete.uuid_cnt = sizeof(ws_adv_uuids) / sizeof(ws_adv_uuids[0]);
-    advdata.uuids_complete.p_uuids  = ws_adv_uuids;
+    memset(&init, 0, sizeof(init));
 
-    memset(&srdata, 0, sizeof(srdata));
-    srdata.uuids_complete.uuid_cnt = sizeof(ws_sr_uuids) / sizeof(ws_sr_uuids[0]);
-    srdata.uuids_complete.p_uuids  = ws_sr_uuids;
+    init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
+    init.advdata.include_appearance      = true;
+    init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+    init.advdata.uuids_complete.uuid_cnt = sizeof(ws_adv_uuids) / sizeof(ws_adv_uuids[0]);
+    init.advdata.uuids_complete.p_uuids  = ws_adv_uuids;
 
-    err_code = ble_advdata_set(&advdata, &srdata);
-    WS_LOG_DEBUG("ble_advdata_set: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    init.config.ble_adv_on_disconnect_disabled  = true;
+    init.config.ble_adv_fast_enabled            = true;
+    init.config.ble_adv_fast_interval           = APP_ADV_INTERVAL;
+    init.config.ble_adv_fast_timeout            = APP_ADV_DURATION;
+
+    init.evt_handler = ws_on_adv_evt;
+
+    err_code = ble_advertising_init(&ws_advertising, &init);
+    WS_APP_ERROR(err_code);
+
+    ble_advertising_conn_cfg_tag_set(&ws_advertising, APP_BLE_CONN_CFG_TAG);
 }
 
 static void ws_advertising_start(
     ble_gap_addr_t* addr)
 {
-    uint32_t                err_code;
-    ble_gap_adv_params_t    adv_params;
+    ble_advertising_start(&ws_advertising, BLE_ADV_MODE_FAST);
+}
 
-    // Start advertising
-    memset(&adv_params, 0, sizeof(adv_params));
-
-    if (addr)
+static void ws_on_adv_evt(
+    ble_adv_evt_t ble_adv_evt)
+{
+    switch (ble_adv_evt)
     {
-        adv_params.type        = BLE_GAP_ADV_TYPE_ADV_DIRECT_IND;
-        adv_params.p_peer_addr = addr;
-    }
-    else
-    {
-        adv_params.type        = BLE_GAP_ADV_TYPE_ADV_IND;
-        adv_params.p_peer_addr = NULL;
-    }
+        case BLE_ADV_EVT_FAST:
+        {
+//            NRF_LOG_INFO("Fast advertising.");
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_ADVERTISING_STARTED, .data = 0 };
+            WS_EventHandler(e);
+        } break;
 
-    adv_params.fp          = BLE_GAP_ADV_FP_ANY;
-    adv_params.interval    = APP_ADV_INTERVAL;
-    adv_params.timeout     = APP_ADV_TIMEOUT_IN_SECONDS;
+        case BLE_ADV_EVT_IDLE:
+        {
+//            sleep_mode_enter();
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_ADVERTISING_STOPPED, .data = 0 };
+            WS_EventHandler(e);
+        } break;
 
-    err_code = sd_ble_gap_adv_start(&adv_params);
-    WS_LOG_DEBUG("sd_ble_gap_adv_start: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+        default:
+            break;
+    }
 }
 
 static void ws_services_init(
@@ -698,12 +711,12 @@ static void ws_services_init(
     if (config->windowEnabled[WS_WINDOW_1])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1]);
-        APP_ERROR_CHECK(err_code);
+        WS_APP_ERROR(err_code);
     }
     if (config->windowEnabled[WS_WINDOW_2])
     {
         err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2]);
-        APP_ERROR_CHECK(err_code);
+        WS_APP_ERROR(err_code);
     }
 }
 
@@ -725,7 +738,7 @@ static void ws_conn_params_init(void)
 
     err_code = ble_conn_params_init(&cp_init);
     WS_LOG_INFO("ble_conn_params_init: %lu\r\n", err_code);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 }
 
 static void ws_on_conn_params_evt(
@@ -735,7 +748,7 @@ static void ws_on_conn_params_evt(
     {
         uint32_t err_code = sd_ble_gap_disconnect(ws_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
         WS_LOG_INFO("BLE_CONN_PARAMS_EVT_FAILED");
-        APP_ERROR_CHECK(err_code);
+        WS_APP_ERROR(err_code);
     }
 }
 
@@ -752,11 +765,12 @@ static void ws_conn_params_error_handler(
 //    WS_LOG_INFO("Going into sleep mode\r\n");
 //    // Go to system-off mode (this function will not return; wakeup will cause a reset).
 //    err_code = sd_power_system_off();
-//    APP_ERROR_CHECK(err_code);
+//    WS_APP_ERROR(err_code);
 //}
 
 static void ws_on_ble_evt(
-    ble_evt_t * p_ble_evt)
+    ble_evt_t const * p_ble_evt,
+    void * p_context)
 {
     uint32_t err_code = NRF_SUCCESS;
 
@@ -767,7 +781,7 @@ static void ws_on_ble_evt(
         case BLE_GAP_EVT_DISCONNECTED:
         {
             WS_LOG_INFO("BLE_GAP_EVT_DISCONNECTED\r\n");
-            WS_Event_t e = { WS_SERVER_BT_EVENT_DISCONNECTED, 0 };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_DISCONNECTED, .data = 0 };
             WS_EventHandler(e);
             break; // BLE_GAP_EVT_DISCONNECTED
         }
@@ -775,25 +789,20 @@ static void ws_on_ble_evt(
         case BLE_GAP_EVT_CONNECTED:
         {
             WS_LOG_INFO("BLE_GAP_EVT_CONNECTED\r\n");
-            WS_Event_t e = { WS_SERVER_BT_EVENT_CONNECTED, p_ble_evt->evt.gap_evt.conn_handle };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_CONNECTED, .data = p_ble_evt->evt.gap_evt.conn_handle };
             WS_EventHandler(e);
             break; // BLE_GAP_EVT_CONNECTED
         }
 
         case BLE_GAP_EVT_TIMEOUT:
             WS_LOG_DEBUG("BLE_GAP_EVT_TIMEOUT %u.\r\n", p_ble_evt->evt.gap_evt.params.timeout.src);
-            if (BLE_GAP_TIMEOUT_SRC_ADVERTISING == p_ble_evt->evt.gap_evt.params.timeout.src)
-            {
-                WS_Event_t e = { WS_SERVER_BT_EVENT_ADVERTISING_STOPPED, 0 };
-                WS_EventHandler(e);
-            }
             break;
 
         case BLE_GATTC_EVT_TIMEOUT:
         {
             // Disconnect on GATT Client timeout event.
             WS_LOG_DEBUG("GATT Client Timeout.\r\n");
-            WS_Event_t e = { WS_SERVER_BT_EVENT_DISCONNECT, p_ble_evt->evt.gattc_evt.conn_handle };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_DISCONNECT, .data = p_ble_evt->evt.gattc_evt.conn_handle };
             WS_EventHandler(e);
             break; // BLE_GATTC_EVT_TIMEOUT
         }
@@ -802,14 +811,14 @@ static void ws_on_ble_evt(
         {
             // Disconnect on GATT Server timeout event.
             WS_LOG_DEBUG("GATT Server Timeout.\r\n");
-            WS_Event_t e = { WS_SERVER_BT_EVENT_DISCONNECT, p_ble_evt->evt.gatts_evt.conn_handle };
+            WS_Event_t e = { .id = WS_SERVER_BT_EVENT_DISCONNECT, .data = p_ble_evt->evt.gatts_evt.conn_handle };
             WS_EventHandler(e);
             break; // BLE_GATTS_EVT_TIMEOUT
         }
 
         case BLE_EVT_USER_MEM_REQUEST:
             err_code = sd_ble_user_mem_reply(p_ble_evt->evt.gattc_evt.conn_handle, NULL);
-            APP_ERROR_CHECK(err_code);
+            WS_APP_ERROR(err_code);
             break; // BLE_EVT_USER_MEM_REQUEST
 
         case BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST:
@@ -836,16 +845,28 @@ static void ws_on_ble_evt(
                     auth_reply.params.write.gatt_status = APP_FEATURE_NOT_SUPPORTED;
                     err_code = sd_ble_gatts_rw_authorize_reply(p_ble_evt->evt.gatts_evt.conn_handle,
                                                                &auth_reply);
-                    APP_ERROR_CHECK(err_code);
+                    WS_APP_ERROR(err_code);
                 }
             }
         } break; // BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST
+
+        case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
+        {
+            WS_LOG_DEBUG("PHY update request.");
+            ble_gap_phys_t const phys =
+            {
+                .rx_phys = BLE_GAP_PHY_AUTO,
+                .tx_phys = BLE_GAP_PHY_AUTO,
+            };
+            err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
+            WS_APP_ERROR(err_code);
+        } break;
 
 #if (NRF_SD_BLE_API_VERSION == 3)
         case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
             err_code = sd_ble_gatts_exchange_mtu_reply(p_ble_evt->evt.gatts_evt.conn_handle,
                                                        NRF_BLE_MAX_MTU_SIZE);
-            APP_ERROR_CHECK(err_code);
+            WS_APP_ERROR(err_code);
             break; // BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
 #endif
 
@@ -887,9 +908,9 @@ static bool ws_bond(
 {
     pm_peer_id_t peerId = PM_PEER_ID_INVALID;
     ret_code_t ret = pm_conn_secure(connHandle, false);
-    APP_ERROR_CHECK(ret);
+    WS_APP_ERROR(ret);
     ret = pm_peer_id_get(connHandle, &peerId);
-    APP_ERROR_CHECK(ret);
+    WS_APP_ERROR(ret);
     return ws_addToWhitelist(peerId);
 }
 
@@ -913,7 +934,7 @@ static bool ws_disconnect(
     uint16_t connHandle)
 {
     uint32_t err_code = sd_ble_gap_disconnect(connHandle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
     return NRF_SUCCESS == err_code;
 }
 
@@ -949,23 +970,23 @@ static void WS_ConnectedEventHandler(
     }
 }
 
-static void WS_ConnectingEventHandler(
-    WS_Event_t event)
-{
-    if (WS_SERVER_BT_EVENT_CONNECTED == event.id)
-    {
-        ws_conn_handle = event.data16a;
-        WS_ChangeState(&connectedState);
-    }
-    else if (WS_SERVER_BT_EVENT_DISCONNECTED == event.id)
-    {
-        WS_ChangeState(&disconnectedState);
-    }
-    else
-    {
-        WS_LOG_WARNING("Event %d in WS_ConnectingEventHandler not handled\r\n", event.id);
-    }
-}
+//static void WS_ConnectingEventHandler(
+//    WS_Event_t event)
+//{
+//    if (WS_SERVER_BT_EVENT_CONNECTED == event.id)
+//    {
+//        ws_conn_handle = event.data16a;
+//        WS_ChangeState(&connectedState);
+//    }
+//    else if (WS_SERVER_BT_EVENT_DISCONNECTED == event.id)
+//    {
+//        WS_ChangeState(&disconnectedState);
+//    }
+//    else
+//    {
+//        WS_LOG_WARNING("Event %d in WS_ConnectingEventHandler not handled\r\n", event.id);
+//    }
+//}
 
 static void WS_DisconnectedEventHandler(
     WS_Event_t event)
@@ -1068,9 +1089,9 @@ static void WS_ConnectedOnExit(void)
 {
 }
 
-static void WS_ConnectingOnExit(void)
-{
-}
+//static void WS_ConnectingOnExit(void)
+//{
+//}
 
 static void WS_DisconnectedOnExit(void)
 {
@@ -1082,7 +1103,6 @@ static void WS_DisconnectingOnExit(void)
 
 static void WS_AdvertisingOnExit(void)
 {
-    sd_ble_gap_adv_stop();
     ws_connectable = false;
 }
 
@@ -1098,9 +1118,9 @@ static void WS_ConnectedOnEnter(void)
 {
 }
 
-static void WS_ConnectingOnEnter(void)
-{
-}
+//static void WS_ConnectingOnEnter(void)
+//{
+//}
 
 static void WS_DisconnectedOnEnter(void)
 {
@@ -1125,7 +1145,7 @@ static void WS_BondingOnEnter(void)
 
 static void WS_UnbondingOnEnter(void)
 {
-    sd_ble_gap_adv_stop();
+    //todo stop advertising
     if (!ws_disconnect(ws_conn_handle))
     {
         ws_removeAllBondings();

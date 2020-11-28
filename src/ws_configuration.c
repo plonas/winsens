@@ -8,7 +8,7 @@
 
 #include "ws_configuration.h"
 #include "ws_storage.h"
-#define WS_LOG_MODULE_NAME " CFG"
+#define WS_LOG_MODULE_NAME CFG
 #include "ws_log.h"
 
 #define WS_CONFIGURATION_STORAGE_ID             0x000B
@@ -39,6 +39,7 @@ WINSENS_Status_e WS_ConfigurationInit(void)
         status = WS_StorageWrite(WS_CONFIGURATION_STORAGE_ID, sizeof(WS_Configuration_t), (uint8_t *) &ws_configuration);
     }
 
+    WS_LOG_FLUSH();
     return status;
 }
 
@@ -46,6 +47,7 @@ const WS_Configuration_t * WS_ConfigurationGet(void)
 {
     WINSENS_Status_e status = WS_StorageRead(WS_CONFIGURATION_STORAGE_ID, sizeof(WS_Configuration_t), (uint8_t *) &ws_configuration);
     WS_LOG_INFO("WS_ConfigurationGet status %u\r\n", status);
+    WS_LOG_FLUSH();
     return &ws_configuration;
 }
 
@@ -59,6 +61,7 @@ WINSENS_Status_e WS_ConfigurationSet(
         ws_configuration = *configuration;
     }
 
+    WS_LOG_FLUSH();
     return status;
 }
 

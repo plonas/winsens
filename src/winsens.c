@@ -8,10 +8,8 @@
 #include "winsens.h"
 #include "ws_window_state.h"
 #include "ws_configuration_write.h"
-#define WS_LOG_MODULE_NAME "WNSN"
+#define WS_LOG_MODULE_NAME WNSN
 #include "ws_log.h"
-
-#include "nrf_delay.h"
 
 
 static void WS_WindowStateCallback(

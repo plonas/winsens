@@ -17,12 +17,12 @@ WINSENS_Status_e WS_TimerInit(void);
 void WS_TimerDeinit(void);
 
 WINSENS_Status_e WS_TimerSetTimer(
-    uint32_t interval, // in 100ms units
+    uint32_t interval,
+    bool repeat,
     WS_TimerCallback_f callback,
     WS_TimerId_t *id);
 void WS_TimerCancel(
     WS_TimerId_t id);
 
-const void* WS_TimerGetNativeTimer(void);
 
 #endif /* WS_TIMER_H_ */

@@ -8,7 +8,7 @@
 #include "ws_button.h"
 #include "button_config.h"
 #include "ws_system.h"
-#define WS_LOG_MODULE_NAME "BUTN"
+#define WS_LOG_MODULE_NAME BUTN
 #include "ws_log.h"
 
 
@@ -129,7 +129,7 @@ static void WS_DigitalInputCallback(
             }
 
             WS_LOG_DEBUG("xxx button xxx\r\n");
-            WS_Event_t e = { push, pin };
+            WS_Event_t e = { { push }, { pin } };
             ws_buttonCallbacks[i].eventHandler(e);
         }
     }

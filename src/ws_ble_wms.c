@@ -7,7 +7,7 @@
 
 
 #include "ws_ble_wms.h"
-#define WS_LOG_MODULE_NAME "LEWM"
+#define WS_LOG_MODULE_NAME LEWM
 #include "ws_log.h"
 
 #include "nrf_error.h"
@@ -18,8 +18,8 @@
 
 static uint32_t ws_wms_state_char_add(ws_ble_wms_t *p_wms);
 
-static void ws_on_connect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
-static void ws_on_disconnect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt);
+static void ws_on_connect(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt);
+static void ws_on_disconnect(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt);
 
 
 uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms)
@@ -32,12 +32,12 @@ uint32_t ws_ble_wms_init(ws_ble_wms_t *p_wms)
 
     service_uuid.uuid = BLE_UUID_WMS_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
                                         &service_uuid,
                                         &p_wms->service_handle);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
 
     ws_wms_state_char_add(p_wms);
 
@@ -105,7 +105,7 @@ uint32_t ws_ble_wms_window_state_update(ws_ble_wms_t *p_wms, ws_ble_wms_state_e 
     return err_code;
 }
 
-void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+void ws_ble_wms_on_ble_evt(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt)
 {
     if (p_wms == NULL || p_ble_evt == NULL)
     {
@@ -139,7 +139,7 @@ static uint32_t ws_wms_state_char_add(ws_ble_wms_t *p_wms)
 
     char_uuid.uuid = BLE_UUID_WMS_STATE_CHARACTERISTC_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
     WS_LOG_DEBUG("sd_ble_uuid_vs_add: %lu\r\n", err_code);
 
     //Add read/write properties to our characteristic
@@ -182,18 +182,18 @@ static uint32_t ws_wms_state_char_add(ws_ble_wms_t *p_wms)
                                        &char_md,
                                        &attr_char_value,
                                        &p_wms->state_char_handles);
-    APP_ERROR_CHECK(err_code);
+    WS_APP_ERROR(err_code);
     WS_LOG_DEBUG("sd_ble_gatts_characteristic_add: %lu\r\n", err_code);
 
     return NRF_SUCCESS;
 }
 
-static void ws_on_connect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+static void ws_on_connect(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt)
 {
     p_wms->conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
 }
 
-static void ws_on_disconnect(ws_ble_wms_t *p_wms, ble_evt_t *p_ble_evt)
+static void ws_on_disconnect(ws_ble_wms_t *p_wms, const ble_evt_t *p_ble_evt)
 {
     UNUSED_PARAMETER(p_ble_evt);
     p_wms->conn_handle = BLE_CONN_HANDLE_INVALID;

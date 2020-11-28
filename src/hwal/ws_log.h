@@ -8,11 +8,10 @@
 #ifndef WS_LOG_H_
 #define WS_LOG_H_
 
-#ifndef WS_LOG_MODULE_NAME
-    #define WS_LOG_MODULE_NAME          ""
-#endif
 
 #include "ws_log_internal.h"
+
+#define WS_APP_ERROR(x)                 do{ if(x){ WS_LOG_ERROR("Error %u in "__FILE__":%u", x, __LINE__) } }while(0)
 
 #define WS_LOG_INIT(timestamp_func)     WS_LOG_INIT_INTERNAL(timestamp_func)
 #define WS_LOG_FLUSH()                  WS_LOG_FLUSH_INTERNAL()

@@ -127,12 +127,12 @@ static WINSENS_Status_e WS_StartDistanceSensors(void)
         return status;
     }
 
-    status = WS_DistanceEnable(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
-    if (WINSENS_OK != status)
-    {
-        WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_1);
-        return status;
-    }
+//    status = WS_DistanceEnable(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
+//    if (WINSENS_OK != status)
+//    {
+//        WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_1);
+//        return status;
+//    }
 
     return WS_DistanceStart();
 }

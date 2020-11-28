@@ -8,8 +8,6 @@
 #include "winsens_types.h"
 #include "hwal/ws_adc_adapter.h"
 
-#include "nrf_drv_timer.h"
-
 #ifndef WS_DISTANCE_H_
 #define WS_DISTANCE_H_
 

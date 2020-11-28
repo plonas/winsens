@@ -14,6 +14,11 @@
 #define WS_DIGITAL_INPUT_PIN_CFG_INIT       { WS_DIGITAL_INPUT_PULL_NONE }
 
 
+typedef enum {
+    WS_DIGITAL_INPUT_PAIR_BTN = 1,
+
+} WS_DigitalInputPins_e;
+
 typedef enum
 {
     WS_DIGITAL_INPUT_PULL_NONE,
@@ -21,11 +26,6 @@ typedef enum
     WS_DIGITAL_INPUT_PULL_DOWN
 
 } WS_DigitalInputPullUpDown_e;
-
-typedef enum {
-    WS_DIGITAL_INPUT_PAIR_BTN = 1,
-
-} WS_DigitalInputPins_e;
 
 typedef struct
 {
