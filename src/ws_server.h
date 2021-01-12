@@ -9,8 +9,8 @@
 #define WS_SERVER_H_
 
 #include "winsens_types.h"
-#include "ws_configuration.h"
-
+#include "IConfig.h"
+#include "IWindowState.h"
 
 struct WS_Server;
 
@@ -34,9 +34,9 @@ typedef struct
 
 } WS_ServerEvent_t;
 
-typedef void (*WS_ServerCallback_f)(WS_Window_e window, WS_ServerEvent_t event);
+typedef void (*WS_ServerCallback_f)(IWindowId_t window, WS_ServerEvent_t event);
 
-typedef void (*WS_ServerUpdateWindowState_f)(struct WS_Server *server, WS_Window_e windowId, WS_WindowState_e state);
+typedef void (*WS_ServerUpdateWindowState_f)(struct WS_Server *server, IWindowId_t windowId, IWindowState_e state);
 typedef WINSENS_Status_e (*WS_ServerSubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
 typedef void (*WS_ServerUnsubscribe_f)(struct WS_Server *server, WS_ServerCallback_f callback);
 typedef void (*WS_ServerReset_f)(struct WS_Server *server, const WS_Configuration_t *config);

@@ -25,22 +25,6 @@ typedef enum
 
 } WINSENS_Status_e;
 
-typedef enum
-{
-    WS_WINDOW_STATE_UNKNOWN,
-    WS_WINDOW_STATE_OPEN,
-    WS_WINDOW_STATE_CLOSED
-
-} WS_WindowState_e;
-
-typedef enum
-{
-    WS_WINDOW_1,
-    WS_WINDOW_2,
-
-    WS_WINDOWS_NUMBER
-} WS_Window_e;
-
 typedef uint32_t WS_EventId_t;
 typedef uint32_t WS_EventData_t;
 

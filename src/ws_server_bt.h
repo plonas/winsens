@@ -9,7 +9,7 @@
 #define WS_SERVER_BT_H_
 
 #include "ws_server.h"
-#include "ws_configuration.h"
+#include "IConfig.h"
 
 WINSENS_Status_e WS_ServerBtInit(
     WS_Server_t *server,

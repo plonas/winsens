@@ -10,7 +10,7 @@
 #include "ws_ble_cs.h"
 #include "ws_task_queue.h"
 #include "hwal/ws_button.h"
-#include "ws_configuration_write.h"
+#include "IConfig.h"
 #define WS_LOG_MODULE_NAME SVBT
 #include "ws_log.h"
 #include "ws_log_nrf.h"
@@ -129,8 +129,8 @@ static void ws_ServerBtDeinit(
     WS_Server_t *server);
 static void ws_ServerBtUpdateWindowState(
     WS_Server_t *server,
-    WS_Window_e windowId,
-    WS_WindowState_e state);
+    IWindowId_t windowId,
+    IWindowState_e state);
 static WINSENS_Status_e ws_ServerSubscribe(
     WS_Server_t *server,
     WS_ServerCallback_f callback);
@@ -141,10 +141,10 @@ static void ws_ServerBtReset(
     WS_Server_t *server,
     const WS_Configuration_t *config);
 static ws_ble_wms_state_e ws_convertWindowState(
-    WS_WindowState_e state);
-static void ws_update_subscribers(WS_Window_e window, WS_ServerEvent_t event);
-static void ws_on_threshold_write(WS_Window_e window, uint16_t value);
-static void ws_on_enabled_write(WS_Window_e window, bool value);
+    IWindowState_e state);
+static void ws_update_subscribers(IWindowId_t window, WS_ServerEvent_t event);
+static void ws_on_threshold_write(IWindowId_t window, uint16_t value);
+static void ws_on_enabled_write(IWindowId_t window, bool value);
 static void ws_on_apply_write(void);
 
 static void ws_timers_init(void);
@@ -242,9 +242,9 @@ static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UU
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
 static pm_peer_id_t ws_peer_id = PM_PEER_ID_INVALID;
 static bool ws_connectable = false;
-static ws_ble_wms_t ws_wms[WS_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
+static ws_ble_wms_t ws_wms[IWINDOW_STATE_CFG_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
 static ws_ble_cs_t ws_cs;
-static WS_ServerCallback_f ws_callbacks[WS_WINDOWS_NUMBER] = {NULL};
+static WS_ServerCallback_f ws_callbacks[IWINDOW_STATE_CFG_WINDOWS_NUMBER] = {NULL};
 static WS_Configuration_t ws_config = { 0 };
 static const WS_ServerBtState_t *ws_currentState = &unknownConnState;
 static pm_peer_id_t ws_whitelist[WS_WHITELIST_MAX_LEN] = {PM_PEER_ID_INVALID};
@@ -269,7 +269,7 @@ WINSENS_Status_e WS_ServerBtInit(
     uint32_t i = 0;
     ret_code_t err_code;
 
-    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
+    for (i = 0; i < IWINDOW_STATE_CFG_WINDOWS_NUMBER; ++i)
     {
         ws_wms[i] = (ws_ble_wms_t)WS_BLE_WMS_INIT;
     }
@@ -383,15 +383,15 @@ static void ws_ServerBtDeinit(
 
 static void ws_ServerBtUpdateWindowState(
     WS_Server_t *server,
-    WS_Window_e windowId,
-    WS_WindowState_e state)
+    IWindowId_t windowId,
+    IWindowState_e state)
 {
     if (WS_SERVER_BT_STATE_CONNECTED != ws_currentState->stateId)
     {
         return;
     }
 
-    if (WS_WINDOWS_NUMBER > windowId)
+    if (IWINDOW_STATE_CFG_WINDOWS_NUMBER > windowId)
     {
         const ws_ble_wms_state_e wmsState = ws_convertWindowState(state);
         ws_ble_wms_window_state_update(&ws_wms[windowId], wmsState);
@@ -399,12 +399,12 @@ static void ws_ServerBtUpdateWindowState(
 }
 
 static ws_ble_wms_state_e ws_convertWindowState(
-    WS_WindowState_e state)
+    IWindowState_e state)
 {
     return (ws_ble_wms_state_e) state;
 }
 
-static void ws_update_subscribers(WS_Window_e window, WS_ServerEvent_t event)
+static void ws_update_subscribers(IWindowId_t window, WS_ServerEvent_t event)
 {
     uint_fast8_t i;
 
@@ -414,7 +414,7 @@ static void ws_update_subscribers(WS_Window_e window, WS_ServerEvent_t event)
     }
 }
 
-static void ws_on_threshold_write(WS_Window_e window, uint16_t value)
+static void ws_on_threshold_write(IWindowId_t window, uint16_t value)
 {
     WS_ServerEvent_t e;
     e.eventType = WS_SERVER_EVENT_TYPE_THRESHOLD_UPDATE;
@@ -422,7 +422,7 @@ static void ws_on_threshold_write(WS_Window_e window, uint16_t value)
     ws_update_subscribers(window, e);
 }
 
-static void ws_on_enabled_write(WS_Window_e window, bool value)
+static void ws_on_enabled_write(IWindowId_t window, bool value)
 {
     WS_ServerEvent_t e;
     e.eventType = WS_SERVER_EVENT_TYPE_ENABLED_UPDATE;
@@ -434,7 +434,7 @@ static void ws_on_enabled_write(WS_Window_e window, bool value)
 static void ws_on_apply_write(void)
 {
     WS_ServerEvent_t e = {WS_SERVER_EVENT_TYPE_APPLY, {0}};
-    ws_update_subscribers(WS_WINDOWS_NUMBER, e);
+    ws_update_subscribers(IWINDOW_STATE_CFG_WINDOWS_NUMBER, e);
 }
 
 static void ws_timers_init(void)
@@ -696,14 +696,14 @@ static void ws_services_init(
     ws_ble_cs_init(&ws_cs, config, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
 
     // Initialize WMS Service.
-    if (config->windowEnabled[WS_WINDOW_1])
+    if (config->windowEnabled[IWINDOW_STATE_CFG_WINDOW_1])
     {
-        err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_1]);
+        err_code = ws_ble_wms_init(&ws_wms[IWINDOW_STATE_CFG_WINDOW_1]);
         WS_LOG_NRF_WARNING_CHECK(err_code);
     }
-    if (config->windowEnabled[WS_WINDOW_2])
+    if (config->windowEnabled[IWINDOW_STATE_CFG_WINDOW_2])
     {
-        err_code = ws_ble_wms_init(&ws_wms[WS_WINDOW_2]);
+        err_code = ws_ble_wms_init(&ws_wms[IWINDOW_STATE_CFG_WINDOW_2]);
         WS_LOG_NRF_WARNING_CHECK(err_code);
     }
 }
@@ -860,7 +860,7 @@ static void ws_on_ble_evt(
             break;
     }
 
-    ws_ble_wms_on_ble_evt(&ws_wms[WS_WINDOW_1], p_ble_evt);
+    ws_ble_wms_on_ble_evt(&ws_wms[IWINDOW_STATE_CFG_WINDOW_1], p_ble_evt);
     ws_ble_cs_on_ble_evt(&ws_cs, p_ble_evt);
 }
 

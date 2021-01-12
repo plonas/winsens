@@ -13,8 +13,8 @@
 
 #include "ble_srv_common.h"
 
-static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window);
-static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window);
+static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window);
+static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window);
 static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs);
 
 static void ws_on_connect(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
@@ -42,7 +42,7 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_
                                         &p_cs->service_handle);
     WS_NRF_ERROR_CHECK(err_code, err_code);
 
-    for (i = 0; i < WS_WINDOWS_NUMBER; ++i)
+    for (i = 0; i < IWINDOW_STATE_CFG_WINDOWS_NUMBER; ++i)
     {
         p_cs->enabled[i] = config->windowEnabled[i];
         p_cs->threshold[i] = config->windowThreshold[i];
@@ -88,7 +88,7 @@ void ws_ble_cs_on_ble_evt(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
     }
 }
 
-static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
+static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
 {
     //Add a custom characteristic UUID
     uint32_t            err_code;
@@ -144,7 +144,7 @@ static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
     return NRF_SUCCESS;
 }
 
-static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, WS_Window_e window)
+static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
 {
     //Add a custom characteristic UUID
     uint32_t            err_code;
@@ -285,25 +285,25 @@ static void ws_on_write(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
         case BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_1:
             if (p_cs->on_enabled_write)
             {
-                p_cs->on_enabled_write(WS_WINDOW_1, *((bool *) p_evt_write->data));
+                p_cs->on_enabled_write(IWINDOW_STATE_CFG_WINDOW_1, *((bool *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_2:
             if (p_cs->on_enabled_write)
             {
-                p_cs->on_enabled_write(WS_WINDOW_2, *((bool *) p_evt_write->data));
+                p_cs->on_enabled_write(IWINDOW_STATE_CFG_WINDOW_2, *((bool *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_1:
             if (p_cs->on_threshold_write)
             {
-                p_cs->on_threshold_write(WS_WINDOW_1, *((uint16_t *) p_evt_write->data));
+                p_cs->on_threshold_write(IWINDOW_STATE_CFG_WINDOW_1, *((uint16_t *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_2:
             if (p_cs->on_threshold_write)
             {
-                p_cs->on_threshold_write(WS_WINDOW_2, *((uint16_t *) p_evt_write->data));
+                p_cs->on_threshold_write(IWINDOW_STATE_CFG_WINDOW_2, *((uint16_t *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_APPLY_CHARACTERISTC_UUID:

@@ -5,11 +5,11 @@
  *      Author: Damian.Plonek
  */
 
-#include "winsens.h"
+#include "IWinsens.h"
 #include "ws_server_bt.h"
 #include "ws_system.h"
 #include "ws_task_queue.h"
-#include "ws_configuration.h"
+#include "IConfig.h"
 #define WS_LOG_MODULE_NAME MAIN
 #include "ws_log.h"
 #include "ws_log_nrf.h"
@@ -51,10 +51,10 @@ int main(void)
     status = WS_TaskQueueInit();
     WS_ERROR_CHECK(status, WINSENS_ERROR);
 
-    status = WS_ConfigurationInit(); //todo handle return value
+    status = IConfig_Init(); //todo handle return value
     WS_ERROR_CHECK(status, WINSENS_ERROR);
 
-    config = WS_ConfigurationGet();
+    config = IConfig_Get();
     WS_LOG_INFO("Enabled: %u, enabled: %u", config->windowEnabled[0], config->windowEnabled[1]);
 
     WS_LOG_FLUSH();
@@ -63,7 +63,7 @@ int main(void)
     WS_ERROR_CHECK(status, WINSENS_ERROR);
     WS_LOG_FLUSH();
 
-    status = WINSENS_Init(&server, config);
+    status = IWinsens_Init(&server, config);
     WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     bsp_board_init(BSP_INIT_LEDS);
@@ -80,7 +80,7 @@ int main(void)
         WS_LOG_FLUSH();
     };
 
-    WINSENS_Deinit();
+    IWinsens_Deinit();
     server.deinit(&server);
 
     WS_LOG_INFO("main out");

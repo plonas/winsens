@@ -12,8 +12,8 @@ static void ws_ServerStubDeinit(
 
 static void ws_ServerStubUpdateWindowState(
     WS_Server_t *server,
-    WS_Window_e windowId,
-    WS_WindowState_e state);
+    IWindowId_t windowId,
+    IWindowState_e state);
 
 
 WINSENS_Status_e WS_ServerStubInit(
@@ -34,8 +34,8 @@ void ws_ServerStubDeinit(
 
 static void ws_ServerStubUpdateWindowState(
     WS_Server_t *server,
-    WS_Window_e windowId,
-    WS_WindowState_e state)
+    IWindowId_t windowId,
+    IWindowState_e state)
 {
 
 }
