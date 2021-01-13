@@ -5,9 +5,9 @@
  *      Author: Damian Plonek
  */
 
-#include "hwal/ws_adc_adapter.h"
-#include "hwal/ws_task_queue.h"
-#include "hwal/ws_timer.h"
+#include "ws_adc_adapter.h"
+#include "ws_task_queue.h"
+#include "ws_timer.h"
 #include "utils/utils.h"
 #define WS_LOG_MODULE_NAME ADCA
 #include "ws_log.h"

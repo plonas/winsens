@@ -5,7 +5,7 @@
  *      Author: Damian Plonek
  */
 
-#include "hwal/ws_task_queue.h"
+#include "ws_task_queue.h"
 #include "task_queue_config.h"
 
 #include "app_scheduler.h"

@@ -5,11 +5,11 @@
  *      Author: Damian.Plonek
  */
 
-#include "ws_server_bt.h"
+#include "ServerBt.h"
 #include "ws_ble_wms.h"
 #include "ws_ble_cs.h"
 #include "ws_task_queue.h"
-#include "hwal/ws_button.h"
+#include "ws_button.h"
 #include "IConfig.h"
 #define WS_LOG_MODULE_NAME SVBT
 #include "ws_log.h"
@@ -35,6 +35,18 @@
 #include "nrf_sdh.h"
 #include "nrf_sdh_ble.h"
 #include "nrf_sdh_soc.h"
+
+
+#ifdef WINSENS_IF_SERVER_BT
+#define ServerBt_Init                   IServer_Init
+#define ServerBt_UpdateWindowState      IServer_UpdateWindowState
+#define ServerBt_Subscribe              IServer_Subscribe
+#define ServerBt_Unsubscribe            IServer_Unsubscribe
+#define ServerBt_Reset                  IServer_Reset
+#define ServerBt_Disconnect             IServer_Disconnect
+#define ServerBt_DeletePeers            IServer_DeletePeers
+#define ServerBt_Deinit                 IServer_Deinit
+#endif
 
 
 #define WS_SUBSCRIBERS_NUMBER   1
@@ -123,23 +135,6 @@ typedef struct WS_ServerBtState_s
 
 } WS_ServerBtState_t;
 
-static WINSENS_Status_e WS_ServerBtDisconnect(void);
-static WINSENS_Status_e WS_ServerBtDeletePeers(void);
-static void ws_ServerBtDeinit(
-    WS_Server_t *server);
-static void ws_ServerBtUpdateWindowState(
-    WS_Server_t *server,
-    IWindowId_t windowId,
-    IWindowState_e state);
-static WINSENS_Status_e ws_ServerSubscribe(
-    WS_Server_t *server,
-    WS_ServerCallback_f callback);
-static void ws_ServerUnsubscribe(
-    WS_Server_t *server,
-    WS_ServerCallback_f callback);
-static void ws_ServerBtReset(
-    WS_Server_t *server,
-    const WS_Configuration_t *config);
 static ws_ble_wms_state_e ws_convertWindowState(
     IWindowState_e state);
 static void ws_update_subscribers(IWindowId_t window, WS_ServerEvent_t event);
@@ -262,8 +257,7 @@ static void gatt_evt_handler(nrf_ble_gatt_t * p_gatt, nrf_ble_gatt_evt_t const *
     }
 }
 
-WINSENS_Status_e WS_ServerBtInit(
-    WS_Server_t *server,
+WINSENS_Status_e ServerBt_Init(
     const WS_Configuration_t *config)
 {
     uint32_t i = 0;
@@ -297,14 +291,6 @@ WINSENS_Status_e WS_ServerBtInit(
     ws_services_init(&ws_config);
     ws_advertising_init();
 
-    server->updateWindowState = ws_ServerBtUpdateWindowState;
-    server->subscribe = ws_ServerSubscribe;
-    server->unsubscribe = ws_ServerUnsubscribe;
-    server->reset = ws_ServerBtReset;
-    server->disconnect = WS_ServerBtDisconnect;
-    server->deletePeers = WS_ServerBtDeletePeers;
-    server->deinit = ws_ServerBtDeinit;
-
     WINSENS_Status_e status = WS_ButtonRegisterCallback(WS_DIGITAL_INPUT_PAIR_BTN, WS_EventHandler);
     WS_ERROR_CHECK(status, status);
 
@@ -313,8 +299,7 @@ WINSENS_Status_e WS_ServerBtInit(
     return status;
 }
 
-static WINSENS_Status_e ws_ServerSubscribe(
-    WS_Server_t *server,
+WINSENS_Status_e ServerBt_Subscribe(
     WS_ServerCallback_f callback)
 {
     uint8_t i;
@@ -331,8 +316,7 @@ static WINSENS_Status_e ws_ServerSubscribe(
     return WINSENS_NO_RESOURCES;
 }
 
-static void ws_ServerUnsubscribe(
-    WS_Server_t *server,
+void ServerBt_Unsubscribe(
     WS_ServerCallback_f callback)
 {
     uint8_t i;
@@ -347,8 +331,7 @@ static void ws_ServerUnsubscribe(
     }
 }
 
-static void ws_ServerBtReset(
-    WS_Server_t *server,
+void ServerBt_Reset(
     const WS_Configuration_t *config)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
@@ -357,32 +340,25 @@ static void ws_ServerBtReset(
     WS_LOG_IF_WARNING(WINSENS_OK != status, "WS_TaskQueueAdd failed");
 }
 
-static WINSENS_Status_e WS_ServerBtDisconnect(void)
+WINSENS_Status_e WS_ServerBtDisconnect(void)
 {
     WS_ChangeState(&disconnectingState);
 
     return WINSENS_OK;
 }
 
-static WINSENS_Status_e WS_ServerBtDeletePeers(void)
+WINSENS_Status_e ServerBt_DeletePeers(void)
 {
     WS_ChangeState(&unbondingState);
     return WINSENS_OK;
 }
 
-static void ws_ServerBtDeinit(
-    WS_Server_t *server)
+void ServerBt_Deinit(void)
 {
     WS_DigitalInputUnregisterCallback(WS_DIGITAL_INPUT_PAIR_BTN);
-
-    server->updateWindowState = NULL;
-    server->subscribe = NULL;
-    server->unsubscribe = NULL;
-    server->deinit = NULL;
 }
 
-static void ws_ServerBtUpdateWindowState(
-    WS_Server_t *server,
+void ServerBt_UpdateWindowState(
     IWindowId_t windowId,
     IWindowState_e state)
 {

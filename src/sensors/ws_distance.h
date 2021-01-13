@@ -6,7 +6,7 @@
  */
 
 #include "winsens_types.h"
-#include "hwal/ws_adc_adapter.h"
+#include "ws_adc_adapter.h"
 
 #ifndef WS_DISTANCE_H_
 #define WS_DISTANCE_H_

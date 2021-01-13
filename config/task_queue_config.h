@@ -8,7 +8,7 @@
 #ifndef TASK_QUEUE_CONFIG_H_
 #define TASK_QUEUE_CONFIG_H_
 
-#include "hwal/ws_adc_adapter.h"
+#include "ws_adc_adapter.h"
 
 #include "app_timer.h"
 

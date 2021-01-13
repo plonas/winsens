@@ -6,7 +6,7 @@
  */
 
 #include "IWinsens.h"
-#include "ws_server_bt.h"
+#include "IServer.h"
 #include "ws_system.h"
 #include "ws_task_queue.h"
 #include "IConfig.h"
@@ -40,7 +40,6 @@ int main(void)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
     ret_code_t err_code;
-    WS_Server_t server;
     const WS_Configuration_t *config = NULL;
 
     WS_LOG_INIT(NULL);
@@ -59,11 +58,11 @@ int main(void)
 
     WS_LOG_FLUSH();
 //    WS_ServerStubInit(&server);
-    WS_ServerBtInit(&server, config);
+    IServer_Init(config);
     WS_ERROR_CHECK(status, WINSENS_ERROR);
     WS_LOG_FLUSH();
 
-    status = IWinsens_Init(&server, config);
+    status = IWinsens_Init(config);
     WS_ERROR_CHECK(status, WINSENS_ERROR);
 
     bsp_board_init(BSP_INIT_LEDS);
@@ -81,7 +80,7 @@ int main(void)
     };
 
     IWinsens_Deinit();
-    server.deinit(&server);
+    IServer_Deinit();
 
     WS_LOG_INFO("main out");
     return 0;

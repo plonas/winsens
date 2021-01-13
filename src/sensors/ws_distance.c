@@ -9,7 +9,7 @@
 
 #include "app_error.h"
 #include "utils/utils.h"
-#include "hwal/ws_adc_adapter.h"
+#include "ws_adc_adapter.h"
 
 
 static void WS_AdcEventHandler(

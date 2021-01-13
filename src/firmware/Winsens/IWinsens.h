@@ -9,11 +9,9 @@
 #define IWINSENS_H_
 
 #include "winsens_types.h"
-#include "ws_server.h"
 #include "IConfig.h"
 
 WINSENS_Status_e IWinsens_Init(
-    WS_Server_t *server,
     const WS_Configuration_t *config);
 
 void IWinsens_Deinit();

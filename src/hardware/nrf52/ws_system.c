@@ -6,10 +6,10 @@
  */
 
 
-#include "hwal/ws_system.h"
-#include "hwal/ws_digital_input.h"
-#include "hwal/ws_timer.h"
-#include "hwal/ws_button.h"
+#include "ws_system.h"
+#include "ws_digital_input.h"
+#include "ws_timer.h"
+#include "ws_button.h"
 #include "winsens_config.h"
 #define WS_LOG_MODULE_NAME SYS
 #include "ws_log.h"

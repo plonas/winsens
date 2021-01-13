@@ -9,6 +9,7 @@
 #include "WinsensImpl.h"
 #include "IWindowState.h"
 #include "IConfig.h"
+#include "IServer.h"
 #define WS_LOG_MODULE_NAME WNSN
 #include "ws_log.h"
 
@@ -24,17 +25,14 @@ static void WS_ServerCallback(
     IWindowId_t window,
     WS_ServerEvent_t event);
 
-WS_Server_t *ws_server = NULL;
 const WS_Configuration_t *ws_config = NULL;
 
 
 WINSENS_Status_e WinsensImpl_Init(
-    WS_Server_t *server,
     const WS_Configuration_t *config)
 {
     WINSENS_Status_e status = WINSENS_ERROR;
 
-    ws_server = server;
     ws_config = config;
 
     // init a window state
@@ -50,21 +48,21 @@ WINSENS_Status_e WinsensImpl_Init(
         IWindowStateSubscribe(IWINDOW_STATE_CFG_WINDOW_2, WS_WindowStateCallback);
     }
 
-    server->subscribe(server, WS_ServerCallback);
+    IServer_Subscribe(WS_ServerCallback);
 
     return WINSENS_OK;
 }
 
 void WinsensImpl_Deinit()
 {
-    ws_server->unsubscribe(ws_server, WS_ServerCallback);
+    IServer_Unsubscribe(WS_ServerCallback);
 }
 
 static void WS_WindowStateCallback(
     IWindowId_t window,
     IWindowState_e state)
 {
-    ws_server->updateWindowState(ws_server, window, state);
+    IServer_UpdateWindowState(window, state);
 }
 
 static void WS_ServerCallback(
@@ -104,7 +102,7 @@ static void WS_ServerCallback(
         }
 
         case WS_SERVER_EVENT_TYPE_APPLY:
-            ws_server->reset(ws_server, ws_config);
+            IServer_Reset(ws_config);
             break;
 
         default:

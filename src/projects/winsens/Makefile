@@ -10,23 +10,22 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 
 # Source files common to all targets
 SRC_FILES += \
-  $(PROJ_DIR)/src/main.c \
-  $(PROJ_DIR)/src/ws_server_stub.c \
-  $(PROJ_DIR)/src/ws_server_bt.c \
-  $(PROJ_DIR)/src/ws_ble_wms.c \
-  $(PROJ_DIR)/src/ws_ble_cs.c \
+  $(PROJ_DIR)/src/projects/winsens/main.c \
+  $(PROJ_DIR)/src/firmware/Server/Bt/ws_ble_wms.c \
+  $(PROJ_DIR)/src/firmware/Server/Bt/ws_ble_cs.c \
   $(PROJ_DIR)/src/sensors/ws_distance.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_adc_adapter.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_task_queue.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_storage.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_system.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_digital_input.c \
-  $(PROJ_DIR)/src/hwal/common/ws_button.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_timer.c \
-  $(PROJ_DIR)/src/hwal/nrf52/ws_log_internal.c \
-  $(PROJ_DIR)/src/modules/WindowState/WindowStateDist.c \
-  $(PROJ_DIR)/src/modules/Winsens/WinsensImpl.c \
-  $(PROJ_DIR)/src/modules/Config/ConfigStorage.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_adc_adapter.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_task_queue.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_storage.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_system.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_digital_input.c \
+  $(PROJ_DIR)/src/hardware/common/ws_button.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_timer.c \
+  $(PROJ_DIR)/src/hardware/nrf52/ws_log_internal.c \
+  $(PROJ_DIR)/src/firmware/WindowState/Dist/WindowStateDist.c \
+  $(PROJ_DIR)/src/firmware/Winsens/Impl/WinsensImpl.c \
+  $(PROJ_DIR)/src/firmware/Config/Storage/ConfigStorage.c \
+  $(PROJ_DIR)/src/firmware/Server/Bt/ServerBt.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -100,14 +99,19 @@ SRC_FILES += \
 INC_FOLDERS += \
   ./config \
   $(PROJ_DIR)/src \
-  $(PROJ_DIR)/src/modules/WindowState \
-  $(PROJ_DIR)/src/modules/Winsens \
-  $(PROJ_DIR)/src/modules/Config \
+  $(PROJ_DIR)/src/firmware/WindowState \
+  $(PROJ_DIR)/src/firmware/WindowState/Dist \
+  $(PROJ_DIR)/src/firmware/Winsens \
+  $(PROJ_DIR)/src/firmware/Winsens/Impl \
+  $(PROJ_DIR)/src/firmware/Config \
+  $(PROJ_DIR)/src/firmware/Config/Storage \
+  $(PROJ_DIR)/src/firmware/Server/ \
+  $(PROJ_DIR)/src/firmware/Server/Bt/ \
 
 INC_FOLDERS += \
   $(PROJ_DIR)/config \
-  $(PROJ_DIR)/src/hwal \
-  $(PROJ_DIR)/src/hwal/nrf52 \
+  $(PROJ_DIR)/src/hardware \
+  $(PROJ_DIR)/src/hardware/nrf52 \
   $(SDK_ROOT)/components \
   $(SDK_ROOT)/components/softdevice/s113/headers \
   $(SDK_ROOT)/components/softdevice/s113/headers/nrf52 \
@@ -153,6 +157,8 @@ INC_FOLDERS += \
 WINSENSIF += -DWINSENS_IF_WINSENS_IMPL
 WINSENSIF += -DWINSENS_IF_WINDOW_STATE_DIST
 WINSENSIF += -DWINSENS_IF_CONFIG_STORAGE
+WINSENSIF += -DWINSENS_IF_SERVER_BT
+#WINSENSIF += -DWINSENS_IF_SERVER_STUB
 
 # Optimization flags
 OPT = -O3 -g3
