@@ -1,27 +1,26 @@
 /*
- * ws_task_queue.c
+ * task_queue.c
  *
  *  Created on: 28.03.2019
  *      Author: Damian Plonek
  */
 
-#include "hwal/ws_task_queue.h"
+#include "task_queue.h"
+#include "task_queue_cfg.h"
+
 #include "app_scheduler.h"
 
-#include "app_timer_appsh.h"
-#include "hwal/ws_adc_adapter.h"
+#include "nrf_soc.h"
 
-// Scheduler settings
-#define TASK_QUEUE_CFG_MAX_EVENT_DATA_SIZE       MAX(WS_ADC_ADAPTER_SCHED_EVT_SIZE, APP_TIMER_SCHED_EVT_SIZE) // todo adjust that size
-#define TASK_QUEUE_CFG_QUEUE_SIZE                10
 
-winsens_status_t WS_TaskQueueInit(void)
+
+winsens_status_t task_queue_init(void)
 {
     APP_SCHED_INIT(TASK_QUEUE_CFG_MAX_EVENT_DATA_SIZE, TASK_QUEUE_CFG_QUEUE_SIZE);
     return WINSENS_OK;
 }
 
-winsens_status_t WS_TaskQueueAdd(
+winsens_status_t task_queue_add(
     void *p_data,
     uint16_t data_size,
     task_function_t function)
@@ -31,7 +30,8 @@ winsens_status_t WS_TaskQueueAdd(
     return (NRF_SUCCESS == res) ? WINSENS_OK : WINSENS_ERROR;
 }
 
-void WS_TaskQueueExecute(void)
+void task_queue_execute(void)
 {
     app_sched_execute();
+    sd_app_evt_wait();
 }

@@ -21,8 +21,8 @@
 
 typedef struct
 {
-    WS_DigitalInputPins_e pin;
-    WS_DigitalInputCallback_f callback;
+    digital_io_input_pins_t pin;
+    digitalio_input_callback_t callback;
     bool status;
 
 } WS_DigitalInputPinCallback_t;
@@ -36,13 +36,13 @@ static void WS_DigitalInputEventHandler(
     uint16_t event_size);
 
 static nrf_gpio_pin_pull_t WS_ConvertPullUpDown(
-    WS_DigitalInputPullUpDown_e pull);
+    digital_io_pull_up_down_t pull);
 
 static uint32_t ws_initCount = 0;
 static WS_DigitalInputPinCallback_t ws_pinCallbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
 
 
-WINSENS_Status_e WS_DigitalInputInit(void)
+winsens_status_t WS_DigitalInputInit(void)
 {
     ++ws_initCount;
     if (1 == ws_initCount)
@@ -61,7 +61,7 @@ WINSENS_Status_e WS_DigitalInputInit(void)
 
         for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
         {
-            nrf_gpio_cfg_input(ws_digitalInputConfig[i].pin, WS_ConvertPullUpDown(ws_digitalInputConfig[i].pullUpDown));
+            nrf_gpio_cfg_input(g_digital_io_input_config[i].pin, WS_ConvertPullUpDown(g_digital_io_input_config[i].pullUpDown));
         }
     }
     return WINSENS_OK;
@@ -79,22 +79,22 @@ void WS_DigitalInputDeinit(void)
     }
 }
 
-WINSENS_Status_e WS_DigitalInputRegisterCallback(
-    WS_DigitalInputPins_e pin,
-    WS_DigitalInputCallback_f callback)
+winsens_status_t WS_DigitalInputRegisterCallback(
+    digital_io_input_pins_t pin,
+    digitalio_input_callback_t callback)
 {
     uint8_t i = 0;
 
     for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
     {
-        if (pin == ws_digitalInputConfig[i].pin)
+        if (pin == g_digital_io_input_config[i].pin)
         {
             nrf_drv_gpiote_in_config_t config = GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
-            config.pull = WS_ConvertPullUpDown(ws_digitalInputConfig[i].pullUpDown);
+            config.pull = WS_ConvertPullUpDown(g_digital_io_input_config[i].pullUpDown);
             ret_code_t ret = nrf_drv_gpiote_in_init(pin, &config, WS_DigitalInputIrqHandler);
             if (NRF_SUCCESS != ret)
             {
-                WS_LOG_ERROR("nrf_drv_gpiote_in_init failed\r\n");
+                ILOG_ERROR("nrf_drv_gpiote_in_init failed\r\n");
                 return WINSENS_ERROR;
             }
             nrf_drv_gpiote_in_event_enable(pin, true);
@@ -111,7 +111,7 @@ WINSENS_Status_e WS_DigitalInputRegisterCallback(
 }
 
 void WS_DigitalInputUnregisterCallback(
-    WS_DigitalInputPins_e pin)
+    digital_io_input_pins_t pin)
 {
     uint8_t i = 0;
 
@@ -134,7 +134,7 @@ static void WS_DigitalInputIrqHandler(
     nrf_gpiote_polarity_t action)
 {
     uint8_t i = 0;
-    WINSENS_Status_e status = WINSENS_ERROR;
+    winsens_status_t status = WINSENS_ERROR;
 
     for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
     {
@@ -143,7 +143,7 @@ static void WS_DigitalInputIrqHandler(
             status = WS_TaskQueueAdd(&i, sizeof(i), WS_DigitalInputEventHandler);
             if (WINSENS_OK != status)
             {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
+                ILOG_ERROR("WS_TaskQueueAdd failed\r\n");
             }
             break;
         }
@@ -163,7 +163,7 @@ static void WS_DigitalInputEventHandler(
 }
 
 static nrf_gpio_pin_pull_t WS_ConvertPullUpDown(
-    WS_DigitalInputPullUpDown_e pull)
+    digital_io_pull_up_down_t pull)
 {
     switch (pull)
     {

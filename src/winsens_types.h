@@ -23,42 +23,42 @@ typedef enum
     WINSENS_NO_RESOURCES,
     WINSENS_INVALID_PARAMS,
 
-} WINSENS_Status_e;
+} winsens_status_t;
 
-typedef uint32_t WS_EventId_t;
-typedef uint32_t WS_EventData_t;
+typedef uint32_t winsens_event_id_t;
+typedef uint32_t winsens_event_data_t;
 
 typedef struct
 {
     union
     {
-        WS_EventId_t        id;
+        winsens_event_id_t  id;
         struct
         {
-            WS_ModuleId_t   moduleId;
-            uint16_t        eventId;
+            winsens_ids_module_t    moduleId;
+            uint16_t                eventId;
         };
     };
 
     union
     {
-        WS_EventData_t      data;
+        winsens_event_data_t    data;
         struct
         {
-            uint16_t        data16a;
-            uint16_t        data16b;
+            uint16_t    data16a;
+            uint16_t    data16b;
         };
         struct
         {
-            uint8_t         data8a;
-            uint8_t         data8b;
-            uint8_t         data8c;
-            uint8_t         data8d;
+            uint8_t     data8a;
+            uint8_t     data8b;
+            uint8_t     data8c;
+            uint8_t     data8d;
         };
     };
 
-} WS_Event_t;
+} winsens_event_t;
 
-typedef void (*WS_EventHandler_f) (WS_Event_t event);
+typedef void (*winsens_event_handler_t) (winsens_event_t event);
 
 #endif /* WINSENS_TYPES_H_ */

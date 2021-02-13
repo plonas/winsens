@@ -7,14 +7,14 @@
 
 #include "ws_ble_cs.h"
 #include "ws_ble.h"
-#define WS_LOG_MODULE_NAME LECS
-#include "ws_log.h"
-#include "ws_log_nrf.h"
+#define ILOG_MODULE_NAME LECS
+#include "log.h"
+#include "log_internal_nrf52.h"
 
 #include "ble_srv_common.h"
 
-static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window);
-static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window);
+static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, window_id_t window);
+static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, window_id_t window);
 static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs);
 
 static void ws_on_connect(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
@@ -22,7 +22,7 @@ static void ws_on_disconnect(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
 static void ws_on_write(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
 
 
-uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
+uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const config_t *config, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
 {
     uint8_t             i;
     uint32_t            err_code;
@@ -35,28 +35,28 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const WS_Configuration_t *config, ws_
 
     service_uuid.uuid = BLE_UUID_CS_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
                                         &service_uuid,
                                         &p_cs->service_handle);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
-    for (i = 0; i < IWINDOW_STATE_CFG_WINDOWS_NUMBER; ++i)
+    for (i = 0; i < WINDOW_STATE_CFG_WINDOWS_NUMBER; ++i)
     {
         p_cs->enabled[i] = config->windowEnabled[i];
         p_cs->threshold[i] = config->windowThreshold[i];
 
         err_code = ws_cs_enabled_char_add(p_cs, i);
-        WS_NRF_ERROR_CHECK(err_code, err_code);
+        LOG_NRF_ERROR_RETURN(err_code, err_code);
 
         err_code = ws_cs_threshold_char_add(p_cs, i);
-        WS_NRF_ERROR_CHECK(err_code, err_code);
+        LOG_NRF_ERROR_RETURN(err_code, err_code);
     }
 
     p_cs->apply = false;
     err_code = ws_cs_apply_char_add(p_cs);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     return NRF_SUCCESS;
 }
@@ -88,7 +88,7 @@ void ws_ble_cs_on_ble_evt(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
     }
 }
 
-static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
+static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, window_id_t window)
 {
     //Add a custom characteristic UUID
     uint32_t            err_code;
@@ -97,7 +97,7 @@ static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
 
     char_uuid.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + window;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -139,12 +139,12 @@ static uint32_t ws_cs_threshold_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->threshold_char_handles[window]);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     return NRF_SUCCESS;
 }
 
-static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
+static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, window_id_t window)
 {
     //Add a custom characteristic UUID
     uint32_t            err_code;
@@ -153,7 +153,7 @@ static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
 
     char_uuid.uuid = BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + window;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -195,7 +195,7 @@ static uint32_t ws_cs_enabled_char_add(ws_ble_cs_t *p_cs, IWindowId_t window)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->enabled_char_handles[window]);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     return NRF_SUCCESS;
 }
@@ -209,7 +209,7 @@ static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs)
 
     char_uuid.uuid = BLE_UUID_CS_APPLY_CHARACTERISTC_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -251,7 +251,7 @@ static uint32_t ws_cs_apply_char_add(ws_ble_cs_t *p_cs)
                                        &char_md,
                                        &attr_char_value,
                                        &p_cs->apply_char_handles);
-    WS_NRF_ERROR_CHECK(err_code, err_code);
+    LOG_NRF_ERROR_RETURN(err_code, err_code);
 
     return NRF_SUCCESS;
 }
@@ -270,40 +270,40 @@ static void ws_on_disconnect(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
 static void ws_on_write(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt)
 {
     const ble_gatts_evt_write_t *p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
-//    WS_ASSERT(p_evt_write);
+//    UTILS_ASSERT(p_evt_write);
 
-    WS_LOG_DEBUG("ws_on_write auth_required: %u", p_evt_write->auth_required);
-    WS_LOG_DEBUG("ws_on_write data: 0x%x", *((uint16_t *) p_evt_write->data));
-    WS_LOG_DEBUG("ws_on_write handle: %u", p_evt_write->handle);
-    WS_LOG_DEBUG("ws_on_write len: %u", p_evt_write->len);
-    WS_LOG_DEBUG("ws_on_write offset: %u", p_evt_write->offset);
-    WS_LOG_DEBUG("ws_on_write op: %u", p_evt_write->op);
-    WS_LOG_DEBUG("ws_on_write uuid: 0x%x", p_evt_write->uuid.uuid);
+    LOG_DEBUG("ws_on_write auth_required: %u", p_evt_write->auth_required);
+    LOG_DEBUG("ws_on_write data: 0x%x", *((uint16_t *) p_evt_write->data));
+    LOG_DEBUG("ws_on_write handle: %u", p_evt_write->handle);
+    LOG_DEBUG("ws_on_write len: %u", p_evt_write->len);
+    LOG_DEBUG("ws_on_write offset: %u", p_evt_write->offset);
+    LOG_DEBUG("ws_on_write op: %u", p_evt_write->op);
+    LOG_DEBUG("ws_on_write uuid: 0x%x", p_evt_write->uuid.uuid);
 
     switch (p_evt_write->uuid.uuid)
     {
         case BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_1:
             if (p_cs->on_enabled_write)
             {
-                p_cs->on_enabled_write(IWINDOW_STATE_CFG_WINDOW_1, *((bool *) p_evt_write->data));
+                p_cs->on_enabled_write(WINDOW_STATE_CFG_WINDOW_1, *((bool *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_2:
             if (p_cs->on_enabled_write)
             {
-                p_cs->on_enabled_write(IWINDOW_STATE_CFG_WINDOW_2, *((bool *) p_evt_write->data));
+                p_cs->on_enabled_write(WINDOW_STATE_CFG_WINDOW_2, *((bool *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_1:
             if (p_cs->on_threshold_write)
             {
-                p_cs->on_threshold_write(IWINDOW_STATE_CFG_WINDOW_1, *((uint16_t *) p_evt_write->data));
+                p_cs->on_threshold_write(WINDOW_STATE_CFG_WINDOW_1, *((uint16_t *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_2:
             if (p_cs->on_threshold_write)
             {
-                p_cs->on_threshold_write(IWINDOW_STATE_CFG_WINDOW_2, *((uint16_t *) p_evt_write->data));
+                p_cs->on_threshold_write(WINDOW_STATE_CFG_WINDOW_2, *((uint16_t *) p_evt_write->data));
             }
             break;
         case BLE_UUID_CS_APPLY_CHARACTERISTC_UUID:

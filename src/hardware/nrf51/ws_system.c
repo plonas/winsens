@@ -27,7 +27,7 @@
 #define PERIPHERAL_LINK_COUNT           1                                           /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
 
-#define WS_SYSTEM_BUTTON_HOLD_DURATION          20 // it is 2000ms in 100ms unit
+#define SYSTEM_BUTTON_HOLD_DURATION          20 // it is 2000ms in 100ms unit
 
 
 static void ws_sys_evt_dispatch(
@@ -38,10 +38,10 @@ static void WS_TimerCallback(
 static WS_TimerId_t ws_systemTimer = 0;
 static uint32_t ws_timeCounter = 0;
 
-WINSENS_Status_e WS_SystemInit(void)
+winsens_status_t WS_SystemInit(void)
 {
     uint32_t err_code;
-    WINSENS_Status_e status = WINSENS_ERROR;
+    winsens_status_t status = WINSENS_ERROR;
 
     nrf_clock_lf_cfg_t clock_lf_cfg = NRF_CLOCK_LFCLKSRC;
 
@@ -68,14 +68,14 @@ WINSENS_Status_e WS_SystemInit(void)
     APP_ERROR_CHECK(err_code);
 
     status = WS_TimerInit();
-    WS_LOG_ERROR_CHECK(status);
+    ILOG_ERROR_CHECK(status);
     status = WS_DigitalInputInit();
-    WS_LOG_ERROR_CHECK(status);
+    ILOG_ERROR_CHECK(status);
     status = WS_ButtonInit();
-    WS_LOG_ERROR_CHECK(status);
+    ILOG_ERROR_CHECK(status);
 
     status = WS_TimerSetTimer(1, WS_TimerCallback, &ws_systemTimer);
-    WS_LOG_ERROR_CHECK(status);
+    ILOG_ERROR_CHECK(status);
 
     return (NRF_SUCCESS == err_code) ? WINSENS_OK : WINSENS_ERROR;
 }

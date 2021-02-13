@@ -5,11 +5,11 @@
  *      Author: Damian Plonek
  */
 
-#ifndef SRC_UTILS_UTILS_H_
-#define SRC_UTILS_UTILS_H_
+#ifndef UTILS_H_
+#define UTILS_H_
 
-#define WS_ASSERT(x)        do { if (x); } while(0);
+#define UTILS_ASSERT(x)        do { if (x); } while(0);
 
-#define WS_STRING(x)        #x
+#define UTILS_STRING(x)        #x
 
-#endif /* SRC_UTILS_UTILS_H_ */
+#endif /* UTILS_H_ */

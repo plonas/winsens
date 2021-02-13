@@ -27,7 +27,7 @@ const uint32_t ADC_CONFIG_INPUT_MAP[WS_ADC_ADAPTER_CHANNELS_NUMBER] = {
 
 typedef struct
 {
-    WS_AdcAdapterCallback_f callback;
+    adc_callback_t callback;
     nrf_drv_adc_channel_t nativeChannelConf;
 
 } WS_AdcAdapterChannel_t;
@@ -48,7 +48,7 @@ static uint8_t ws_active_adc_channels_num = 0;
 static const nrf_drv_timer_t *ws_timer = NULL;
 
 
-WINSENS_Status_e WS_AdcAdapterInit(void)
+winsens_status_t WS_AdcAdapterInit(void)
 {
     ret_code_t ret_code;
     uint32_t err_code = NRF_ERROR_INTERNAL;
@@ -88,12 +88,12 @@ void WS_AdcAdapterDeinit(void)
     nrf_drv_adc_uninit();
 }
 
-WINSENS_Status_e WS_AdcAdapterEnableChannel(
-    WS_AdcAdapterChannelId_e channelId,
-    WS_AdcAdapterCallback_f callback)
+winsens_status_t WS_AdcAdapterEnableChannel(
+    adc_channel_id_t channelId,
+    adc_callback_t callback)
 {
-    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
-    WS_ASSERT(callback);
+    UTILS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
+    UTILS_ASSERT(callback);
 
     // Add channel to the list
     ws_channels[channelId].callback = callback;
@@ -110,9 +110,9 @@ WINSENS_Status_e WS_AdcAdapterEnableChannel(
 }
 
 void WS_AdcAdapterDisableChannel(
-    WS_AdcAdapterChannelId_e channelId)
+    adc_channel_id_t channelId)
 {
-    WS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
+    UTILS_ASSERT(WS_ADC_ADAPTER_CHANNELS_NUMBER > channelId);
 
     if (ws_active_adc_channels_num)
     {
@@ -134,7 +134,7 @@ void WS_AdcAdapterDisableChannel(
     }
 }
 
-WINSENS_Status_e WS_AdcAdapterStart(void)
+winsens_status_t WS_AdcAdapterStart(void)
 {
     uint32_t err_code;
 
@@ -167,19 +167,19 @@ static void WS_AdcAdapterIrqHandler(
 
         if (ws_active_adc_channels_num != event->data.done.size)
         {
-            WS_LOG_ERROR("Active channels #%u but got %u reads\r\n", ws_active_adc_channels_num, event->data.done.size);
+            ILOG_ERROR("Active channels #%u but got %u reads\r\n", ws_active_adc_channels_num, event->data.done.size);
             return;
         }
 
         for (i = 0; i < event->data.done.size; i++)
         {
-            WINSENS_Status_e status = WINSENS_ERROR;
-            WS_AdcAdapterEvent_t adcEvent = { i, (int16_t) event->data.done.p_buffer[i] };
+            winsens_status_t status = WINSENS_ERROR;
+            adc_event_t adcEvent = { i, (int16_t) event->data.done.p_buffer[i] };
 
             status = WS_TaskQueueAdd(&adcEvent, sizeof(adcEvent), WS_AdcAdapterEventHandler);
             if (WINSENS_OK != status)
             {
-                WS_LOG_ERROR("WS_TaskQueueAdd failed\r\n");
+                ILOG_ERROR("WS_TaskQueueAdd failed\r\n");
             }
         }
 
@@ -191,10 +191,10 @@ static void WS_AdcAdapterEventHandler(
     void *p_event_data,
     uint16_t event_size)
 {
-    const WS_AdcAdapterEvent_t *adcEvent = p_event_data;
+    const adc_event_t *adcEvent = p_event_data;
     UNUSED_PARAMETER(event_size);
 
-    ASSERT(adcEvent);
+    UTILS_ASSERT(adcEvent);
 
     if (ws_channels[adcEvent->id].callback)
     {
@@ -202,6 +202,6 @@ static void WS_AdcAdapterEventHandler(
     }
     else
     {
-        WS_LOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
+        ILOG_ERROR("Missing channel's #%u callback\r\n", adcEvent->id);
     }
 }

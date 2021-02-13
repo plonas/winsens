@@ -33,7 +33,7 @@ static uint32_t counter = 0;
 static const nrf_drv_timer_t ws_systemTimer = NRF_DRV_TIMER_INSTANCE(1);
 static WS_Timer_t ws_timers[WS_TIMER_TIMERS_NUM] = { 0, NULL };
 
-WINSENS_Status_e WS_TimerInit(void)
+winsens_status_t WS_TimerInit(void)
 {
     uint32_t i;
     for (i = 0; i < WS_TIMER_TIMERS_NUM; ++i)
@@ -58,7 +58,7 @@ void WS_TimerDeinit(void)
     nrf_drv_timer_uninit(&ws_systemTimer);
 }
 
-WINSENS_Status_e WS_TimerSetTimer(
+winsens_status_t WS_TimerSetTimer(
     uint32_t interval,
     WS_TimerCallback_f callback,
     WS_TimerId_t *id)
