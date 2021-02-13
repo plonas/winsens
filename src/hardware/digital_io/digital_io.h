@@ -14,10 +14,7 @@
 #define DIGITAL_INPUT_PIN_CFG_INIT          { WS_DIGITAL_INPUT_PULL_NONE }
 
 
-typedef enum {
-    DIGITAL_IO_INPUT_PAIR_BTN = 1,
-
-} digital_io_input_pins_t;
+typedef uint16_t digital_io_input_pins_t;
 
 typedef enum
 {

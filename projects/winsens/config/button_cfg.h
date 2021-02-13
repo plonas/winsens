@@ -8,6 +8,9 @@
 #ifndef BUTTON_CFG_H_
 #define BUTTON_CFG_H_
 
+#include "digital_io_cfg.h"
+
+
 digital_io_input_pins_t const g_buttons_config[] = {
     DIGITAL_IO_INPUT_PAIR_BTN
     };

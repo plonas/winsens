@@ -5,14 +5,19 @@
  *      Author: Damian Plonek
  */
 
-#ifndef DIGITAL_IO_CONFIG_H_
-#define DIGITAL_IO_CONFIG_H_
-
-#include "digital_io.h"
+#ifndef DIGITAL_IO_CFG_H_
+#define DIGITAL_IO_CFG_H_
 
 
-digital_io_input_pin_cfg_t const g_digital_io_input_config[] = {
-    { DIGITAL_IO_INPUT_PAIR_BTN, DIGITAL_IO_INPUT_PULL_DOWN }
-    };
+typedef enum {
+    DIGITAL_IO_INPUT_PAIR_BTN = 1,
 
-#endif /* DIGITAL_IO_CONFIG_H_ */
+    DIGITAL_IO_INPUT_NUMBER
+
+} digital_io_input_pins_enum_t;
+
+#define DIGITAL_IO_CFG_INPUT_INIT { \
+    { DIGITAL_IO_INPUT_PAIR_BTN, DIGITAL_IO_INPUT_PULL_DOWN }, \
+}
+
+#endif /* DIGITAL_IO_CFG_H_ */

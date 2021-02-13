@@ -17,7 +17,7 @@
 
 
 #define WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT     { DIGITAL_INPUT_PIN_INVALID, NULL, false }
-#define WS_DIGITAL_INPUT_PINS_NUMBER            (sizeof(g_digital_io_input_config) / sizeof(digital_io_input_pin_cfg_t))
+#define WS_DIGITAL_INPUT_PINS_NUMBER            (sizeof(DIGITAL_IO_INPUT_CONFIG) / sizeof(digital_io_input_pin_cfg_t))
 
 
 typedef struct
@@ -39,8 +39,9 @@ static void digital_io_input_event_handler(
 static nrf_gpio_pin_pull_t convert_pull_up_down(
     digital_io_pull_up_down_t pull);
 
-static uint32_t                         g_init_count = 0;
-static digital_io_input_pin_callback_t  g_pin_callbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
+static const digital_io_input_pin_cfg_t     DIGITAL_IO_INPUT_CONFIG[DIGITAL_IO_INPUT_NUMBER] = DIGITAL_IO_CFG_INPUT_INIT;
+static uint32_t                             g_init_count = 0;
+static digital_io_input_pin_callback_t      g_pin_callbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
 
 
 winsens_status_t digital_io_init(void)
@@ -61,7 +62,7 @@ winsens_status_t digital_io_init(void)
 
         for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
         {
-            nrf_gpio_cfg_input(g_digital_io_input_config[i].pin, convert_pull_up_down(g_digital_io_input_config[i].pullUpDown));
+            nrf_gpio_cfg_input(DIGITAL_IO_INPUT_CONFIG[i].pin, convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown));
         }
     }
     return WINSENS_OK;
@@ -75,10 +76,10 @@ winsens_status_t digital_io_register_callback(
 
     for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
     {
-        if (pin == g_digital_io_input_config[i].pin)
+        if (pin == DIGITAL_IO_INPUT_CONFIG[i].pin)
         {
             nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
-            config.pull = convert_pull_up_down(g_digital_io_input_config[i].pullUpDown);
+            config.pull = convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown);
             ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)pin, &config, digital_io_input_isr);
             LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 

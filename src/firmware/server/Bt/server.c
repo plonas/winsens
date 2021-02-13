@@ -6,6 +6,7 @@
  */
 
 #include "server.h"
+#include "digital_io_cfg.h"
 #include "ws_ble_wms.h"
 #include "ws_ble_cs.h"
 #include "task_queue.h"

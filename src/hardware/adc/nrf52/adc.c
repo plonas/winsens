@@ -10,7 +10,7 @@
 #include "task_queue.h"
 #include "timer.h"
 #include "utils.h"
-#define ILOG_MODULE_NAME ADCA
+#define ILOG_MODULE_NAME ADC
 #include "log.h"
 #include "log_internal_nrf52.h"
 
