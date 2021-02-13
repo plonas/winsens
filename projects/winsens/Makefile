@@ -99,6 +99,7 @@ SRC_FILES += \
 INC_FOLDERS += \
   ./config \
   $(PROJ_DIR)/src \
+  $(PROJ_DIR)/src/utils \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \

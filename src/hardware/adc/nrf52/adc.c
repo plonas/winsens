@@ -6,9 +6,10 @@
  */
 
 #include "adc.h"
+#include "adc_cfg.h"
 #include "task_queue.h"
 #include "timer.h"
-#include "utils/utils.h"
+#include "utils.h"
 #define ILOG_MODULE_NAME ADCA
 #include "log.h"
 #include "log_internal_nrf52.h"
@@ -21,11 +22,6 @@
 
 #include <string.h>
 
-
-static const uint32_t ADC_CONFIG_INPUT_MAP[ADC_CHANNELS_NUMBER] = {
-        NRF_SAADC_INPUT_AIN3,
-        NRF_SAADC_INPUT_AIN6
-};
 
 typedef struct
 {
@@ -44,39 +40,47 @@ static void adc_event_handler(
     uint16_t event_size);
 
 
+static const uint32_t       ADC_CHANNEL_CONFIG[ADC_CHANNELS_NUMBER] = ADC_CFG_CHANNEL_INIT;
+
 static nrf_ppi_channel_t    g_ppi_channel_adc;
 static adc_channel_t        g_channels[ADC_CHANNELS_NUMBER];
 
 static nrf_saadc_value_t    g_adc_buffer[ADC_CHANNELS_NUMBER];
 static uint8_t              g_active_adc_channels_num = 0;
 
-nrfx_timer_t                g_timer = NRFX_TIMER_INSTANCE(1);
+static nrfx_timer_t         g_timer = NRFX_TIMER_INSTANCE(1);
 
+static bool                 g_initialized = false;
 
 winsens_status_t adc_init(void)
 {
-    nrfx_err_t err_code = NRF_ERROR_INTERNAL;
+    if (false == g_initialized)
+    {
+        g_initialized = true;
 
-    memset(g_channels, 0, sizeof(adc_channel_t) * ADC_CHANNELS_NUMBER);
-    g_active_adc_channels_num = 0;
+        nrfx_err_t err_code = NRF_ERROR_INTERNAL;
 
-    // init a timer
-    nrfx_timer_config_t timer_cfg = NRFX_TIMER_DEFAULT_CONFIG;
-    err_code = nrfx_timer_init(&g_timer, &timer_cfg, timer_isr);
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-    nrfx_timer_extended_compare(&g_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
+        memset(g_channels, 0, sizeof(adc_channel_t) * ADC_CHANNELS_NUMBER);
+        g_active_adc_channels_num = 0;
 
-    // init ADC
-    err_code = nrfx_saadc_init(NRFX_SAADC_CONFIG_IRQ_PRIORITY);
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        // init a timer
+        nrfx_timer_config_t timer_cfg = NRFX_TIMER_DEFAULT_CONFIG;
+        err_code = nrfx_timer_init(&g_timer, &timer_cfg, timer_isr);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        nrfx_timer_extended_compare(&g_timer, NRF_TIMER_CC_CHANNEL0, 31250UL, NRF_TIMER_SHORT_COMPARE1_CLEAR_MASK, false);
 
-    // init PPI
-    err_code = nrfx_ppi_channel_alloc(&g_ppi_channel_adc);
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-    err_code = nrfx_ppi_channel_assign(g_ppi_channel_adc,
-                                       nrfx_timer_event_address_get(&g_timer, NRF_TIMER_EVENT_COMPARE0),
-                                       nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        // init ADC
+        err_code = nrfx_saadc_init(NRFX_SAADC_CONFIG_IRQ_PRIORITY);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+
+        // init PPI
+        err_code = nrfx_ppi_channel_alloc(&g_ppi_channel_adc);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        err_code = nrfx_ppi_channel_assign(g_ppi_channel_adc,
+                                           nrfx_timer_event_address_get(&g_timer, NRF_TIMER_EVENT_COMPARE0),
+                                           nrf_saadc_task_address_get(NRF_SAADC_TASK_START));
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+    }
 
     return WINSENS_OK;
 }
@@ -85,6 +89,8 @@ winsens_status_t adc_enable_channel(
     adc_channel_id_t channelId,
     adc_callback_t callback)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     nrfx_err_t err_code;
 
     UTILS_ASSERT(ADC_CHANNELS_NUMBER > channelId);
@@ -92,7 +98,7 @@ winsens_status_t adc_enable_channel(
 
     // Add channel to the list
     g_channels[channelId].callback = callback;
-    g_channels[channelId].nativeChannelConf = (nrfx_saadc_channel_t) NRFX_SAADC_DEFAULT_CHANNEL_SE(ADC_CONFIG_INPUT_MAP[channelId], channelId);
+    g_channels[channelId].nativeChannelConf = (nrfx_saadc_channel_t) NRFX_SAADC_DEFAULT_CHANNEL_SE(ADC_CHANNEL_CONFIG[channelId], channelId);
 //    ws_channels[channelId].nativeChannelConf.config.config.input = NRF_ADC_CONFIG_SCALING_INPUT_ONE_THIRD;
 
     // Increase the number of active channels
@@ -112,6 +118,8 @@ winsens_status_t adc_enable_channel(
 void adc_disable_channel(
     adc_channel_id_t channelId)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     UTILS_ASSERT(ADC_CHANNELS_NUMBER > channelId);
 
     if (g_active_adc_channels_num)
@@ -136,6 +144,8 @@ void adc_disable_channel(
 
 winsens_status_t adc_start(void)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     uint32_t err_code;
 
     // Start sampling
@@ -149,6 +159,8 @@ winsens_status_t adc_start(void)
 
 void adc_stop(void)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     if (g_active_adc_channels_num)
     {
         // Stop sampling

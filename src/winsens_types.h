@@ -22,6 +22,7 @@ typedef enum
     WINSENS_NOT_FOUND,
     WINSENS_NO_RESOURCES,
     WINSENS_INVALID_PARAMS,
+    WINSENS_NOT_INITIALIZED,
 
 } winsens_status_t;
 

@@ -11,15 +11,7 @@
 #include "winsens_types.h"
 
 
-typedef enum
-{
-    ADC_CHANNEL_1,
-    ADC_CHANNEL_2,
-
-    ADC_CHANNELS_NUMBER
-
-} adc_channel_id_t;
-
+typedef uint8_t adc_channel_id_t;
 typedef void (*adc_callback_t)(adc_channel_id_t id, int16_t value);
 
 typedef struct

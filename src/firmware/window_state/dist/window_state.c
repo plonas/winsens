@@ -8,6 +8,7 @@
 #include "window_state.h"
 #include "window_state_cfg.h"
 #include "distance.h"
+#include "adc_cfg.h"
 #include <string.h>
 
 
@@ -127,7 +128,7 @@ static winsens_status_t start_distance_sensors(void)
 {
     winsens_status_t status = WINSENS_ERROR;
 
-    status = distance_enable(ADC_CHANNEL_1, distance_callback);
+    status = distance_enable(ADC_CHANNEL_DISTANCE, distance_callback);
     if (WINSENS_OK != status)
     {
         return status;

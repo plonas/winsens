@@ -7,6 +7,7 @@
 
 #include "distance.h"
 
+#include "adc_cfg.h"
 #include "app_error.h"
 #include "utils/utils.h"
 #include "adc.h"
