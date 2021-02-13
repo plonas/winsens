@@ -16,11 +16,11 @@
 
 #define BLE_UUID_CS_SERVICE_UUID                        0xE00D // Just a random, but recognizable value
 #define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE   0xF000 // Just a random, but recognizable value
-#define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_1  (BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_1)
-#define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_2  (BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_2)
+#define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_1  (BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_LEFT)
+#define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_WIN_2  (BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_RIGHT)
 #define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE     0xF010 // Just a random, but recognizable value
-#define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_1    (BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_1)
-#define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_2    (BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_2)
+#define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_1    (BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_LEFT)
+#define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_WIN_2    (BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_RIGHT)
 #define BLE_UUID_CS_APPLY_CHARACTERISTC_UUID            0xF020 // Just a random, but recognizable value
 
 
@@ -34,16 +34,16 @@ typedef struct ws_ble_cs
 {
     uint16_t conn_handle;
     uint16_t service_handle;
-    ble_gatts_char_handles_t threshold_char_handles[WINDOW_STATE_CFG_WINDOWS_NUMBER];
-    ble_gatts_char_handles_t enabled_char_handles[WINDOW_STATE_CFG_WINDOWS_NUMBER];
+    ble_gatts_char_handles_t threshold_char_handles[WINDOW_STATE_CFG_NUMBER];
+    ble_gatts_char_handles_t enabled_char_handles[WINDOW_STATE_CFG_NUMBER];
     ble_gatts_char_handles_t apply_char_handles;
 
     ws_ble_cs_threshold_write_f on_threshold_write;
     ws_ble_cs_enabled_write_f on_enabled_write;
     ws_ble_cs_enabled_apply_f on_apply_write;
 
-    uint16_t threshold[WINDOW_STATE_CFG_WINDOWS_NUMBER];
-    bool enabled[WINDOW_STATE_CFG_WINDOWS_NUMBER];
+    uint16_t threshold[WINDOW_STATE_CFG_NUMBER];
+    bool enabled[WINDOW_STATE_CFG_NUMBER];
     bool apply;
 
 } ws_ble_cs_t;

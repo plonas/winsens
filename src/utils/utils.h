@@ -8,7 +8,7 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#define UTILS_ASSERT(x)        do { if (x); } while(0);
+#define UTILS_ASSERT(x)        while(false == (x))
 
 #define UTILS_STRING(x)        #x
 

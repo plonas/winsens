@@ -226,9 +226,9 @@ static ble_uuid_t ws_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UU
 static uint16_t ws_conn_handle = BLE_CONN_HANDLE_INVALID;                           /**< Handle of the current connection. */
 static pm_peer_id_t ws_peer_id = PM_PEER_ID_INVALID;
 static bool ws_connectable = false;
-static ws_ble_wms_t ws_wms[WINDOW_STATE_CFG_WINDOWS_NUMBER] = {WS_BLE_WMS_INIT};
+static ws_ble_wms_t ws_wms[WINDOW_STATE_CFG_NUMBER] = {WS_BLE_WMS_INIT};
 static ws_ble_cs_t ws_cs;
-static server_callback_t ws_callbacks[WINDOW_STATE_CFG_WINDOWS_NUMBER] = {NULL};
+static server_callback_t ws_callbacks[WINDOW_STATE_CFG_NUMBER] = {NULL};
 static config_t ws_config = { 0 };
 static const WS_ServerBtState_t *ws_currentState = &unknownConnState;
 static pm_peer_id_t ws_whitelist[WS_WHITELIST_MAX_LEN] = {PM_PEER_ID_INVALID};
@@ -252,7 +252,7 @@ winsens_status_t server_init(
     uint32_t i = 0;
     ret_code_t err_code;
 
-    for (i = 0; i < WINDOW_STATE_CFG_WINDOWS_NUMBER; ++i)
+    for (i = 0; i < WINDOW_STATE_CFG_NUMBER; ++i)
     {
         ws_wms[i] = (ws_ble_wms_t)WS_BLE_WMS_INIT;
     }
@@ -351,7 +351,7 @@ void server_update_window_state(
         return;
     }
 
-    if (WINDOW_STATE_CFG_WINDOWS_NUMBER > windowId)
+    if (WINDOW_STATE_CFG_NUMBER > windowId)
     {
         const ws_ble_wms_state_e wmsState = ws_convertWindowState(state);
         ws_ble_wms_window_state_update(&ws_wms[windowId], wmsState);
@@ -394,7 +394,7 @@ static void ws_on_enabled_write(window_id_t window, bool value)
 static void ws_on_apply_write(void)
 {
     server_event_t e = {SERVER_EVENT_TYPE_APPLY, {0}};
-    ws_update_subscribers(WINDOW_STATE_CFG_WINDOWS_NUMBER, e);
+    ws_update_subscribers(WINDOW_STATE_CFG_NUMBER, e);
 }
 
 static void ws_timers_init(void)
@@ -656,14 +656,14 @@ static void ws_services_init(
     ws_ble_cs_init(&ws_cs, config, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
 
     // Initialize WMS Service.
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_1])
+    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_LEFT])
     {
-        err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_1]);
+        err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_LEFT]);
         LOG_NRF_WARNING_CHECK(err_code);
     }
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_2])
+    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_RIGHT])
     {
-        err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_2]);
+        err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_RIGHT]);
         LOG_NRF_WARNING_CHECK(err_code);
     }
 }
@@ -820,7 +820,7 @@ static void ws_on_ble_evt(
             break;
     }
 
-    ws_ble_wms_on_ble_evt(&ws_wms[WINDOW_STATE_CFG_WINDOW_1], p_ble_evt);
+    ws_ble_wms_on_ble_evt(&ws_wms[WINDOW_STATE_CFG_WINDOW_LEFT], p_ble_evt);
     ws_ble_cs_on_ble_evt(&ws_cs, p_ble_evt);
 }
 

@@ -34,13 +34,13 @@ winsens_status_t IWinsens_Init(
     status = window_state_init();
     LOG_ERROR_RETURN(status, status);
 
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_1])
+    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_LEFT])
     {
-        window_state_subscribe(WINDOW_STATE_CFG_WINDOW_1, WS_WindowStateCallback);
+        window_state_subscribe(WINDOW_STATE_CFG_WINDOW_LEFT, WS_WindowStateCallback);
     }
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_2])
+    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_RIGHT])
     {
-        window_state_subscribe(WINDOW_STATE_CFG_WINDOW_2, WS_WindowStateCallback);
+        window_state_subscribe(WINDOW_STATE_CFG_WINDOW_RIGHT, WS_WindowStateCallback);
     }
 
     server_subscribe(WS_ServerCallback);

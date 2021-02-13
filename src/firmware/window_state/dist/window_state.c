@@ -9,6 +9,7 @@
 #include "window_state_cfg.h"
 #include "distance.h"
 #include "adc_cfg.h"
+#include "utils.h"
 #include <string.h>
 
 
@@ -25,18 +26,17 @@ static void distance_callback(
     int16_t value);
 
 static winsens_status_t start_distance_sensors(void);
+static window_id_t get_window_id(const adc_channel_id_t windows_id);
 
 /*
  ******************************************************************************
  * Variables
  ******************************************************************************
  */
-static const adc_channel_id_t WS_ADC_CHANNEL_WINDOW_MAP[ADC_CHANNELS_NUMBER] = {
-    WINDOW_STATE_CFG_WINDOW_1,
-    WINDOW_STATE_CFG_WINDOW_2,
-};
-static window_state_type_t      g_window_state[WINDOW_STATE_CFG_WINDOWS_NUMBER];
-static window_state_callback_t  g_callbacks[WINDOW_STATE_CFG_WINDOWS_NUMBER] = {NULL};
+static const adc_channel_id_t   WINDOW_ADC_MAP[WINDOW_STATE_CFG_NUMBER] = WINDOW_STATE_CFG_WINDOW_MAP_INIT;
+
+static window_state_type_t      g_window_state[WINDOW_STATE_CFG_NUMBER];
+static window_state_callback_t  g_callbacks[WINDOW_STATE_CFG_NUMBER] = {NULL};
 static uint16_t                 g_open_closed_threshold = 0;
 
 /*
@@ -55,8 +55,8 @@ winsens_status_t window_state_init(void)
 
     g_open_closed_threshold = OPEN_THRESHOLD_DEFAULT;
 
-    memset(g_window_state, 0, sizeof(bool) * WINDOW_STATE_CFG_WINDOWS_NUMBER);
-    memset(g_callbacks, 0, sizeof(window_state_callback_t) * WINDOW_STATE_CFG_WINDOWS_NUMBER);
+    memset(g_window_state, 0, sizeof(bool) * WINDOW_STATE_CFG_NUMBER);
+    memset(g_callbacks, 0, sizeof(window_state_callback_t) * WINDOW_STATE_CFG_NUMBER);
 
     return start_distance_sensors();
 }
@@ -65,7 +65,7 @@ winsens_status_t window_state_subscribe(
     window_id_t windowsId,
     window_state_callback_t callback)
 {
-    if (windowsId >= WINDOW_STATE_CFG_WINDOWS_NUMBER)
+    if (windowsId >= WINDOW_STATE_CFG_NUMBER)
     {
         return WINSENS_ERROR;
     }
@@ -86,7 +86,7 @@ void window_state_unsubscribe(
 {
     (void) callback;
 
-    if (windowsId >= WINDOW_STATE_CFG_WINDOWS_NUMBER)
+    if (windowsId >= WINDOW_STATE_CFG_NUMBER)
     {
         return;
     }
@@ -114,12 +114,13 @@ static void distance_callback(
         wStatus = WINDOW_STATE_CLOSED;
     }
 
-    if (wStatus != g_window_state[WS_ADC_CHANNEL_WINDOW_MAP[id]])
+    const window_id_t win_id = get_window_id(id);
+    if (wStatus != g_window_state[win_id])
     {
-        g_window_state[WS_ADC_CHANNEL_WINDOW_MAP[id]] = wStatus;
-        if (g_callbacks[WS_ADC_CHANNEL_WINDOW_MAP[id]])
+        g_window_state[win_id] = wStatus;
+        if (g_callbacks[win_id])
         {
-            g_callbacks[WS_ADC_CHANNEL_WINDOW_MAP[id]](WS_ADC_CHANNEL_WINDOW_MAP[id], wStatus);
+            g_callbacks[win_id](win_id, wStatus);
         }
     }
 }
@@ -142,4 +143,20 @@ static winsens_status_t start_distance_sensors(void)
 //    }
 
     return distance_start();
+}
+
+static window_id_t get_window_id(const adc_channel_id_t adc_channel_id)
+{
+    window_id_t window_id;
+    for (window_id = 0; window_id < WINDOW_STATE_CFG_NUMBER; window_id++)
+    {
+        if (adc_channel_id == WINDOW_ADC_MAP[window_id])
+        {
+            break;
+        }
+    }
+
+    UTILS_ASSERT(WINDOW_STATE_CFG_NUMBER == window_id);
+
+    return window_id;
 }

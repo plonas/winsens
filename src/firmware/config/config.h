@@ -15,8 +15,8 @@
 
 typedef struct
 {
-    bool        windowEnabled[WINDOW_STATE_CFG_WINDOWS_NUMBER];
-    uint16_t    windowThreshold[WINDOW_STATE_CFG_WINDOWS_NUMBER];
+    bool        windowEnabled[WINDOW_STATE_CFG_NUMBER];
+    uint16_t    windowThreshold[WINDOW_STATE_CFG_NUMBER];
     bool        bonded;
     uint8_t     address[CONFIGURATION_ADDR_LEN];
 
