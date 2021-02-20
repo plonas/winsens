@@ -6,12 +6,14 @@
  */
 
 #include "server.h"
+#include "server_defs.h"
 #include "digital_io_cfg.h"
 #include "ws_ble_wms.h"
 #include "ws_ble_cs.h"
 #include "task_queue.h"
 #include "button.h"
 #include "config.h"
+#include "config_cfg.h"
 #define ILOG_MODULE_NAME SVBT
 #include "log.h"
 #include "log_internal_nrf52.h"
@@ -143,8 +145,7 @@ static void ws_advertising_start(
     ble_gap_addr_t* addr);
 static void ws_on_adv_evt(
     ble_adv_evt_t ble_adv_evt);
-static void ws_services_init(
-    const config_t *config);
+static void ws_services_init(void);
 static void ws_conn_params_init(void);
 static void ws_on_conn_params_evt(
     ble_conn_params_evt_t * p_evt);
@@ -154,9 +155,6 @@ static void ws_conn_params_error_handler(
 static void ws_on_ble_evt(
     ble_evt_t const * p_ble_evt,
     void * p_context);
-static void ws_ServerBtResetHandler(
-    void *p_event_data,
-    uint16_t event_size);
 
 static bool ws_addToWhitelist(
     pm_peer_id_t peerId);
@@ -229,9 +227,9 @@ static bool ws_connectable = false;
 static ws_ble_wms_t ws_wms[WINDOW_STATE_CFG_NUMBER] = {WS_BLE_WMS_INIT};
 static ws_ble_cs_t ws_cs;
 static server_callback_t ws_callbacks[WINDOW_STATE_CFG_NUMBER] = {NULL};
-static config_t ws_config = { 0 };
 static const WS_ServerBtState_t *ws_currentState = &unknownConnState;
 static pm_peer_id_t ws_whitelist[WS_WHITELIST_MAX_LEN] = {PM_PEER_ID_INVALID};
+static const server_config_t SERVER_CONFIG_DEFAULT = {false, {400, 400}};
 
 
 /**@brief GATT module event handler.
@@ -246,8 +244,7 @@ static void gatt_evt_handler(nrf_ble_gatt_t * p_gatt, nrf_ble_gatt_evt_t const *
     }
 }
 
-winsens_status_t server_init(
-    const config_t *config)
+winsens_status_t server_init(void)
 {
     uint32_t i = 0;
     ret_code_t err_code;
@@ -258,26 +255,25 @@ winsens_status_t server_init(
     }
     memset(ws_callbacks, 0, sizeof(server_callback_t) * WS_SUBSCRIBERS_NUMBER);
 
-    if (config)
-    {
-        ws_config = *config;
-    }
-
     ws_conn_handle = BLE_CONN_HANDLE_INVALID;
     ws_connectable = false;
 
+    config_init();
     ws_timers_init();
     ws_ble_stack_init();
     ws_gap_params_init();
     err_code = nrf_ble_gatt_init(&m_gatt, gatt_evt_handler);
     LOG_NRF_ERROR_RETURN(err_code, err_code);
 
+    server_config_t server_config;
+    config_get(CONFIG_ID_SERVER, &server_config, sizeof(server_config), &SERVER_CONFIG_DEFAULT);
+
     ws_conn_params_init();
-    ws_peer_manager_init(!config->bonded);
+    ws_peer_manager_init(!server_config.bonded);
     err_code = pm_register(ws_pm_evt_handler);
     LOG_NRF_ERROR_RETURN(err_code, err_code);
 
-    ws_services_init(&ws_config);
+    ws_services_init();
     ws_advertising_init();
 
     winsens_status_t status = button_register_callback(DIGITAL_IO_INPUT_PAIR_BTN, WS_EventHandler);
@@ -318,15 +314,6 @@ void server_unsubscribe(
             break;
         }
     }
-}
-
-void server_reset(
-    const config_t *config)
-{
-    winsens_status_t status = WINSENS_ERROR;
-
-    status = task_queue_add(NULL, 0, ws_ServerBtResetHandler);
-    LOG_IF_WARNING(WINSENS_OK != status, "WS_TaskQueueAdd failed");
 }
 
 winsens_status_t WS_ServerBtDisconnect(void)
@@ -647,21 +634,20 @@ static void ws_on_adv_evt(
     }
 }
 
-static void ws_services_init(
-    const config_t *config)
+static void ws_services_init(void)
 {
     uint32_t err_code;
 
     // Initialize CS Service
-    ws_ble_cs_init(&ws_cs, config, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
+    ws_ble_cs_init(&ws_cs, ws_on_threshold_write, ws_on_enabled_write, ws_on_apply_write);
 
     // Initialize WMS Service.
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_LEFT])
+//    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_LEFT])
     {
         err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_LEFT]);
         LOG_NRF_WARNING_CHECK(err_code);
     }
-    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_RIGHT])
+//    if (config->windowEnabled[WINDOW_STATE_CFG_WINDOW_RIGHT])
     {
         err_code = ws_ble_wms_init(&ws_wms[WINDOW_STATE_CFG_WINDOW_RIGHT]);
         LOG_NRF_WARNING_CHECK(err_code);
@@ -822,15 +808,6 @@ static void ws_on_ble_evt(
 
     ws_ble_wms_on_ble_evt(&ws_wms[WINDOW_STATE_CFG_WINDOW_LEFT], p_ble_evt);
     ws_ble_cs_on_ble_evt(&ws_cs, p_ble_evt);
-}
-
-static void ws_ServerBtResetHandler(
-    void *p_event_data,
-    uint16_t event_size)
-{
-    //todo move it to the system module
-    nrf_delay_ms(500);
-    sd_nvic_SystemReset();
 }
 
 static bool ws_addToWhitelist(

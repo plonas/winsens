@@ -40,7 +40,6 @@ int main(void)
 {
     winsens_status_t status = WINSENS_ERROR;
     ret_code_t err_code;
-    const config_t *config = NULL;
 
     LOG_INIT(NULL);
 
@@ -53,16 +52,11 @@ int main(void)
     status = config_init(); //todo handle return value
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
-    config = config_get();
-    LOG_INFO("Enabled: %u, enabled: %u", config->windowEnabled[0], config->windowEnabled[1]);
-
-    LOG_FLUSH();
-//    WS_ServerStubInit(&server);
-    server_init(config);
+    server_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
     LOG_FLUSH();
 
-    status = IWinsens_Init(config);
+    status = IWinsens_Init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     bsp_board_init(BSP_INIT_LEDS);

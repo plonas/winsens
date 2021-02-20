@@ -19,12 +19,8 @@
 
 #define STORAGE_WORD_SIZE                                   (sizeof(uint32_t))
 #define STORAGE_DATA_BUF_SIZE                               (10 * (STORAGE_WORD_SIZE))
-#define STORAGE_FILE_ID                                     0x000B
 #define STORAGE_RECORDS_BUFFER_LENGTH                       FDS_OP_QUEUE_SIZE
 
-#define STORAGE_FDS_RECORD_INIT                             { STORAGE_FILE_ID, 0x0000, { NULL, 0 } }
-#define STORAGE_DATA_WRAPPER_INIT(p_wrapper)                ((storage_data_wrapper_t) { { 0x00 }, STORAGE_FDS_RECORD_INIT, false })
-#define STORAGE_FDS_RECORD_GET_KEY(p_wrapper_m)             ((p_wrapper_m)->record.key)
 
 typedef struct
 {
@@ -35,12 +31,13 @@ typedef struct
 } storage_data_wrapper_t;
 
 static bool is_valid_record_id(
-    storage_record_id_t recordId);
+    storage_record_id_t record_id);
 static bool is_valid_data_size(
     uint32_t size);
 static bool set_write_data(
     storage_data_wrapper_t* wrapper,
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data);
 
@@ -61,7 +58,7 @@ winsens_status_t storage_init(void)
 
     for (i = 0; i < STORAGE_RECORDS_BUFFER_LENGTH; ++i)
     {
-        g_records_buffer[i] = STORAGE_DATA_WRAPPER_INIT(&g_records_buffer[i]);
+        memset(&g_records_buffer[i], 0, sizeof(g_records_buffer[i]));
     }
 
     fds_gc();
@@ -70,7 +67,8 @@ winsens_status_t storage_init(void)
 }
 
 winsens_status_t storage_read(
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data)
 {
@@ -78,7 +76,7 @@ winsens_status_t storage_read(
     fds_flash_record_t flash_record;
     fds_find_token_t ftok = { 0, 0 };
 
-    if (!is_valid_record_id(recordId) ||
+    if (!is_valid_record_id(record_id) ||
         !is_valid_data_size(size))
     {
         LOG_WARNING("Params validation failed");
@@ -86,7 +84,7 @@ winsens_status_t storage_read(
     }
 
 
-    ret_code_t ret = fds_record_find(STORAGE_FILE_ID, recordId, &record_desc, &ftok);
+    ret_code_t ret = fds_record_find(file_id, record_id, &record_desc, &ftok);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_NOT_FOUND);
 
     if (fds_record_open(&record_desc, &flash_record) != NRF_SUCCESS)
@@ -104,7 +102,8 @@ winsens_status_t storage_read(
 }
 
 winsens_status_t storage_write(
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data)
 {
@@ -113,7 +112,7 @@ winsens_status_t storage_write(
     fds_find_token_t    ftok = { 0, 0 };
     uint_fast8_t        i = 0;
 
-    if (!is_valid_record_id(recordId) ||
+    if (!is_valid_record_id(record_id) ||
         !is_valid_data_size(size))
     {
         return WINSENS_ERROR;
@@ -124,7 +123,7 @@ winsens_status_t storage_write(
     {
         if (!g_records_buffer[i].used)
         {
-            UTILS_ASSERT(set_write_data(&g_records_buffer[i], recordId, size, data));
+            UTILS_ASSERT(set_write_data(&g_records_buffer[i], file_id, record_id, size, data));
             g_records_buffer[i].used = true;
             break;
         }
@@ -136,7 +135,7 @@ winsens_status_t storage_write(
         return WINSENS_BUSY;
     }
 
-    ret = fds_record_find(STORAGE_FILE_ID, recordId, &record_desc, &ftok);
+    ret = fds_record_find(file_id, record_id, &record_desc, &ftok);
     if (NRF_SUCCESS == ret)
     {
         ret = fds_record_update(&record_desc, &g_records_buffer[i].record);
@@ -162,9 +161,9 @@ winsens_status_t storage_write(
 }
 
 static bool is_valid_record_id(
-    storage_record_id_t recordId)
+    storage_record_id_t record_id)
 {
-    if (FDS_RECORD_KEY_DIRTY == recordId)
+    if (FDS_RECORD_KEY_DIRTY == record_id)
     {
         return false;
     }
@@ -185,7 +184,8 @@ static bool is_valid_data_size(
 
 static bool set_write_data(
     storage_data_wrapper_t* wrapper,
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data)
 {
@@ -197,8 +197,8 @@ static bool set_write_data(
     memcpy(wrapper->data, data, size);
     wrapper->record.data.p_data = wrapper->data;
     wrapper->record.data.length_words = (size + (STORAGE_WORD_SIZE - 1)) / STORAGE_WORD_SIZE;
-    wrapper->record.file_id = STORAGE_FILE_ID;
-    wrapper->record.key = recordId;
+    wrapper->record.file_id = file_id;
+    wrapper->record.key = record_id;
 
     return true;
 }
@@ -217,7 +217,7 @@ static void fds_event_handler(
             uint_fast8_t i = 0;
             for (i = 0; i < STORAGE_RECORDS_BUFFER_LENGTH; ++i)
             {
-                if (p_fds_evt->write.record_key == STORAGE_FDS_RECORD_GET_KEY(&g_records_buffer[i]))
+                if (p_fds_evt->write.record_key == g_records_buffer[i].record.key)
                 {
                     g_records_buffer[i].used = false;
                 }
@@ -235,7 +235,7 @@ static void fds_event_handler(
 
             for (i = 0; i < STORAGE_RECORDS_BUFFER_LENGTH; ++i)
             {
-                if (p_fds_evt->write.record_key == STORAGE_FDS_RECORD_GET_KEY(&g_records_buffer[i]))
+                if (p_fds_evt->write.record_key == g_records_buffer[i].record.key)
                 {
                     g_records_buffer[i].used = false;
                 }

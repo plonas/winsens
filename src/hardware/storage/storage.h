@@ -11,17 +11,20 @@
 #include "winsens_types.h"
 
 
+typedef uint16_t storage_file_id_t;
 typedef uint16_t storage_record_id_t;
 
 
 winsens_status_t storage_init(void);
 
 winsens_status_t storage_read(
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data);
 winsens_status_t storage_write(
-    storage_record_id_t recordId,
+    storage_file_id_t file_id,
+    storage_record_id_t record_id,
     uint32_t size,
     uint8_t* data);
 

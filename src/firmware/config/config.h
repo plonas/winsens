@@ -9,24 +9,15 @@
 #define CONFIG_H_
 
 #include "winsens_types.h"
-#include "window_state_cfg.h"
 
-#define CONFIGURATION_ADDR_LEN          6
 
-typedef struct
-{
-    bool        windowEnabled[WINDOW_STATE_CFG_NUMBER];
-    uint16_t    windowThreshold[WINDOW_STATE_CFG_NUMBER];
-    bool        bonded;
-    uint8_t     address[CONFIGURATION_ADDR_LEN];
+typedef uint16_t config_id_t;
 
-} config_t;
 
 winsens_status_t config_init(void);
 
-const config_t * config_get(void);
+void config_get(config_id_t id, void *config, uint16_t config_size, const void *default_config);
 
-winsens_status_t config_set(
-    const config_t *configuration);
+winsens_status_t config_set(config_id_t id, const void *config, uint16_t config_size);
 
 #endif /* CONFIG_H_ */

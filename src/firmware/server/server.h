@@ -35,8 +35,7 @@ typedef struct
 
 typedef void (*server_callback_t)(window_id_t window, server_event_t event);
 
-winsens_status_t server_init(
-    const config_t *config);
+winsens_status_t server_init(void);
 void server_update_window_state(
     window_id_t windowId,
     window_state_type_t state);
@@ -44,8 +43,6 @@ winsens_status_t server_subscribe(
     server_callback_t callback);
 void server_unsubscribe(
     server_callback_t callback);
-void server_reset(
-    const config_t *config);
 winsens_status_t server_disconnect(void);
 winsens_status_t server_delete_peers(void);
 

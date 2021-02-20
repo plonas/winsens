@@ -5,6 +5,8 @@
  *      Author: Damian Plonek
  */
 
+#include "server_defs.h"
+#include "config_cfg.h"
 #include "ws_ble_cs.h"
 #include "ws_ble.h"
 #define ILOG_MODULE_NAME LECS
@@ -22,7 +24,10 @@ static void ws_on_disconnect(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
 static void ws_on_write(ws_ble_cs_t *p_cs, const ble_evt_t *p_ble_evt);
 
 
-uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const config_t *config, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
+static const server_config_t SERVER_CONFIG_DEFAULT = {false, {400, 400}};
+
+
+uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, ws_ble_cs_threshold_write_f on_threshold_write, ws_ble_cs_enabled_write_f on_enabled_write, ws_ble_cs_enabled_apply_f on_apply_write)
 {
     uint8_t             i;
     uint32_t            err_code;
@@ -42,10 +47,13 @@ uint32_t ws_ble_cs_init(ws_ble_cs_t *p_cs, const config_t *config, ws_ble_cs_thr
                                         &p_cs->service_handle);
     LOG_NRF_ERROR_RETURN(err_code, err_code);
 
+    server_config_t server_config;
+    config_get(CONFIG_ID_SERVER, &server_config, sizeof(server_config), &SERVER_CONFIG_DEFAULT);
+
     for (i = 0; i < WINDOW_STATE_CFG_NUMBER; ++i)
     {
-        p_cs->enabled[i] = config->windowEnabled[i];
-        p_cs->threshold[i] = config->windowThreshold[i];
+        p_cs->enabled[i] = true;
+        p_cs->threshold[i] = server_config.window_state_threshold[i];
 
         err_code = ws_cs_enabled_char_add(p_cs, i);
         LOG_NRF_ERROR_RETURN(err_code, err_code);

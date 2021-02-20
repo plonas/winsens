@@ -7,62 +7,47 @@
 
 
 #include "config.h"
+#include "config_cfg.h"
 #include "storage.h"
+#include "storage_cfg.h"
 #define ILOG_MODULE_NAME CFG
 #include "log.h"
 
 
-#define CONFIGURATION_STORAGE_ID                0x000B
-
-#define CONFIGURATION_THRESHOLD_DEFAULT         400
-
-static config_t ws_configuration = {
-    { true, false },
-    { CONFIGURATION_THRESHOLD_DEFAULT, CONFIGURATION_THRESHOLD_DEFAULT },
-    false,
-    { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }
-};
+static bool config_initialized = false;
 
 
 winsens_status_t config_init(void)
 {
-    winsens_status_t status = storage_init();
-    if (WINSENS_OK != status)
+    winsens_status_t status = WINSENS_OK;
+
+    if (false == config_initialized)
     {
-        return status;
+        config_initialized = true;
+
+        status = storage_init();
+        LOG_WARNING_CHECK(status);
     }
 
-    status = storage_read(CONFIGURATION_STORAGE_ID, sizeof(config_t), (uint8_t *) &ws_configuration);
-    LOG_INFO("IConfig_Init status %u", status);
-    if (WINSENS_NOT_FOUND == status)
-    {
-        // keep the default configuration and store it
-        status = storage_write(CONFIGURATION_STORAGE_ID, sizeof(config_t), (uint8_t *) &ws_configuration);
-    }
-
-    LOG_FLUSH();
     return status;
 }
 
-const config_t * config_get(void)
+void config_get(config_id_t id, void *config, uint16_t config_size, const void *default_config)
 {
-    winsens_status_t status = storage_read(CONFIGURATION_STORAGE_ID, sizeof(config_t), (uint8_t *) &ws_configuration);
-    LOG_WARNING_CHECK(status);
-    LOG_FLUSH();
-    return &ws_configuration;
+    winsens_status_t status = storage_read(STORAGE_FILE_ID_STORAGE, id, config_size, config);
+
+    if (WINSENS_OK != status)
+    {
+        memcpy(config, default_config, config_size);
+        LOG_WARNING("Using default config for %u (error: %d)", id, status);
+    }
 }
 
-winsens_status_t config_set(
-    const config_t *configuration)
+winsens_status_t config_set(config_id_t id, const void *config, uint16_t config_size)
 {
-    winsens_status_t status = storage_write(CONFIGURATION_STORAGE_ID, sizeof(config_t), (uint8_t *) configuration);
+    winsens_status_t status = storage_write(STORAGE_FILE_ID_STORAGE, id, config_size, (uint8_t *) config);
     LOG_WARNING_CHECK(status);
-    if (WINSENS_OK == status)
-    {
-        ws_configuration = *configuration;
-    }
 
-    LOG_FLUSH();
     return status;
 }
 
