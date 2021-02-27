@@ -26,6 +26,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/firmware/server/bt/server.c \
+  $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -113,6 +114,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/hardware/storage \
   $(PROJ_DIR)/src/hardware/adc \
   $(PROJ_DIR)/src/hardware/digital_io \
+  $(PROJ_DIR)/src/hardware/ble_peripheral \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \
