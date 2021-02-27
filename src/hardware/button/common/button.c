@@ -7,9 +7,10 @@
 
 #include "button.h"
 #include "button_cfg.h"
-#include "system.h"
+#include "digital_io_cfg.h"
 #define ILOG_MODULE_NAME BUTN
 #include "log.h"
+#include "system.h"
 
 
 #define BUTTON_PINS_NUMBER                  (sizeof(g_buttons_config) / sizeof(digital_io_input_pins_t))
@@ -30,6 +31,7 @@ static void digital_input_callback(
     digital_io_input_pins_t pin,
     bool on);
 
+static const digital_io_input_pins_t g_buttons_config[] = BUTTONS_COOFIG_INIT;
 static button_pin_callback_t g_button_callbacks[BUTTON_PINS_NUMBER];
 
 

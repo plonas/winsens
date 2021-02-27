@@ -25,8 +25,8 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/window_state/dist/window_state.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
-  $(PROJ_DIR)/src/firmware/server/bt/server.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
+  $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -105,7 +105,6 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
-  $(PROJ_DIR)/src/firmware/server/ \
   $(PROJ_DIR)/src/firmware/server/bt/ \
   $(PROJ_DIR)/src/firmware/distance/ \
   $(PROJ_DIR)/src/os/log \
@@ -118,6 +117,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \
+  $(PROJ_DIR)/src/app/hmi \
 
 INC_FOLDERS += \
   $(SDK_ROOT)/components \

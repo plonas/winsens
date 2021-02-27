@@ -59,18 +59,6 @@
 #define CHARACTERISTICS_NUMBER          (sizeof(g_characteristics)/sizeof(ble_peripheral_char_t))
 #define WHITELIST_LEN                   BLE_GAP_WHITELIST_ADDR_MAX_COUNT
 
-typedef enum
-{
-    BLE_PERIPHERAL_STATE_UNKNOWN,
-    BLE_PERIPHERAL_STATE_CONNECTED,
-    BLE_PERIPHERAL_STATE_CONNECTING,
-    BLE_PERIPHERAL_STATE_DISCONNECTED,
-    BLE_PERIPHERAL_STATE_DISCONNECTING,
-    BLE_PERIPHERAL_STATE_ADVERTISING,
-    BLE_PERIPHERAL_STATE_BONDING,
-    BLE_PERIPHERAL_STATE_UNBONDING,
-
-} ble_peripheral_state_enum_t;
 
 typedef enum
 {
@@ -217,7 +205,25 @@ winsens_status_t ble_peripheral_disconnect()
     return WINSENS_OK;
 }
 
+winsens_status_t ble_peripheral_start_advertising(void)
+{
+    change_state(&ADVERTISING_STATE);
+    return WINSENS_OK;
+}
+
 winsens_status_t ble_peripheral_delete_all_peers()
+{
+    change_state(&UNBONDING_STATE);
+    return WINSENS_OK;
+}
+
+winsens_status_t ble_peripheral_bond(void)
+{
+    change_state(&BONDING_STATE);
+    return WINSENS_OK;
+}
+
+winsens_status_t ble_peripheral_unbond(void)
 {
     change_state(&UNBONDING_STATE);
     return WINSENS_OK;
@@ -225,7 +231,13 @@ winsens_status_t ble_peripheral_delete_all_peers()
 
 winsens_status_t ble_peripheral_subscribe()
 {
+    //todo implement ble_peripheral_subscribe
     return WINSENS_OK;
+}
+
+ble_peripheral_state_enum_t ble_peripheral_get_state(void)
+{
+    return g_current_state->state_id;
 }
 
 static void ble_stack_init(void)

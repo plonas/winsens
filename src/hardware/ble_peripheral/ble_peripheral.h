@@ -14,6 +14,19 @@
 #include "winsens_types.h"
 
 
+typedef enum
+{
+    BLE_PERIPHERAL_STATE_UNKNOWN,
+    BLE_PERIPHERAL_STATE_CONNECTED,
+    BLE_PERIPHERAL_STATE_CONNECTING,
+    BLE_PERIPHERAL_STATE_DISCONNECTED,
+    BLE_PERIPHERAL_STATE_DISCONNECTING,
+    BLE_PERIPHERAL_STATE_ADVERTISING,
+    BLE_PERIPHERAL_STATE_BONDING,
+    BLE_PERIPHERAL_STATE_UNBONDING,
+
+} ble_peripheral_state_enum_t;
+
 typedef struct
 {
     ble_uuid128_t           service_base_uuid;
@@ -37,10 +50,17 @@ typedef struct
 
 winsens_status_t ble_peripheral_init(void);
 
-winsens_status_t ble_peripheral_disconnect();
+winsens_status_t ble_peripheral_disconnect(void);
 
-winsens_status_t ble_peripheral_delete_all_peers();
+winsens_status_t ble_peripheral_start_advertising(void);
 
-winsens_status_t ble_peripheral_subscribe();
+winsens_status_t ble_peripheral_delete_all_peers(void);
+
+winsens_status_t ble_peripheral_bond(void);
+winsens_status_t ble_peripheral_unbond(void);
+
+winsens_status_t ble_peripheral_subscribe(void);
+
+ble_peripheral_state_enum_t ble_peripheral_get_state(void);
 
 #endif /* BLE_PERIPHERAL_H_ */

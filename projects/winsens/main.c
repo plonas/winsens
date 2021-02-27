@@ -6,7 +6,6 @@
  */
 
 #include "winsens.h"
-#include "server.h"
 #include "system.h"
 #include "task_queue.h"
 #include "config.h"
@@ -52,7 +51,6 @@ int main(void)
     status = config_init(); //todo handle return value
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
-    server_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
     LOG_FLUSH();
 
