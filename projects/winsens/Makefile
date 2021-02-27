@@ -11,8 +11,6 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 # Source files common to all targets
 SRC_FILES += \
   $(PROJ_DIR)/projects/winsens/main.c \
-  $(PROJ_DIR)/src/firmware/Server/Bt/ws_ble_wms.c \
-  $(PROJ_DIR)/src/firmware/Server/Bt/ws_ble_cs.c \
   $(PROJ_DIR)/src/firmware/distance/cny70/distance.c \
   $(PROJ_DIR)/src/hardware/adc/nrf52/adc.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
@@ -105,7 +103,6 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
-  $(PROJ_DIR)/src/firmware/server/bt/ \
   $(PROJ_DIR)/src/firmware/distance/ \
   $(PROJ_DIR)/src/os/log \
   $(PROJ_DIR)/src/os/log/nrf52 \

@@ -9,18 +9,15 @@
 #define CONFIG_CFG_H_
 
 
-#include "server_defs.h"
-
-
 typedef enum
 {
-    CONFIG_ID_SERVER,
+    CONFIG_ID_XXX,
 
 } config_id_enum_t;
 
 typedef struct
 {
-    server_config_t server_config;
+    uint8_t xxx;
 
 } config_master_t;
 

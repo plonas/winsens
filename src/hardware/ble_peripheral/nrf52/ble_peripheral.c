@@ -12,9 +12,9 @@
 #define ILOG_MODULE_NAME SVBT
 #include "log.h"
 #include "log_internal_nrf52.h"
-#include "server_defs.h"
 #include "utils.h"
 #include "winsens_types.h"
+#include "window_state_cfg.h"
 
 #include "app_timer.h"
 #include "app_util.h"
@@ -146,8 +146,6 @@ const static ble_peripheral_state_t ADVERTISING_STATE       = { BLE_PERIPHERAL_S
 const static ble_peripheral_state_t BONDING_STATE           = { BLE_PERIPHERAL_STATE_BONDING, bonding_evt_handler, bonding_on_enter, empty_on_exit };
 const static ble_peripheral_state_t UNBONDING_STATE         = { BLE_PERIPHERAL_STATE_UNBONDING, unbonding_evt_handler, unbonding_on_enter, empty_on_exit };
 
-static const server_config_t SERVER_CONFIG_DEFAULT          = {.bonded = false, .window_state_threshold = {400, 400}};
-
 
 static bool g_ble_peripheral_init                           = false;
 static bool g_connectable                                   = false;
@@ -180,10 +178,7 @@ winsens_status_t ble_peripheral_init(void)
 
         conn_params_init();
 
-        server_config_t server_config;
-        config_get(CONFIG_ID_SERVER, &server_config, sizeof(server_config), &SERVER_CONFIG_DEFAULT);
-
-        peer_manager_init(!server_config.bonded);
+        peer_manager_init(false); //todo get param from config
 
         err_code = pm_register(pm_evt_handler);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
