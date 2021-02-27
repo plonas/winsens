@@ -157,6 +157,7 @@ static ble_peripheral_svc_t g_services[] = BLE_PERIPHERAL_SERVICES_INIT;
 static ble_peripheral_char_t g_characteristics[] = BLE_PERIPHERAL_CHARS_INIT;
 static ble_uuid_t g_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
 static pm_peer_id_t g_whitelist[WHITELIST_LEN] = {PM_PEER_ID_INVALID};
+static ble_peripheral_cb_t g_callbacks[BLE_PERIPERAL_MAX_CALLBACKS] = {NULL};
 
 BLE_ADVERTISING_DEF(g_advertising);
 NRF_BLE_GATT_DEF(g_gatt);
@@ -224,9 +225,23 @@ winsens_status_t ble_peripheral_unbond(void)
     return WINSENS_OK;
 }
 
-winsens_status_t ble_peripheral_subscribe()
+winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback)
 {
-    //todo implement ble_peripheral_subscribe
+    for (uint32_t i = 0; i < BLE_PERIPERAL_MAX_CALLBACKS; ++i)
+    {
+        if (NULL == g_callbacks[i])
+        {
+            g_callbacks[i] = callback;
+            return WINSENS_OK;
+        }
+    }
+
+    return WINSENS_NO_RESOURCES;
+}
+
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value)
+{
+    //todo implement ble_peripheral_update
     return WINSENS_OK;
 }
 

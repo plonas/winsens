@@ -9,6 +9,8 @@
 #define BLE_PERIPHERAL_CFG_H_
 
 
+#define BLE_PERIPERAL_MAX_CALLBACKS                     3
+
 #define BLE_UUID_WMS_BASE_UUID                          {{0x23, 0xD1, 0x13, 0xEF, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00}} // 128-bit base UUID
 #define BLE_UUID_CS_SERVICE_UUID                        0xE00D // Just a random, but recognizable value
 #define BLE_UUID_WMS_SERVICE_UUID                       0xF00D // Just a random, but recognizable value
@@ -21,6 +23,15 @@ typedef enum
     BLE_PERIPERAL_SVC_CS,
     BLE_PERIPERAL_SVC_WMS,
 } ble_peripheral_svc_id_enum_t;
+
+typedef enum
+{
+    BLE_PERIPERAL_CHAR_CS_ENABLED_LEFT,
+    BLE_PERIPERAL_CHAR_CS_ENABLED_RIGHT,
+    BLE_PERIPERAL_CHAR_CS_THRESHOLD_LEFT,
+    BLE_PERIPERAL_CHAR_CS_THRESHOLD_RIGHT,
+    BLE_PERIPERAL_CHAR_WMS_STATE,
+} ble_peripheral_char_id_enum_t;
 
 /*
 typedef struct

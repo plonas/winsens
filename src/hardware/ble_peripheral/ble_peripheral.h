@@ -34,7 +34,8 @@ typedef struct
     uint16_t                service_handle;
 } ble_peripheral_svc_t;
 
-typedef uint8_t ble_peripheral_svc_id_t;
+typedef uint16_t ble_peripheral_svc_id_t;
+typedef uint16_t ble_peripheral_char_id_t;
 
 typedef struct
 {
@@ -46,6 +47,16 @@ typedef struct
     bool                        notification_enabled;
     uint16_t                    value_len;
 } ble_peripheral_char_t;
+
+typedef struct
+{
+    ble_peripheral_svc_id_t     server_id;
+    ble_peripheral_char_id_t    char_id;
+    uint16_t                    value_len;
+    uint8_t                     *value;
+} ble_peripheral_update_t;
+
+typedef void (*ble_peripheral_cb_t) (ble_peripheral_update_t *update_data);
 
 
 winsens_status_t ble_peripheral_init(void);
@@ -59,7 +70,8 @@ winsens_status_t ble_peripheral_delete_all_peers(void);
 winsens_status_t ble_peripheral_bond(void);
 winsens_status_t ble_peripheral_unbond(void);
 
-winsens_status_t ble_peripheral_subscribe(void);
+winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback);
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value);
 
 ble_peripheral_state_enum_t ble_peripheral_get_state(void);
 
