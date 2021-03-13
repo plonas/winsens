@@ -69,6 +69,7 @@ typedef enum
     BLE_PERIPHERAL_EVT_ADVERTISE,
     BLE_PERIPHERAL_EVT_ADVERTISING_STARTED,
     BLE_PERIPHERAL_EVT_ADVERTISING_STOPPED,
+    BLE_PERIPHERAL_EVT_WRITE,
 
     BLE_PERIPHERAL_EVT_UNBOND,
     BLE_PERIPHERAL_EVT_UNBONDED,
@@ -135,6 +136,8 @@ static bool disconnect(uint16_t connHandle);
 static void start_advertising(ble_gap_addr_t* addr);
 static bool bond(uint16_t connHandle);
 static bool add_to_whitelist(pm_peer_id_t peerId);
+static void notify_on_write(const ble_peripheral_update_t *update_data);
+static ble_peripheral_char_id_t get_char_id(uint16_t attr_handle);
 static char const * convert_state_to_str(ble_peripheral_state_enum_t state);
 
 
@@ -179,7 +182,7 @@ winsens_status_t ble_peripheral_init(void)
 
         conn_params_init();
 
-        peer_manager_init(false); //todo get param from config
+        peer_manager_init(false);
 
         err_code = pm_register(pm_evt_handler);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
@@ -189,8 +192,6 @@ winsens_status_t ble_peripheral_init(void)
 
         change_state(&ADVERTISING_STATE);
     }
-
-    (void)BONDING_STATE; //todo change to BONDING_STATE when button is pressed
 
     return status;
 }
@@ -241,7 +242,14 @@ winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback)
 
 winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value)
 {
-    //todo implement ble_peripheral_update
+    ble_gatts_hvx_params_t hv_params;
+    hv_params.handle = g_characteristics[char_id].char_handle;
+    hv_params.type = BLE_GATT_HVX_NOTIFICATION;
+    hv_params.offset = 0;
+    hv_params.p_len = value_len;
+    hv_params.p_data = value;
+
+    sd_ble_gatts_hvx(g_conn_handle, &hv_params);
     return WINSENS_OK;
 }
 
@@ -353,14 +361,17 @@ static void peer_manager_init(bool erase_bonds)
 
 static void services_init(void)
 {
-    for (uint8_t i = 0; i < SERVICES_NUMBER; ++i)
+    for (uint8_t svc_id = 0; svc_id < SERVICES_NUMBER; ++svc_id)
     {
-        add_service(&g_services[i]);
-    }
+        add_service(&g_services[svc_id]);
 
-    for (uint8_t i = 0; i < CHARACTERISTICS_NUMBER; ++i)
-    {
-        add_characteristic(&g_characteristics[i]);
+        for (uint8_t char_id = 0; char_id < CHARACTERISTICS_NUMBER; ++char_id)
+        {
+            if (svc_id ==  g_characteristics[char_id].service_id)
+            {
+                add_characteristic(&g_characteristics[char_id]);
+            }
+        }
     }
 }
 
@@ -512,7 +523,12 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
 #endif
 
         case BLE_GATTS_EVT_WRITE:
-            //todo handle BLE_GATTS_EVT_WRITE
+            const ble_gatts_evt_write_t *write_evt = p_ble_evt->evt.gatts_evt.params.write;
+            const ble_peripheral_char_id_t char_id = get_char_id(write_evt->handle);
+            ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
+
+            winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&update_data };
+            evt_handler(e);
             break;
 
         default:
@@ -676,6 +692,10 @@ static void connected_evt_handler(
     {
         change_state(&ADVERTISING_STATE);
     }
+    else if (BLE_PERIPHERAL_EVT_WRITE == event.id)
+    {
+        notify_on_write((const ble_peripheral_update_t *)event.data);
+    }
     else
     {
         LOG_INFO("Event %d in WS_Connected_evt_handler not handled", event.id);
@@ -802,7 +822,13 @@ static void bonding_on_enter(void)
 
 static void unbonding_on_enter(void)
 {
-    //todo stop advertising
+    uint32_t err_code = sd_ble_gap_adv_stop(g_advertising.adv_handle);
+    if (NRF_ERROR_INVALID_STATE != err_code && NRF_SUCCESS != err_code)
+    {
+        LOG_WARNING("Stopping advertising failed (%d)", err_code);
+        return;
+    }
+
     if (!disconnect(g_conn_handle))
     {
         remove_all_bondings();
@@ -925,6 +951,30 @@ static bool add_to_whitelist(pm_peer_id_t peerId)
         }
     }
     return false;
+}
+
+static void notify_on_write(const ble_peripheral_update_t *update_data)
+{
+    for (uint16_t i = 0; i < BLE_PERIPERAL_MAX_CALLBACKS; ++i)
+    {
+        if (g_callbacks[i])
+        {
+            g_callbacks[i](update_data);
+        }
+    }
+}
+
+static ble_peripheral_char_id_t get_char_id(uint16_t attr_handle)
+{
+    for (ble_peripheral_char_id_t i = 0; i < CHARACTERISTICS_NUMBER; ++i)
+    {
+        if (attr_handle == g_characteristics[i].char_handle)
+        {
+            return i;
+        }
+    }
+
+    return BLE_PERIPHERAL_CHAR_ID_INVALID;
 }
 
 static char const * convert_state_to_str(ble_peripheral_state_enum_t state)

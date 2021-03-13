@@ -48,7 +48,7 @@ int main(void)
     status = task_queue_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
-    status = config_init(); //todo handle return value
+    status = config_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     LOG_ERROR_RETURN(status, WINSENS_ERROR);

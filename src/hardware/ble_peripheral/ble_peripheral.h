@@ -14,6 +14,9 @@
 #include "winsens_types.h"
 
 
+#define BLE_PERIPHERAL_CHAR_ID_INVALID      (0xFFFF)
+
+
 typedef enum
 {
     BLE_PERIPHERAL_STATE_UNKNOWN,
