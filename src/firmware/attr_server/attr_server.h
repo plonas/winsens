@@ -13,8 +13,8 @@
 
 typedef struct
 {
-    uint16_t    value_len;
-    uint8_t     *value;
+    uint16_t        value_len;
+    uint8_t const   *value;
 } attr_server_value_t;
 
 typedef uint32_t attr_server_attr_id_t;

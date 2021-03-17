@@ -56,10 +56,10 @@ typedef struct
     ble_peripheral_svc_id_t     server_id;
     ble_peripheral_char_id_t    char_id;
     uint16_t                    value_len;
-    uint8_t                     *value;
+    uint8_t const               *value;
 } ble_peripheral_update_t;
 
-typedef void (*ble_peripheral_cb_t) (ble_peripheral_update_t *update_data);
+typedef void (*ble_peripheral_cb_t) (ble_peripheral_update_t const *update_data);
 
 
 winsens_status_t ble_peripheral_init(void);
@@ -74,7 +74,7 @@ winsens_status_t ble_peripheral_bond(void);
 winsens_status_t ble_peripheral_unbond(void);
 
 winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback);
-winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value);
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value);
 
 ble_peripheral_state_enum_t ble_peripheral_get_state(void);
 

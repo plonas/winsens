@@ -240,13 +240,13 @@ winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback)
     return WINSENS_NO_RESOURCES;
 }
 
-winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value)
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value)
 {
     ble_gatts_hvx_params_t hv_params;
-    hv_params.handle = g_characteristics[char_id].char_handle;
+    hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
     hv_params.type = BLE_GATT_HVX_NOTIFICATION;
     hv_params.offset = 0;
-    hv_params.p_len = value_len;
+    hv_params.p_len = &value_len;
     hv_params.p_data = value;
 
     sd_ble_gatts_hvx(g_conn_handle, &hv_params);
@@ -523,13 +523,15 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
 #endif
 
         case BLE_GATTS_EVT_WRITE:
-            const ble_gatts_evt_write_t *write_evt = p_ble_evt->evt.gatts_evt.params.write;
+        {
+            const ble_gatts_evt_write_t *write_evt = &p_ble_evt->evt.gatts_evt.params.write;
             const ble_peripheral_char_id_t char_id = get_char_id(write_evt->handle);
-            ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
+            const ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
 
             winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&update_data };
             evt_handler(e);
             break;
+        }
 
         default:
             LOG_DEBUG("ws_on_ble_evt event %u not handled", p_ble_evt->header.evt_id);
@@ -968,7 +970,7 @@ static ble_peripheral_char_id_t get_char_id(uint16_t attr_handle)
 {
     for (ble_peripheral_char_id_t i = 0; i < CHARACTERISTICS_NUMBER; ++i)
     {
-        if (attr_handle == g_characteristics[i].char_handle)
+        if (attr_handle == g_characteristics[i].char_handle.value_handle)
         {
             return i;
         }

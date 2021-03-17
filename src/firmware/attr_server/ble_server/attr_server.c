@@ -18,7 +18,7 @@ typedef struct
 } attr_server_config_t;
 
 
-void update_char_cb(ble_peripheral_update_t *update_data);
+void update_char_cb(ble_peripheral_update_t const *update_data);
 
 void update_subscribers(attr_server_attr_id_t attr_id, attr_server_value_t value);
 void update_ble_server(attr_server_attr_id_t attr_id, attr_server_value_t value);
@@ -57,13 +57,13 @@ winsens_status_t attr_server_update(attr_server_attr_id_t attr_id, attr_server_v
     return WINSENS_OK;
 }
 
-void update_char_cb(ble_peripheral_update_t *update_data)
+void update_char_cb(ble_peripheral_update_t const *update_data)
 {
     attr_server_attr_id_t attr_id = get_attr_id(update_data->server_id, update_data->char_id);
 
     if (ATTR_SERVER_ID_NUMBER > attr_id)
     {
-        attr_server_value_t value_data = {update_data->value_len, update_data->value};
+        attr_server_value_t value_data = {.value_len = update_data->value_len, .value = update_data->value};
         update_subscribers(attr_id, value_data);
     }
 }
