@@ -26,16 +26,16 @@ typedef enum
 /*
 typedef struct
 {
-    ble_peripheral_svc_id_t     server_id;
+    ble_peripheral_svc_id_t     service_id;
     ble_peripheral_char_id_t    char_id;
 } attr_server_config_t;
 */
 #define ATTR_SERVER_CONFIG_INIT     { \
-        {.server_id = BLE_PERIPERAL_SVC_CS,     .char_id = BLE_PERIPERAL_CHAR_CS_ENABLED_LEFT}, \
-        {.server_id = BLE_PERIPERAL_SVC_CS,     .char_id = BLE_PERIPERAL_CHAR_CS_ENABLED_RIGHT}, \
-        {.server_id = BLE_PERIPERAL_SVC_CS,     .char_id = BLE_PERIPERAL_CHAR_CS_THRESHOLD_LEFT}, \
-        {.server_id = BLE_PERIPERAL_SVC_CS,     .char_id = BLE_PERIPERAL_CHAR_CS_THRESHOLD_RIGHT}, \
-        {.server_id = BLE_PERIPERAL_SVC_WMS,    .char_id = BLE_PERIPERAL_CHAR_WMS_STATE}, \
+        {.service_id = BLE_PERIPERAL_SVC_CS,    .char_id = BLE_PERIPERAL_CHAR_CS_ENABLED_LEFT}, \
+        {.service_id = BLE_PERIPERAL_SVC_CS,    .char_id = BLE_PERIPERAL_CHAR_CS_ENABLED_RIGHT}, \
+        {.service_id = BLE_PERIPERAL_SVC_CS,    .char_id = BLE_PERIPERAL_CHAR_CS_THRESHOLD_LEFT}, \
+        {.service_id = BLE_PERIPERAL_SVC_CS,    .char_id = BLE_PERIPERAL_CHAR_CS_THRESHOLD_RIGHT}, \
+        {.service_id = BLE_PERIPERAL_SVC_CS,    .char_id = BLE_PERIPERAL_CHAR_WMS_STATE}, \
 }
 
 #endif /* ATTR_SERVER_CFG_H_ */

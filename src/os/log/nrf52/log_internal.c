@@ -7,6 +7,10 @@
 
 #include "log.h"
 
+
+LOG_REGISTER();
+
+
 /**@brief Function for error handling, which is called when an error has occurred.
  *
  * @param[in] error_code  Error code supplied to the handler.

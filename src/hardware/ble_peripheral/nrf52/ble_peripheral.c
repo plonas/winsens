@@ -162,6 +162,8 @@ static ble_uuid_t g_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUI
 static pm_peer_id_t g_whitelist[WHITELIST_LEN] = {PM_PEER_ID_INVALID};
 static ble_peripheral_cb_t g_callbacks[BLE_PERIPERAL_MAX_CALLBACKS] = {NULL};
 
+
+LOG_REGISTER();
 BLE_ADVERTISING_DEF(g_advertising);
 NRF_BLE_GATT_DEF(g_gatt);
 
@@ -369,6 +371,7 @@ static void services_init(void)
         {
             if (svc_id ==  g_characteristics[char_id].service_id)
             {
+                LOG_DEBUG("char_id: %d", char_id);
                 add_characteristic(&g_characteristics[char_id]);
             }
         }
@@ -524,17 +527,27 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GATTS_EVT_WRITE:
         {
+            LOG_DEBUG("BLE_GATTS_EVT_WRITE");
             const ble_gatts_evt_write_t *write_evt = &p_ble_evt->evt.gatts_evt.params.write;
             const ble_peripheral_char_id_t char_id = get_char_id(write_evt->handle);
-            const ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
+            if (BLE_PERIPHERAL_CHAR_ID_INVALID != char_id)
+            {
+                const ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
+                winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&update_data };
+                evt_handler(e);
+            }
+            break;
+        }
 
-            winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&update_data };
-            evt_handler(e);
+        case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+        {
+            err_code = sd_ble_gatts_sys_attr_set(p_ble_evt->evt.gap_evt.conn_handle, NULL, 0, 0);
+            LOG_NRF_ERROR_CHECK(err_code);
             break;
         }
 
         default:
-            LOG_DEBUG("ws_on_ble_evt event %u not handled", p_ble_evt->header.evt_id);
+            LOG_DEBUG("on_ble_evt event %u not handled", p_ble_evt->header.evt_id);
             // No implementation needed.
             break;
     }
@@ -855,47 +868,47 @@ static void add_service(ble_peripheral_svc_t *svc)
 static void add_characteristic(ble_peripheral_char_t *charact)
 {
     const ble_peripheral_svc_t *svc = &g_services[charact->service_id];
+    charact->char_uuid.type = svc->service_uuid.type;
 
-    //Add a custom characteristic UUID
-    uint32_t            err_code;
-    ble_uuid_t          char_uuid;
+    uint32_t err_code;
 
-    err_code = sd_ble_uuid_vs_add(&svc->service_base_uuid, &charact->char_uuid.type);
-    LOG_NRF_ERROR_CHECK(err_code);
+//    err_code = sd_ble_uuid_vs_add(&svc->service_base_uuid, &charact->char_uuid.type);
+//    LOG_NRF_ERROR_CHECK(err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
     memset(&char_md, 0, sizeof(char_md));
-    char_md.char_props.read = charact->read_enabled;
-    char_md.char_props.write = charact->write_enabled;
-
-    //Configuring Client Characteristic Configuration Descriptor metadata and add to char_md structure
-    ble_gatts_attr_md_t cccd_md;
-    memset(&cccd_md, 0, sizeof(cccd_md));
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
-    cccd_md.vloc                = BLE_GATTS_VLOC_STACK;
-    char_md.p_cccd_md           = &cccd_md;
+    char_md.char_props.read     = charact->read_enabled;
+    char_md.char_props.write    = charact->write_enabled;
     char_md.char_props.notify   = charact->notification_enabled;
+
+    if (charact->notification_enabled)
+    {
+        //Configuring Client Characteristic Configuration Descriptor metadata
+        ble_gatts_attr_md_t cccd_md;
+        memset(&cccd_md, 0, sizeof(cccd_md));
+        cccd_md.vloc = BLE_GATTS_VLOC_STACK;
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+        char_md.p_cccd_md = &cccd_md;
+    }
 
     //Configure the attribute metadata
     ble_gatts_attr_md_t attr_md;
     memset(&attr_md, 0, sizeof(attr_md));
     attr_md.vloc = BLE_GATTS_VLOC_STACK;
-
-    //Set read/write security levels to our characteristic
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
 
     //Configure the characteristic value attribute
     ble_gatts_attr_t attr_char_value;
     memset(&attr_char_value, 0, sizeof(attr_char_value));
-    attr_char_value.p_uuid = &char_uuid;
+    attr_char_value.p_uuid = &charact->char_uuid;
     attr_char_value.p_attr_md = &attr_md;
 
     //Set characteristic length in number of bytes
-    attr_char_value.max_len     = sizeof(bool);
-    attr_char_value.init_len    = sizeof(bool);
+    attr_char_value.init_len    = charact->value_len;
+    attr_char_value.max_len     = charact->value_len;
 //    attr_char_value.p_value     = charact->value;
 
     //Add our new characteristic to the service
@@ -904,6 +917,7 @@ static void add_characteristic(ble_peripheral_char_t *charact)
                                        &attr_char_value,
                                        &charact->char_handle);
     LOG_NRF_ERROR_CHECK(err_code);
+    LOG_FLUSH();
 }
 
 static void remove_all_bondings(void)
@@ -957,6 +971,11 @@ static bool add_to_whitelist(pm_peer_id_t peerId)
 
 static void notify_on_write(const ble_peripheral_update_t *update_data)
 {
+    if (BLE_PERIPHERAL_CHAR_ID_INVALID == update_data->char_id)
+    {
+        return;
+    }
+
     for (uint16_t i = 0; i < BLE_PERIPERAL_MAX_CALLBACKS; ++i)
     {
         if (g_callbacks[i])

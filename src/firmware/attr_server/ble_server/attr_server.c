@@ -11,9 +11,12 @@
 #include "ble_peripheral_cfg.h"
 
 
+#define ATTRIBUTES_NUMBER           (sizeof(g_attr_server_config)/sizeof(attr_server_config_t))
+
+
 typedef struct
 {
-    ble_peripheral_svc_id_t     server_id;
+    ble_peripheral_svc_id_t     service_id;
     ble_peripheral_char_id_t    char_id;
 } attr_server_config_t;
 
@@ -22,7 +25,7 @@ void update_char_cb(ble_peripheral_update_t const *update_data);
 
 void update_subscribers(attr_server_attr_id_t attr_id, attr_server_value_t value);
 void update_ble_server(attr_server_attr_id_t attr_id, attr_server_value_t value);
-attr_server_attr_id_t get_attr_id(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id);
+attr_server_attr_id_t get_attr_id(ble_peripheral_svc_id_t service_id, ble_peripheral_char_id_t char_id);
 
 static attr_server_config_t g_attr_server_config[] = ATTR_SERVER_CONFIG_INIT;
 static attr_server_cb_t g_callbacks[ATTR_SERVER_MAX_CALLBACKS] = {NULL};
@@ -81,5 +84,18 @@ void update_subscribers(attr_server_attr_id_t attr_id, attr_server_value_t value
 
 void update_ble_server(attr_server_attr_id_t attr_id, attr_server_value_t value)
 {
-    ble_peripheral_update(g_attr_server_config[attr_id].server_id, g_attr_server_config[attr_id].char_id, value.value_len, value.value);
+    ble_peripheral_update(g_attr_server_config[attr_id].service_id, g_attr_server_config[attr_id].char_id, value.value_len, value.value);
+}
+
+attr_server_attr_id_t get_attr_id(ble_peripheral_svc_id_t service_id, ble_peripheral_char_id_t char_id)
+{
+    for (attr_server_attr_id_t i = 0; i < ATTRIBUTES_NUMBER; ++i)
+    {
+        if (char_id == g_attr_server_config[i].char_id && service_id == g_attr_server_config[i].service_id)
+        {
+            return i;
+        }
+    }
+
+    return ATTR_SERVER_ID_INVALID;
 }

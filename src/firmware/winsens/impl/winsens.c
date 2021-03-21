@@ -14,6 +14,9 @@
 #include "log.h"
 
 
+LOG_REGISTER();
+
+
 winsens_status_t IWinsens_Init(void)
 {
     winsens_status_t status = WINSENS_ERROR;

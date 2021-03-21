@@ -35,6 +35,9 @@ static const digital_io_input_pins_t g_buttons_config[] = BUTTONS_COOFIG_INIT;
 static button_pin_callback_t g_button_callbacks[BUTTON_PINS_NUMBER];
 
 
+LOG_REGISTER();
+
+
 winsens_status_t button_init(void)
 {
     uint32_t i;

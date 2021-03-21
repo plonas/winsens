@@ -18,7 +18,9 @@
 #include "nrf_delay.h"
 
 
+LOG_REGISTER();
 APP_TIMER_DEF(ws_timer);
+
 
 static void WS_TimerCallback(
     void *p_data,

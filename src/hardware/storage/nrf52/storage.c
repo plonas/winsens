@@ -46,6 +46,10 @@ static void fds_event_handler(
 
 static storage_data_wrapper_t g_records_buffer[STORAGE_RECORDS_BUFFER_LENGTH];
 
+
+LOG_REGISTER();
+
+
 winsens_status_t storage_init(void)
 {
     uint_fast8_t i = 0;

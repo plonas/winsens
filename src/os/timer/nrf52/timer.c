@@ -33,7 +33,9 @@ static void WS_TimerIrqHandler(
     void* context);
 
 
+LOG_REGISTER();
 APP_TIMER_DEF(ws_timer);
+
 
 static uint32_t activeTimers = 0;
 static WS_Timer_t ws_timers[WS_TIMER_TIMERS_NUM];

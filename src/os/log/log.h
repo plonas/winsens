@@ -11,6 +11,7 @@
 
 #include "log_internal.h"
 
+#define LOG_REGISTER()                  LOG_INTERNAL_REGISTER()
 #define LOG_INIT(timestamp_func)        LOG_INIT_INTERNAL(timestamp_func)
 #define LOG_FLUSH()                     LOG_FLUSH_INTERNAL()
 

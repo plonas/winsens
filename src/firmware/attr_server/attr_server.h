@@ -11,6 +11,8 @@
 
 #include "winsens_types.h"
 
+#define ATTR_SERVER_ID_INVALID          0xFFFFFFFF
+
 typedef struct
 {
     uint16_t        value_len;

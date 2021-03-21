@@ -15,7 +15,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-NRF_LOG_MODULE_REGISTER();
+#define LOG_INTERNAL_REGISTER()                         NRF_LOG_MODULE_REGISTER()
 
 #define LOG_INIT_INTERNAL(timestamp_func)               NRF_LOG_INIT(timestamp_func);NRF_LOG_DEFAULT_BACKENDS_INIT()
 #define LOG_FLUSH_INTERNAL()                            NRF_LOG_FLUSH()

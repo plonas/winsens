@@ -44,6 +44,9 @@ static uint32_t                             g_init_count = 0;
 static digital_io_input_pin_callback_t      g_pin_callbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
 
 
+LOG_REGISTER();
+
+
 winsens_status_t digital_io_init(void)
 {
     ++g_init_count;

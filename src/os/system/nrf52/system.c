@@ -31,6 +31,10 @@ static void soc_event_handler(
 static WS_TimerId_t g_system_timer = 0;
 static uint32_t g_time_counter = 0;
 
+
+LOG_REGISTER();
+
+
 winsens_status_t system_init(void)
 {
     uint32_t err_code;

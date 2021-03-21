@@ -17,6 +17,9 @@
 static bool config_initialized = false;
 
 
+LOG_REGISTER();
+
+
 winsens_status_t config_init(void)
 {
     winsens_status_t status = WINSENS_OK;

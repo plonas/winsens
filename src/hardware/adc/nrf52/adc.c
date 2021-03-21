@@ -52,6 +52,10 @@ static nrfx_timer_t         g_timer = NRFX_TIMER_INSTANCE(1);
 
 static bool                 g_initialized = false;
 
+
+LOG_REGISTER();
+
+
 winsens_status_t adc_init(void)
 {
     if (false == g_initialized)
