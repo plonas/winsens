@@ -73,6 +73,7 @@ typedef struct
     .write_enabled = true, \
     .notification_enabled = false, \
     .value_len = sizeof(bool), \
+    .desc = "Enable left window", \
     }, \
     { \
     .service_id = BLE_PERIPERAL_SVC_CS, \
@@ -81,6 +82,7 @@ typedef struct
     .write_enabled = true, \
     .notification_enabled = false, \
     .value_len = sizeof(bool), \
+    .desc = "Enable right window", \
     }, \
     { \
     .service_id = BLE_PERIPERAL_SVC_CS, \
@@ -89,6 +91,7 @@ typedef struct
     .write_enabled = true, \
     .notification_enabled = false, \
     .value_len = sizeof(uint16_t), \
+    .desc = "Left window's threshold", \
     }, \
     { \
     .service_id = BLE_PERIPERAL_SVC_CS, \
@@ -97,6 +100,7 @@ typedef struct
     .write_enabled = true, \
     .notification_enabled = false, \
     .value_len = sizeof(uint16_t), \
+    .desc = "Right window's threshold", \
     }, \
     { \
     .service_id = BLE_PERIPERAL_SVC_CS, \
@@ -105,6 +109,7 @@ typedef struct
     .write_enabled = false, \
     .notification_enabled = true, \
     .value_len = sizeof(uint8_t), \
+    .desc = "Window's state", \
     }, \
 }
 

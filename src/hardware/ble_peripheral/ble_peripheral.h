@@ -49,6 +49,7 @@ typedef struct
     bool                        write_enabled;
     bool                        notification_enabled;
     uint16_t                    value_len;
+    char                        *desc;
 } ble_peripheral_char_t;
 
 typedef struct

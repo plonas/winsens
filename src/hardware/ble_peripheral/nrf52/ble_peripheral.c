@@ -745,7 +745,7 @@ static void disconnected_evt_handler(
     }
     else
     {
-        LOG_INFO("Event %d in WS_Disconnected_evt_handler not handled", event.id);
+        LOG_INFO("Event %d in disconnected_evt_handler not handled", event.id);
     }
 }
 
@@ -758,7 +758,7 @@ static void disconnecting_evt_handler(
     }
     else
     {
-        LOG_INFO("Event %d in WS_Disconnecting_evt_handler not handled", event.id);
+        LOG_INFO("Event %d in disconnecting_evt_handler not handled", event.id);
     }
 }
 
@@ -776,7 +776,7 @@ static void advertising_evt_handler(
     }
     else
     {
-        LOG_INFO("Event %d in WS_Advertising_evt_handler not handled", event.id);
+        LOG_INFO("Event %d in advertising_evt_handler not handled", event.id);
     }
 }
 
@@ -793,7 +793,7 @@ static void bonding_evt_handler(
     }
     else
     {
-        LOG_INFO("Event %d in WS_Bonding_evt_handler not handled", event.id);
+        LOG_INFO("Event %d in bonding_evt_handler not handled", event.id);
     }
 }
 
@@ -810,7 +810,7 @@ static void unbonding_evt_handler(
     }
     else
     {
-        LOG_INFO("Event %d in WS_Unbonding_evt_handler not handled", event.id);
+        LOG_INFO("Event %d in unbonding_evt_handler not handled", event.id);
     }
 }
 
@@ -878,9 +878,16 @@ static void add_characteristic(ble_peripheral_char_t *charact)
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
     memset(&char_md, 0, sizeof(char_md));
-    char_md.char_props.read     = charact->read_enabled;
-    char_md.char_props.write    = charact->write_enabled;
-    char_md.char_props.notify   = charact->notification_enabled;
+    char_md.char_props.read         = charact->read_enabled;
+    char_md.char_props.write        = charact->write_enabled;
+    char_md.char_props.notify       = charact->notification_enabled;
+
+    if (charact->desc && '\0' != charact->desc[0])
+    {
+        char_md.p_char_user_desc        = (uint8_t *)charact->desc;
+        char_md.char_user_desc_size     = strlen(charact->desc);
+        char_md.char_user_desc_max_size = strlen(charact->desc);
+    }
 
     if (charact->notification_enabled)
     {
