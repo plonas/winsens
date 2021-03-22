@@ -108,7 +108,6 @@ static void conn_params_error_handler(uint32_t nrf_error);
 static void evt_handler(winsens_event_t event);
 
 static void change_state(const ble_peripheral_state_t *new_state);
-
 static void empty_evt_handler(winsens_event_t event) {}
 static void empty_on_enter(void) {}
 static void empty_on_exit(void) {}
@@ -371,7 +370,6 @@ static void services_init(void)
         {
             if (svc_id ==  g_characteristics[char_id].service_id)
             {
-                LOG_DEBUG("char_id: %d", char_id);
                 add_characteristic(&g_characteristics[char_id]);
             }
         }
@@ -943,7 +941,7 @@ static void remove_all_bondings(void)
 static bool disconnect(uint16_t connHandle)
 {
     uint32_t err_code = sd_ble_gap_disconnect(connHandle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-    LOG_NRF_WARNING_RETURN(err_code, false);
+    LOG_NRF_INFO_RETURN(err_code, false);
     return true;
 }
 

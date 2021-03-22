@@ -14,7 +14,7 @@
 #define DIGITAL_INPUT_PIN_CFG_INIT          { WS_DIGITAL_INPUT_PULL_NONE }
 
 
-typedef uint16_t digital_io_input_pins_t;
+typedef uint16_t digital_io_input_pin_t;
 
 typedef enum
 {
@@ -26,20 +26,20 @@ typedef enum
 
 typedef struct
 {
-    digital_io_input_pins_t pin;
+    uint32_t pin_no;
     digital_io_pull_up_down_t pullUpDown;
 
 } digital_io_input_pin_cfg_t;
 
-typedef void (*digitalio_input_callback_t)(digital_io_input_pins_t pin, bool on);
+typedef void (*digitalio_input_callback_t)(digital_io_input_pin_t pin, bool on);
 
 
 winsens_status_t digital_io_init(void);
 
 winsens_status_t digital_io_register_callback(
-    digital_io_input_pins_t pin,
+    digital_io_input_pin_t pin,
     digitalio_input_callback_t callback);
 void digital_io_unregister_callback(
-    digital_io_input_pins_t pin);
+    digital_io_input_pin_t pin);
 
 #endif /* DIGITAL_IO_H_ */

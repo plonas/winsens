@@ -18,12 +18,20 @@ typedef enum {
 
 } button_event_t;
 
+typedef uint8_t button_id_t;
+
+typedef struct
+{
+    digital_io_input_pin_t  pin;
+    bool                    active_low;
+} button_cfg_t;
+
 winsens_status_t button_init(void);
 
 winsens_status_t button_register_callback(
-    digital_io_input_pins_t pin,
+        button_id_t btn,
     winsens_event_handler_t eventHandler);
 void button_unregister_callback(
-    digital_io_input_pins_t pin);
+        button_id_t btn);
 
 #endif /* BUTTON_H_ */

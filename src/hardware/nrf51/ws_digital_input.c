@@ -15,13 +15,13 @@
 #include "nrf_drv_gpiote.h"
 
 
-#define WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT     { WS_DIGITAL_INPUT_PIN_INVALID, NULL, false }
-#define WS_DIGITAL_INPUT_PINS_NUMBER            (sizeof(ws_digitalInputConfig) / sizeof(WS_DigitalInputPinCfg_t))
+#define DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT     { WS_DIGITAL_INPUT_PIN_INVALID, NULL, false }
+#define DIGITAL_IO_INPUT_PINS_NUMBER            (sizeof(ws_digitalInputConfig) / sizeof(WS_DigitalInputPinCfg_t))
 
 
 typedef struct
 {
-    digital_io_input_pins_t pin;
+    digital_io_input_pin_t pin;
     digitalio_input_callback_t callback;
     bool status;
 
@@ -39,7 +39,7 @@ static nrf_gpio_pin_pull_t WS_ConvertPullUpDown(
     digital_io_pull_up_down_t pull);
 
 static uint32_t ws_initCount = 0;
-static WS_DigitalInputPinCallback_t ws_pinCallbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
+static WS_DigitalInputPinCallback_t ws_pinCallbacks[DIGITAL_IO_INPUT_PINS_NUMBER];
 
 
 winsens_status_t WS_DigitalInputInit(void)
@@ -49,9 +49,9 @@ winsens_status_t WS_DigitalInputInit(void)
     {
         uint8_t i = 0;
 
-        for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+        for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
         {
-            ws_pinCallbacks[i] = (WS_DigitalInputPinCallback_t) WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT;
+            ws_pinCallbacks[i] = (WS_DigitalInputPinCallback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
         }
 
         if (NRF_SUCCESS != nrf_drv_gpiote_init())
@@ -59,7 +59,7 @@ winsens_status_t WS_DigitalInputInit(void)
             return WINSENS_ERROR;
         }
 
-        for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+        for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
         {
             nrf_gpio_cfg_input(g_digital_io_input_config[i].pin, WS_ConvertPullUpDown(g_digital_io_input_config[i].pullUpDown));
         }
@@ -80,12 +80,12 @@ void WS_DigitalInputDeinit(void)
 }
 
 winsens_status_t WS_DigitalInputRegisterCallback(
-    digital_io_input_pins_t pin,
+    digital_io_input_pin_t pin,
     digitalio_input_callback_t callback)
 {
     uint8_t i = 0;
 
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
     {
         if (pin == g_digital_io_input_config[i].pin)
         {
@@ -111,15 +111,15 @@ winsens_status_t WS_DigitalInputRegisterCallback(
 }
 
 void WS_DigitalInputUnregisterCallback(
-    digital_io_input_pins_t pin)
+    digital_io_input_pin_t pin)
 {
     uint8_t i = 0;
 
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
     {
         if (pin == ws_pinCallbacks[i].pin)
         {
-            ws_pinCallbacks[i] = (WS_DigitalInputPinCallback_t) WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT;
+            ws_pinCallbacks[i] = (WS_DigitalInputPinCallback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
 
             nrf_drv_gpiote_in_event_disable(pin);
             nrf_drv_gpiote_in_uninit(pin);
@@ -136,7 +136,7 @@ static void WS_DigitalInputIrqHandler(
     uint8_t i = 0;
     winsens_status_t status = WINSENS_ERROR;
 
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
     {
         if (pin == ws_pinCallbacks[i].pin)
         {

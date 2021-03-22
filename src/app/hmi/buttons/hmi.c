@@ -9,9 +9,14 @@
 #include "ble_peripheral.h"
 #include "button.h"
 #include "digital_io_cfg.h"
+#define ILOG_MODULE_NAME HMI
+#include "log.h"
 
 
 static void button_callback(winsens_event_t event);
+
+
+LOG_REGISTER();
 
 
 winsens_status_t hmi_init(void)

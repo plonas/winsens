@@ -16,13 +16,13 @@
 #include "nrfx_gpiote.h"
 
 
-#define WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT     { DIGITAL_INPUT_PIN_INVALID, NULL, false }
-#define WS_DIGITAL_INPUT_PINS_NUMBER            (sizeof(DIGITAL_IO_INPUT_CONFIG) / sizeof(digital_io_input_pin_cfg_t))
+#define DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT     { DIGITAL_INPUT_PIN_INVALID, NULL, false }
+#define DIGITAL_IO_INPUT_PINS_NUMBER            (sizeof(DIGITAL_IO_INPUT_CONFIG) / sizeof(digital_io_input_pin_cfg_t))
 
 
 typedef struct
 {
-    digital_io_input_pins_t     pin;
+    digital_io_input_pin_t      pin_no;
     digitalio_input_callback_t  callback;
     bool                        status;
 
@@ -30,7 +30,7 @@ typedef struct
 
 
 static void digital_io_input_isr(
-    nrfx_gpiote_pin_t pin,
+    nrfx_gpiote_pin_t pin_no,
     nrf_gpiote_polarity_t action);
 static void digital_io_input_event_handler(
     void *p_event_data,
@@ -39,9 +39,9 @@ static void digital_io_input_event_handler(
 static nrf_gpio_pin_pull_t convert_pull_up_down(
     digital_io_pull_up_down_t pull);
 
-static const digital_io_input_pin_cfg_t     DIGITAL_IO_INPUT_CONFIG[DIGITAL_IO_INPUT_NUMBER] = DIGITAL_IO_CFG_INPUT_INIT;
+static const digital_io_input_pin_cfg_t     DIGITAL_IO_INPUT_CONFIG[] = DIGITAL_IO_CFG_INPUT_INIT;
 static uint32_t                             g_init_count = 0;
-static digital_io_input_pin_callback_t      g_pin_callbacks[WS_DIGITAL_INPUT_PINS_NUMBER];
+static digital_io_input_pin_callback_t      g_pin_callbacks[DIGITAL_IO_INPUT_PINS_NUMBER];
 
 
 LOG_REGISTER();
@@ -55,79 +55,67 @@ winsens_status_t digital_io_init(void)
         uint8_t i = 0;
         nrfx_err_t err_code;
 
-        for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+        for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
         {
-            g_pin_callbacks[i] = (digital_io_input_pin_callback_t) WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT;
+            g_pin_callbacks[i] = (digital_io_input_pin_callback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
         }
 
         err_code = nrfx_gpiote_init();
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
-        for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
-        {
-            nrf_gpio_cfg_input(DIGITAL_IO_INPUT_CONFIG[i].pin, convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown));
-        }
+//        for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
+//        {
+//            nrf_gpio_cfg_input(DIGITAL_IO_INPUT_CONFIG[i].pin_no, convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown));
+//        }
     }
     return WINSENS_OK;
 }
 
 winsens_status_t digital_io_register_callback(
-    digital_io_input_pins_t pin,
+    digital_io_input_pin_t pin,
     digitalio_input_callback_t callback)
 {
-    uint8_t i = 0;
-
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    if (pin < DIGITAL_IO_INPUT_PINS_NUMBER)
     {
-        if (pin == DIGITAL_IO_INPUT_CONFIG[i].pin)
-        {
-            nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
-            config.pull = convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown);
-            ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)pin, &config, digital_io_input_isr);
-            LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+        nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
+        config.pull = convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[pin].pullUpDown);
+        ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)DIGITAL_IO_INPUT_CONFIG[pin].pin_no, &config, digital_io_input_isr);
+        LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 
-            nrfx_gpiote_in_event_enable(pin, true);
+        nrfx_gpiote_in_event_enable(DIGITAL_IO_INPUT_CONFIG[pin].pin_no, true);
 
-            g_pin_callbacks[i].pin = pin;
-            g_pin_callbacks[i].callback = callback;
-            g_pin_callbacks[i].status =  nrfx_gpiote_in_is_set(pin);
+        g_pin_callbacks[pin].pin_no     = DIGITAL_IO_INPUT_CONFIG[pin].pin_no;
+        g_pin_callbacks[pin].callback   = callback;
+        g_pin_callbacks[pin].status     = nrfx_gpiote_in_is_set(DIGITAL_IO_INPUT_CONFIG[pin].pin_no);
 
-            return WINSENS_OK;
-        }
+        return WINSENS_OK;
     }
 
     return WINSENS_NOT_FOUND;
 }
 
 void digital_io_unregister_callback(
-    digital_io_input_pins_t pin)
+    digital_io_input_pin_t pin)
 {
-    uint8_t i = 0;
-
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    if (pin < DIGITAL_IO_INPUT_PINS_NUMBER)
     {
-        if (pin == g_pin_callbacks[i].pin)
-        {
-            g_pin_callbacks[i] = (digital_io_input_pin_callback_t) WS_DIGITAL_INPUT_PIN_CALLBACKS_INIT;
+        g_pin_callbacks[pin] = (digital_io_input_pin_callback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
 
-            nrfx_gpiote_in_event_disable(pin);
-            nrfx_gpiote_in_uninit(pin);
-
-            return;
-        }
+        nrfx_gpiote_in_event_disable(DIGITAL_IO_INPUT_CONFIG[pin].pin_no);
+        nrfx_gpiote_in_uninit(DIGITAL_IO_INPUT_CONFIG[pin].pin_no);
     }
 }
 
 static void digital_io_input_isr(
-    nrfx_gpiote_pin_t pin,
+    nrfx_gpiote_pin_t pin_no,
     nrf_gpiote_polarity_t action)
 {
-    uint8_t i = 0;
+    uint32_t i = 0;
     winsens_status_t status = WINSENS_ERROR;
 
-    for (i = 0; i < WS_DIGITAL_INPUT_PINS_NUMBER; ++i)
+    for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
     {
-        if (pin == g_pin_callbacks[i].pin)
+        if (pin_no == g_pin_callbacks[i].pin_no)
         {
             status = task_queue_add(&i, sizeof(i), digital_io_input_event_handler);
             LOG_IF_WARNING(status, "WS_TaskQueueAdd failed");
@@ -141,11 +129,11 @@ static void digital_io_input_event_handler(
     uint16_t event_size)
 {
     const uint8_t *pi =  p_event_data;
-    const uint8_t i = *pi;
+    const digital_io_input_pin_t pin = *pi;
     UNUSED_PARAMETER(event_size);
 
-    g_pin_callbacks[i].status = !g_pin_callbacks[i].status;
-    g_pin_callbacks[i].callback(g_pin_callbacks[i].pin, g_pin_callbacks[i].status);
+    g_pin_callbacks[pin].status = nrfx_gpiote_in_is_set(DIGITAL_IO_INPUT_CONFIG[pin].pin_no);
+    g_pin_callbacks[pin].callback(pin, g_pin_callbacks[pin].status);
 }
 
 static nrf_gpio_pin_pull_t convert_pull_up_down(
