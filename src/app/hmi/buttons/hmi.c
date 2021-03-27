@@ -31,10 +31,10 @@ winsens_status_t hmi_init(void)
 
 static void button_callback(winsens_event_t event)
 {
+    const ble_peripheral_state_enum_t ble_state = ble_peripheral_get_state();
+
     if (BUTTON_EVENT_NORMAL == event.id)
     {
-        const ble_peripheral_state_enum_t ble_state = ble_peripheral_get_state();
-
         if (BLE_PERIPHERAL_STATE_CONNECTED == ble_state)
         {
             ble_peripheral_bond();
@@ -44,8 +44,15 @@ static void button_callback(winsens_event_t event)
             ble_peripheral_start_advertising();
         }
     }
-    else if (BUTTON_EVENT_VERY_LONG == event.id)
+    else if (BUTTON_EVENT_LONG == event.id)
     {
-        ble_peripheral_unbond();
+        if (BLE_PERIPHERAL_STATE_CONNECTED == ble_state)
+        {
+            ble_peripheral_disconnect();
+        }
+        else if (BLE_PERIPHERAL_STATE_DISCONNECTED == ble_state)
+        {
+            ble_peripheral_unbond();
+        }
     }
 }

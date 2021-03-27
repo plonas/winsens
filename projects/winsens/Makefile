@@ -25,6 +25,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/firmware/attr_server/ble_server/attr_server.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
+  $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
 
 SRC_FILES += \
@@ -113,6 +114,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/hardware/adc \
   $(PROJ_DIR)/src/hardware/digital_io \
   $(PROJ_DIR)/src/hardware/ble_peripheral \
+  $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \

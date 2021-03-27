@@ -33,7 +33,7 @@ static attr_server_cb_t g_callbacks[ATTR_SERVER_MAX_CALLBACKS] = {NULL};
 
 winsens_status_t attr_server_init(void)
 {
-    ble_peripheral_subscribe(update_char_cb);
+    ble_peripheral_attr_subscribe(update_char_cb);
 
     return WINSENS_OK;
 }

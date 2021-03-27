@@ -15,6 +15,7 @@ typedef enum
 {
     WINSENS_IDS_MODULE_BUTTON = 0x0001,
     WINSENS_IDS_MODULE_SERVER,
+    WINSENS_IDS_MODULE_BLE_PERIPHERAL,
 
 } winsens_ids_module_enum_t;
 

@@ -106,6 +106,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt);
 static void on_conn_params_evt_handler(ble_conn_params_evt_t * p_evt);
 static void conn_params_error_handler(uint32_t nrf_error);
 static void evt_handler(winsens_event_t event);
+static void push_event(winsens_event_id_t evt_id, winsens_event_data_t data);
 
 static void change_state(const ble_peripheral_state_t *new_state);
 static void empty_evt_handler(winsens_event_t event) {}
@@ -159,7 +160,8 @@ static ble_peripheral_svc_t g_services[] = BLE_PERIPHERAL_SERVICES_INIT;
 static ble_peripheral_char_t g_characteristics[] = BLE_PERIPHERAL_CHARS_INIT;
 static ble_uuid_t g_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
 static pm_peer_id_t g_whitelist[WHITELIST_LEN] = {PM_PEER_ID_INVALID};
-static ble_peripheral_cb_t g_callbacks[BLE_PERIPERAL_MAX_CALLBACKS] = {NULL};
+static ble_peripheral_attr_cb_t g_callbacks[BLE_PERIPERAL_MAX_CALLBACKS] = {NULL};
+static winsens_event_handler_t g_evt_handlers[BLE_PERIPERAL_MAX_EVT_HANDLERS] = {NULL};
 
 
 LOG_REGISTER();
@@ -199,35 +201,54 @@ winsens_status_t ble_peripheral_init(void)
 
 winsens_status_t ble_peripheral_disconnect()
 {
-    change_state(&DISCONNECTING_STATE);
+    winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_DISCONNECT, .data = 0 };
+    evt_handler(e);
     return WINSENS_OK;
 }
 
 winsens_status_t ble_peripheral_start_advertising(void)
 {
-    change_state(&ADVERTISING_STATE);
+    winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_ADVERTISE, .data = 0 };
+    evt_handler(e);
     return WINSENS_OK;
 }
 
 winsens_status_t ble_peripheral_delete_all_peers()
 {
-    change_state(&UNBONDING_STATE);
+    winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_UNBOND, .data = 0 };
+    evt_handler(e);
     return WINSENS_OK;
 }
 
 winsens_status_t ble_peripheral_bond(void)
 {
-    change_state(&BONDING_STATE);
+    winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_BOND, .data = 0 };
+    evt_handler(e);
     return WINSENS_OK;
 }
 
 winsens_status_t ble_peripheral_unbond(void)
 {
-    change_state(&UNBONDING_STATE);
+    winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_UNBOND, .data = 0 };
+    evt_handler(e);
     return WINSENS_OK;
 }
 
-winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback)
+winsens_status_t ble_peripheral_subscribe(winsens_event_handler_t evt_handler)
+{
+    for (uint32_t i = 0; i < BLE_PERIPERAL_MAX_EVT_HANDLERS; ++i)
+    {
+        if (NULL == g_evt_handlers[i])
+        {
+            g_evt_handlers[i] = evt_handler;
+            return WINSENS_OK;
+        }
+    }
+
+    return WINSENS_NO_RESOURCES;
+}
+
+winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback)
 {
     for (uint32_t i = 0; i < BLE_PERIPERAL_MAX_CALLBACKS; ++i)
     {
@@ -685,6 +706,19 @@ static void evt_handler(winsens_event_t event)
     g_current_state->evt_handler(event);
 }
 
+static void push_event(winsens_event_id_t evt_id, winsens_event_data_t data)
+{
+    winsens_event_t e = { .id = evt_id, .data = data };
+
+    for (int i = 0; i < BLE_PERIPERAL_MAX_EVT_HANDLERS; ++i)
+    {
+        if (g_evt_handlers[i])
+        {
+            g_evt_handlers[i](e);
+        }
+    }
+}
+
 static void change_state(const ble_peripheral_state_t *new_state)
 {
     LOG_DEBUG("%s -> %s", (uint32_t) convert_state_to_str(g_current_state->state_id), (uint32_t) convert_state_to_str(new_state->state_id));
@@ -692,18 +726,27 @@ static void change_state(const ble_peripheral_state_t *new_state)
     g_current_state->exit_state();
     g_current_state = new_state;
     g_current_state->enter_state();
+
+    push_event(BLE_PERIPHERAL_EVT_STATE_CHANGE, new_state->state_id);
 }
 
-static void connected_evt_handler(
-    winsens_event_t event)
+static void connected_evt_handler(winsens_event_t event)
 {
     if (BLE_PERIPHERAL_EVT_DISCONNECT == event.id)
     {
-
+        change_state(&DISCONNECTING_STATE);
     }
     else if (BLE_PERIPHERAL_EVT_DISCONNECTED == event.id)
     {
-        change_state(&ADVERTISING_STATE);
+        change_state(&DISCONNECTED_STATE);
+    }
+    else if (BLE_PERIPHERAL_EVT_BOND == event.id)
+    {
+        change_state(&BONDING_STATE);
+    }
+    else if (BLE_PERIPHERAL_EVT_UNBOND == event.id)
+    {
+        change_state(&UNBONDING_STATE);
     }
     else if (BLE_PERIPHERAL_EVT_WRITE == event.id)
     {
@@ -740,6 +783,10 @@ static void disconnected_evt_handler(
     {
         g_conn_handle = event.data16a;
         change_state(&CONNECTED_STATE);
+    }
+    else if (BLE_PERIPHERAL_EVT_ADVERTISE == event.id)
+    {
+        change_state(&ADVERTISING_STATE);
     }
     else
     {

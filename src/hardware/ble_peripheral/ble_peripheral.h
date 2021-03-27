@@ -19,6 +19,12 @@
 
 typedef enum
 {
+    BLE_PERIPHERAL_EVT_STATE_CHANGE = (WINSENS_IDS_MODULE_BLE_PERIPHERAL << 16),
+
+} ble_peripheral_evt_t;
+
+typedef enum
+{
     BLE_PERIPHERAL_STATE_UNKNOWN,
     BLE_PERIPHERAL_STATE_CONNECTED,
     BLE_PERIPHERAL_STATE_CONNECTING,
@@ -60,7 +66,7 @@ typedef struct
     uint8_t const               *value;
 } ble_peripheral_update_t;
 
-typedef void (*ble_peripheral_cb_t) (ble_peripheral_update_t const *update_data);
+typedef void (*ble_peripheral_attr_cb_t) (ble_peripheral_update_t const *update_data);
 
 
 winsens_status_t ble_peripheral_init(void);
@@ -74,7 +80,9 @@ winsens_status_t ble_peripheral_delete_all_peers(void);
 winsens_status_t ble_peripheral_bond(void);
 winsens_status_t ble_peripheral_unbond(void);
 
-winsens_status_t ble_peripheral_subscribe(ble_peripheral_cb_t callback);
+winsens_status_t ble_peripheral_subscribe(winsens_event_handler_t evt_handler);
+
+winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback);
 winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value);
 
 ble_peripheral_state_enum_t ble_peripheral_get_state(void);
