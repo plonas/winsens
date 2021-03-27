@@ -1,5 +1,5 @@
 /*
- * WindowState.c
+ * window_state.c
  *
  *  Created on: 09.01.2021
  *      Author: Damian.Plonek

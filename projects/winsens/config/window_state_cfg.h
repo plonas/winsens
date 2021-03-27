@@ -18,9 +18,6 @@ typedef enum
 
 } window_id_enum_t;
 
-#define WINDOW_STATE_CFG_WINDOW_MAP_INIT { \
-    ADC_CHANNEL_DISTANCE, \
-    ADC_CHANNEL_BATTERY, /* todo change the adc channel */ \
-}
+#define WINDOW_STATE_CFG_UPDATE_INTERVAL        1000 //sec.
 
 #endif /* WINDOW_STATE_CFG_H_ */
