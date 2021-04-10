@@ -40,7 +40,7 @@ static nrf_gpio_pin_pull_t convert_pull_up_down(
     digital_io_pull_up_down_t pull);
 
 static const digital_io_input_pin_cfg_t     DIGITAL_IO_INPUT_CONFIG[] = DIGITAL_IO_CFG_INPUT_INIT;
-static uint32_t                             g_init_count = 0;
+static bool                                 g_initialized = false;
 static digital_io_input_pin_callback_t      g_pin_callbacks[DIGITAL_IO_INPUT_PINS_NUMBER];
 
 
@@ -49,9 +49,10 @@ LOG_REGISTER();
 
 winsens_status_t digital_io_init(void)
 {
-    ++g_init_count;
-    if (1 == g_init_count)
+    if (false == g_initialized)
     {
+        g_initialized = true;
+
         uint8_t i = 0;
         nrfx_err_t err_code;
 
@@ -68,6 +69,7 @@ winsens_status_t digital_io_init(void)
 //            nrf_gpio_cfg_input(DIGITAL_IO_INPUT_CONFIG[i].pin_no, convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown));
 //        }
     }
+
     return WINSENS_OK;
 }
 
@@ -75,6 +77,8 @@ winsens_status_t digital_io_register_callback(
     digital_io_input_pin_t pin,
     digitalio_input_callback_t callback)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     if (pin < DIGITAL_IO_INPUT_PINS_NUMBER)
     {
         nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
@@ -97,6 +101,8 @@ winsens_status_t digital_io_register_callback(
 void digital_io_unregister_callback(
     digital_io_input_pin_t pin)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     if (pin < DIGITAL_IO_INPUT_PINS_NUMBER)
     {
         g_pin_callbacks[pin] = (digital_io_input_pin_callback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
@@ -110,6 +116,8 @@ static void digital_io_input_isr(
     nrfx_gpiote_pin_t pin_no,
     nrf_gpiote_polarity_t action)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     uint32_t i = 0;
     winsens_status_t status = WINSENS_ERROR;
 
@@ -128,6 +136,8 @@ static void digital_io_input_event_handler(
     void *p_event_data,
     uint16_t event_size)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     const uint8_t *pi =  p_event_data;
     const digital_io_input_pin_t pin = *pi;
     UNUSED_PARAMETER(event_size);

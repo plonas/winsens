@@ -14,7 +14,7 @@
 #include "log.h"
 
 
-static bool config_initialized = false;
+static bool g_initialized = false;
 
 
 LOG_REGISTER();
@@ -24,9 +24,9 @@ winsens_status_t config_init(void)
 {
     winsens_status_t status = WINSENS_OK;
 
-    if (false == config_initialized)
+    if (false == g_initialized)
     {
-        config_initialized = true;
+        g_initialized = true;
 
         status = storage_init();
         LOG_WARNING_CHECK(status);
@@ -37,6 +37,11 @@ winsens_status_t config_init(void)
 
 void config_get(config_id_t id, void *config, uint16_t config_size, const void *default_config)
 {
+    if (!g_initialized)
+    {
+        return;
+    }
+
     winsens_status_t status = storage_read(STORAGE_FILE_ID_STORAGE, id, config_size, config);
 
     if (WINSENS_OK != status)
@@ -48,6 +53,11 @@ void config_get(config_id_t id, void *config, uint16_t config_size, const void *
 
 winsens_status_t config_set(config_id_t id, const void *config, uint16_t config_size)
 {
+    if (!g_initialized)
+    {
+        return WINSENS_NOT_INITIALIZED;
+    }
+
     winsens_status_t status = storage_write(STORAGE_FILE_ID_STORAGE, id, config_size, (uint8_t *) config);
     LOG_WARNING_CHECK(status);
 

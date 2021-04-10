@@ -35,6 +35,7 @@ static window_id_t get_window_id(const adc_channel_id_t windows_id);
  */
 static const adc_channel_id_t   WINDOW_ADC_MAP[WINDOW_STATE_CFG_NUMBER] = WINDOW_STATE_CFG_WINDOW_MAP_INIT;
 
+static bool                     g_initialized = false;
 static window_state_type_t      g_window_state[WINDOW_STATE_CFG_NUMBER];
 static window_state_callback_t  g_callbacks[WINDOW_STATE_CFG_NUMBER] = {NULL};
 static uint16_t                 g_open_closed_threshold = 0;
@@ -46,25 +47,39 @@ static uint16_t                 g_open_closed_threshold = 0;
  */
 winsens_status_t window_state_init(void)
 {
-    winsens_status_t status = distance_init();
+    winsens_status_t status = WINSENS_OK;
 
-    if (WINSENS_OK != status)
+    if (!g_initialized)
     {
-        return status;
+        g_initialized = true;
+
+        status = distance_init();
+
+        if (WINSENS_OK != status)
+        {
+            return status;
+        }
+
+        g_open_closed_threshold = OPEN_THRESHOLD_DEFAULT;
+
+        memset(g_window_state, 0, sizeof(bool) * WINDOW_STATE_CFG_NUMBER);
+        memset(g_callbacks, 0, sizeof(window_state_callback_t) * WINDOW_STATE_CFG_NUMBER);
+
+        status = start_distance_sensors();
     }
 
-    g_open_closed_threshold = OPEN_THRESHOLD_DEFAULT;
-
-    memset(g_window_state, 0, sizeof(bool) * WINDOW_STATE_CFG_NUMBER);
-    memset(g_callbacks, 0, sizeof(window_state_callback_t) * WINDOW_STATE_CFG_NUMBER);
-
-    return start_distance_sensors();
+    return status;
 }
 
 winsens_status_t window_state_subscribe(
     window_id_t windowsId,
     window_state_callback_t callback)
 {
+    if (!g_initialized)
+    {
+        return WINSENS_NOT_INITIALIZED;
+    }
+
     if (windowsId >= WINDOW_STATE_CFG_NUMBER)
     {
         return WINSENS_ERROR;
@@ -84,6 +99,11 @@ void window_state_unsubscribe(
     window_id_t windowsId,
     window_state_callback_t callback)
 {
+    if (!g_initialized)
+    {
+        return;
+    }
+
     (void) callback;
 
     if (windowsId >= WINDOW_STATE_CFG_NUMBER)

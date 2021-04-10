@@ -31,6 +31,7 @@ static void digital_input_callback(
     digital_io_input_pin_t pin,
     bool on);
 
+static bool g_initialized = false;
 static const button_cfg_t g_buttons_config[] = BUTTONS_COOFIG_INIT;
 static button_pin_callback_t g_button_callbacks[BUTTONS_NUMBER];
 
@@ -40,10 +41,15 @@ LOG_REGISTER();
 
 winsens_status_t button_init(void)
 {
-    uint32_t i;
-    for (i = 0; i < BUTTONS_NUMBER; ++i)
+    if (false == g_initialized)
     {
-        g_button_callbacks[i] = (button_pin_callback_t) BUTTON_CALLBACK_INIT;
+        g_initialized = true;
+
+        uint32_t i;
+        for (i = 0; i < BUTTONS_NUMBER; ++i)
+        {
+            g_button_callbacks[i] = (button_pin_callback_t) BUTTON_CALLBACK_INIT;
+        }
     }
 
     return WINSENS_OK;
@@ -53,6 +59,8 @@ winsens_status_t button_register_callback(
     button_id_t btn,
     winsens_event_handler_t eventHandler)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     if (btn < BUTTONS_NUMBER)
     {
         winsens_status_t status = digital_io_register_callback(g_buttons_config[btn].pin, digital_input_callback);
@@ -69,6 +77,8 @@ winsens_status_t button_register_callback(
 void button_unregister_callback(
     button_id_t btn)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, );
+
     if (btn < BUTTONS_NUMBER)
     {
         g_button_callbacks[btn] = (button_pin_callback_t) BUTTON_CALLBACK_INIT;

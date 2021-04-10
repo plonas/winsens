@@ -150,7 +150,7 @@ const static ble_peripheral_state_t BONDING_STATE           = { BLE_PERIPHERAL_S
 const static ble_peripheral_state_t UNBONDING_STATE         = { BLE_PERIPHERAL_STATE_UNBONDING, unbonding_evt_handler, unbonding_on_enter, empty_on_exit };
 
 
-static bool g_ble_peripheral_init                           = false;
+static bool g_initialized                                   = false;
 static bool g_connectable                                   = false;
 static uint16_t g_conn_handle                               = BLE_CONN_HANDLE_INVALID;                                      /**< Handle of the current connection. */
 static const ble_peripheral_state_t *g_current_state        = &UNKNOWN_STATE;
@@ -173,9 +173,9 @@ winsens_status_t ble_peripheral_init(void)
 {
     winsens_status_t status = WINSENS_OK;
 
-    if (false == g_ble_peripheral_init)
+    if (false == g_initialized)
     {
-        g_ble_peripheral_init = true;
+        g_initialized = true;
 
         ble_stack_init();
         gap_params_init();
@@ -201,6 +201,8 @@ winsens_status_t ble_peripheral_init(void)
 
 winsens_status_t ble_peripheral_disconnect()
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_DISCONNECT, .data = 0 };
     evt_handler(e);
     return WINSENS_OK;
@@ -208,6 +210,8 @@ winsens_status_t ble_peripheral_disconnect()
 
 winsens_status_t ble_peripheral_start_advertising(void)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_ADVERTISE, .data = 0 };
     evt_handler(e);
     return WINSENS_OK;
@@ -215,6 +219,8 @@ winsens_status_t ble_peripheral_start_advertising(void)
 
 winsens_status_t ble_peripheral_delete_all_peers()
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_UNBOND, .data = 0 };
     evt_handler(e);
     return WINSENS_OK;
@@ -222,6 +228,8 @@ winsens_status_t ble_peripheral_delete_all_peers()
 
 winsens_status_t ble_peripheral_bond(void)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_BOND, .data = 0 };
     evt_handler(e);
     return WINSENS_OK;
@@ -229,6 +237,8 @@ winsens_status_t ble_peripheral_bond(void)
 
 winsens_status_t ble_peripheral_unbond(void)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_UNBOND, .data = 0 };
     evt_handler(e);
     return WINSENS_OK;
@@ -236,6 +246,8 @@ winsens_status_t ble_peripheral_unbond(void)
 
 winsens_status_t ble_peripheral_subscribe(winsens_event_handler_t evt_handler)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     for (uint32_t i = 0; i < BLE_PERIPERAL_MAX_EVT_HANDLERS; ++i)
     {
         if (NULL == g_evt_handlers[i])
@@ -250,6 +262,8 @@ winsens_status_t ble_peripheral_subscribe(winsens_event_handler_t evt_handler)
 
 winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     for (uint32_t i = 0; i < BLE_PERIPERAL_MAX_CALLBACKS; ++i)
     {
         if (NULL == g_callbacks[i])
@@ -264,6 +278,8 @@ winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback
 
 winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     ble_gatts_hvx_params_t hv_params;
     hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
     hv_params.type = BLE_GATT_HVX_NOTIFICATION;

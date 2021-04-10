@@ -44,7 +44,8 @@ static bool set_write_data(
 static void fds_event_handler(
     fds_evt_t const * const p_fds_evt);
 
-static storage_data_wrapper_t g_records_buffer[STORAGE_RECORDS_BUFFER_LENGTH];
+static bool                             g_initialized = false;
+static storage_data_wrapper_t           g_records_buffer[STORAGE_RECORDS_BUFFER_LENGTH];
 
 
 LOG_REGISTER();
@@ -52,20 +53,25 @@ LOG_REGISTER();
 
 winsens_status_t storage_init(void)
 {
-    uint_fast8_t i = 0;
-
-    ret_code_t ret = fds_register(fds_event_handler);
-    LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
-
-    ret = fds_init();
-    LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
-
-    for (i = 0; i < STORAGE_RECORDS_BUFFER_LENGTH; ++i)
+    if (false == g_initialized)
     {
-        memset(&g_records_buffer[i], 0, sizeof(g_records_buffer[i]));
-    }
+        g_initialized = true;
 
-    fds_gc();
+        uint_fast8_t i = 0;
+
+        ret_code_t ret = fds_register(fds_event_handler);
+        LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+
+        ret = fds_init();
+        LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+
+        for (i = 0; i < STORAGE_RECORDS_BUFFER_LENGTH; ++i)
+        {
+            memset(&g_records_buffer[i], 0, sizeof(g_records_buffer[i]));
+        }
+
+        fds_gc();
+    }
 
     return WINSENS_OK;
 }
@@ -76,6 +82,8 @@ winsens_status_t storage_read(
     uint32_t size,
     uint8_t* data)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     fds_record_desc_t record_desc;
     fds_flash_record_t flash_record;
     fds_find_token_t ftok = { 0, 0 };
@@ -111,6 +119,8 @@ winsens_status_t storage_write(
     uint32_t size,
     uint8_t* data)
 {
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
     ret_code_t          ret = FDS_ERR_INTERNAL;
     fds_record_desc_t   record_desc;
     fds_find_token_t    ftok = { 0, 0 };

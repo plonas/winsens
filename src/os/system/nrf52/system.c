@@ -28,8 +28,9 @@ static void soc_event_handler(
     uint32_t evt_id,
     void * p_context);
 
-static WS_TimerId_t g_system_timer = 0;
-static uint32_t g_time_counter = 0;
+static bool                             g_initialized = false;
+static WS_TimerId_t                     g_system_timer = 0;
+static uint32_t                         g_time_counter = 0;
 
 
 LOG_REGISTER();
@@ -37,26 +38,32 @@ LOG_REGISTER();
 
 winsens_status_t system_init(void)
 {
-    uint32_t err_code;
-    winsens_status_t status = WINSENS_ERROR;
+    winsens_status_t status = WINSENS_OK;
 
-    err_code = nrf_sdh_enable_request();
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+    if (false == g_initialized)
+    {
+        g_initialized = true;
 
-    // Register handlers for SoC events.
-    NRF_SDH_SOC_OBSERVER(m_soc_observer, APP_SOC_OBSERVER_PRIO, soc_event_handler, NULL);
+        uint32_t err_code;
 
-    status = ITimer_Init();
-    LOG_ERROR_RETURN(status, status);
+        err_code = nrf_sdh_enable_request();
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
-    status = digital_io_init();
-    LOG_ERROR_RETURN(status, status);
+        // Register handlers for SoC events.
+        NRF_SDH_SOC_OBSERVER(m_soc_observer, APP_SOC_OBSERVER_PRIO, soc_event_handler, NULL);
 
-    status = button_init();
-    LOG_ERROR_RETURN(status, status);
+        status = ITimer_Init();
+        LOG_ERROR_RETURN(status, status);
 
-    status = ITimer_SetTimer(100, true, timer_callback, &g_system_timer);
-    LOG_ERROR_RETURN(status, status);
+        status = digital_io_init();
+        LOG_ERROR_RETURN(status, status);
+
+        status = button_init();
+        LOG_ERROR_RETURN(status, status);
+
+        status = ITimer_SetTimer(100, true, timer_callback, &g_system_timer);
+        LOG_ERROR_RETURN(status, status);
+    }
 
     return status;
 }
