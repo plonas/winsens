@@ -30,14 +30,9 @@ typedef struct
 
 } adc_channel_t;
 
-static void adc_isr(
-    nrfx_saadc_evt_t const *event);
-static void timer_isr(
-    nrf_timer_event_t eventType,
-    void* context);
-static void adc_event_handler(
-    void *p_event_data,
-    uint16_t event_size);
+static void adc_isr(nrfx_saadc_evt_t const *event);
+static void timer_isr(nrf_timer_event_t eventType, void* context);
+static void adc_event_handler(void *p_event_data, uint16_t event_size);
 
 
 static const uint32_t       ADC_CHANNEL_CONFIG[ADC_CHANNELS_NUMBER] = ADC_CFG_CHANNEL_INIT;
@@ -89,9 +84,7 @@ winsens_status_t adc_init(void)
     return WINSENS_OK;
 }
 
-winsens_status_t adc_enable_channel(
-    adc_channel_id_t channelId,
-    adc_callback_t callback)
+winsens_status_t adc_enable_channel(adc_channel_id_t channelId, adc_callback_t callback)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
@@ -119,8 +112,7 @@ winsens_status_t adc_enable_channel(
     return WINSENS_OK;
 }
 
-void adc_disable_channel(
-    adc_channel_id_t channelId)
+void adc_disable_channel(adc_channel_id_t channelId)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, );
 
@@ -173,8 +165,7 @@ void adc_stop(void)
     }
 }
 
-static void adc_isr(
-    nrfx_saadc_evt_t const *event)
+static void adc_isr(nrfx_saadc_evt_t const *event)
 {
     if (NRFX_SAADC_EVT_DONE == event->type)
     {
@@ -203,15 +194,11 @@ static void adc_isr(
     }
 }
 
-static void timer_isr(
-    nrf_timer_event_t eventType,
-    void* context)
+static void timer_isr(nrf_timer_event_t eventType, void* context)
 {
 }
 
-static void adc_event_handler(
-    void *p_event_data,
-    uint16_t event_size)
+static void adc_event_handler(void *p_event_data, uint16_t event_size)
 {
     const adc_event_t *adcEvent = p_event_data;
     UNUSED_PARAMETER(event_size);

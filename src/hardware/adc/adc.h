@@ -23,12 +23,9 @@ typedef struct
 
 winsens_status_t adc_init(void);
 
-winsens_status_t adc_enable_channel(
-    adc_channel_id_t channelId,
-    adc_callback_t callback);
+winsens_status_t adc_enable_channel(adc_channel_id_t channelId, adc_callback_t callback);
 
-void adc_disable_channel(
-    adc_channel_id_t channelId);
+void adc_disable_channel(adc_channel_id_t channelId);
 
 winsens_status_t adc_start(void);
 
