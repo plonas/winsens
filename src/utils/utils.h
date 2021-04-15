@@ -8,8 +8,10 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#define UTILS_ASSERT(x)        while(false == (x))
 
-#define UTILS_STRING(x)        #x
+#define UTILS_ASSERT(x)         while(false == (x))
+
+#define UTILS_STRING(x)         #x
+
 
 #endif /* UTILS_H_ */

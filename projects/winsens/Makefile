@@ -14,7 +14,9 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hardware/adc/nrf52/adc.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
+  $(PROJ_DIR)/src/hardware/spi/nrf52/spi.c \
   $(PROJ_DIR)/src/os/system/nrf52/system.c \
+  $(PROJ_DIR)/src/os/critical_region/nrf52/critical_region.c \
   $(PROJ_DIR)/src/hardware/digital_io/nrf52/digital_io.c \
   $(PROJ_DIR)/src/hardware/button/common/button.c \
   $(PROJ_DIR)/src/os/timer/nrf52/timer.c \
@@ -25,6 +27,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
+  $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -99,6 +102,7 @@ INC_FOLDERS += \
   ./config \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/src/utils \
+  $(PROJ_DIR)/src/utils/circular_buf \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
@@ -111,9 +115,11 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/hardware/digital_io \
   $(PROJ_DIR)/src/hardware/ble_peripheral \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl \
+  $(PROJ_DIR)/src/hardware/spi \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \
+  $(PROJ_DIR)/src/os/critical_region \
   $(PROJ_DIR)/src/app/hmi \
 
 INC_FOLDERS += \
