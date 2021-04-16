@@ -22,7 +22,7 @@ typedef struct
 } circular_buf_t;
 
 
-winsens_status_t circular_buf_init(circular_buf_t* buf);
+winsens_status_t circular_buf_init(circular_buf_t* buf, uint8_t* data_buffer, uint32_t size);
 
 uint32_t circular_buf_size(const circular_buf_t* buf);
 

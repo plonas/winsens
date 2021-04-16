@@ -12,11 +12,13 @@
 #include "string.h"
 
 
-winsens_status_t circular_buf_init(circular_buf_t *buf)
+winsens_status_t circular_buf_init(circular_buf_t* buf, uint8_t* data_buffer, uint32_t size)
 {
-    buf->full = false;
-    buf->head = 0;
-    buf->tail = 0;
+    buf->full       = false;
+    buf->head       = 0;
+    buf->tail       = 0;
+    buf->buffer     = data_buffer;
+    buf->capacity   = size;
 
     return WINSENS_OK;
 }
