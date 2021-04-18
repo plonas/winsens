@@ -11,11 +11,13 @@
 
 typedef enum {
     DIGITAL_IO_INPUT_PAIR_BTN,
+    DIGITAL_IO_INPUT_ACC_FIFO_INT,
 
 } digital_io_input_pin_enum_t;
 
 #define DIGITAL_IO_CFG_INPUT_INIT { \
     { NRF_GPIO_PIN_MAP(1, 6), DIGITAL_IO_INPUT_PULL_UP }, \
+    { NRF_GPIO_PIN_MAP(0, 15), DIGITAL_IO_INPUT_PULL_DOWN }, \
 }
 
 #endif /* DIGITAL_IO_CFG_H_ */

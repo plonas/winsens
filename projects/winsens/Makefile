@@ -24,6 +24,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/window_state/simulator/window_state.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
+  $(PROJ_DIR)/src/firmware/acc/lis3dh/acc.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
@@ -107,6 +108,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
+  $(PROJ_DIR)/src/firmware/acc \
   $(PROJ_DIR)/src/os/log \
   $(PROJ_DIR)/src/os/log/nrf52 \
   $(PROJ_DIR)/src/hardware/button \

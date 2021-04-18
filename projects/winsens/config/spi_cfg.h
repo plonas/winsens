@@ -10,8 +10,6 @@
 
 
 #define SPI_CFG_MAX_SUBSCRIBERS     (2)
-#define SPI_CFG_RX_BUFFER_SIZE      (128)
-#define SPI_CFG_TX_BUFFER_SIZE      (128)
 
 #define SPI_CFG_FREQUENCY           NRF_SPI_FREQ_125K
 
