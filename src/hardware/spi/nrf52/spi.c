@@ -9,7 +9,7 @@
 #include "spi.h"
 #include "spi_cfg.h"
 #include "task_queue.h"
-#define ILOG_MODULE_NAME SPI
+#define ILOG_MODULE_NAME WSPI
 #include "log.h"
 #include "log_internal_nrf52.h"
 #include "nrfx_spi.h"
@@ -39,9 +39,12 @@ winsens_status_t spi_init(void)
         spi_config.mosi_pin             = SPI_CFG_MOSI_PIN;
         spi_config.ss_pin               = SPI_CFG_SS_PIN;
         spi_config.frequency            = SPI_CFG_FREQUENCY;
+        spi_config.orc                  = 0x00;
 
         task_queue_init();
-        nrfx_spi_init(&g_spi, &spi_config, event_handler, NULL);
+        nrfx_err_t err = nrfx_spi_init(&g_spi, &spi_config, event_handler, NULL);
+        LOG_NRF_DEBUG_CHECK(err);
+        LOG_FLUSH();
     }
 
     return WINSENS_OK;
@@ -68,7 +71,9 @@ winsens_status_t spi_transfer(uint8_t *tx, uint16_t tx_len, uint8_t *rx, uint16_
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
     nrfx_spi_xfer_desc_t desc = { .p_rx_buffer = rx, .rx_length = rx_len, .p_tx_buffer = tx, .tx_length = tx_len };
-    nrfx_spi_xfer(&g_spi, &desc, 0);
+    nrfx_err_t err = nrfx_spi_xfer(&g_spi, &desc, 0);
+    LOG_NRF_DEBUG_CHECK(err);
+    LOG_FLUSH();
 
     return WINSENS_OK;
 }

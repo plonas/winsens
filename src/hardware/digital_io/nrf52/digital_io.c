@@ -83,8 +83,9 @@ winsens_status_t digital_io_register_callback(
     {
         nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_TOGGLE(false);
         config.pull = convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[pin].pullUpDown);
-        ret_code_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)DIGITAL_IO_INPUT_CONFIG[pin].pin_no, &config, digital_io_input_isr);
+        nrfx_err_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)DIGITAL_IO_INPUT_CONFIG[pin].pin_no, &config, digital_io_input_isr);
         LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+        LOG_FLUSH();
 
         nrfx_gpiote_in_event_enable(DIGITAL_IO_INPUT_CONFIG[pin].pin_no, true);
 

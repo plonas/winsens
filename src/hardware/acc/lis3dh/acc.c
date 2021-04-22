@@ -59,7 +59,7 @@
 #define LIS3DH_CTRL_REG1_VAL            0b00101111
 //#define LIS3DH_CTRL_REG2_VAL            0b00101111
 #define LIS3DH_CTRL_REG3_VAL            0b00000100
-//#define LIS3DH_CTRL_REG4_VAL            0b00010000
+#define LIS3DH_CTRL_REG4_VAL            0b00001000
 #define LIS3DH_CTRL_REG5_VAL            0b01000000
 //#define LIS3DH_CTRL_REG6_VAL            0b00000000
 #define LIS3DH_FIFO_CTRL_REG_VAL        0b10001010
@@ -73,7 +73,7 @@
 #define LIS3DH_IS_READ_BIT_SET(x)       ((x) & LIS3DH_READ_REQ_BIT)
 #define LIS3DH_GET_REG(x)               ((x) & LIS3DH_REG_BITMASK)
 
-#define ACC_RX_BUFFER_SIZE              (196)
+#define ACC_RX_BUFFER_SIZE              (197)
 #define ACC_TX_BUFFER_SIZE              (8)
 #define ACC_DATA_BUFFER_LEN             (12)
 
@@ -81,18 +81,22 @@
 typedef enum
 {
     ACC_STATE_IDLE,
+    ACC_STATE_INIT,
     ACC_STATE_READ_FIFO,
 } acc_state_t;
 
 
 static void event_handler(winsens_event_t event);
 static void dio_callback(digital_io_input_pin_t pin, bool on);
+
+static void change_state(acc_state_t state);
+
 static void lis3dh_init(void);
 static void write_reg(uint8_t reg, uint8_t value);
 static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
 static void read_fifo(void);
-static void store_acc_data(uint8_t* data, uint16_t len);
+static void handle_acc_data(uint8_t* data, uint16_t len);
 static void update_subscribers(void);
 
 
@@ -103,8 +107,10 @@ static uint8_t                  g_fss                                   = 0; // 
 static winsens_event_handler_t  g_subscribers[ACC_CFG_MAX_SUBSCRIBERS]  = {NULL};
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
 static uint8_t                  g_tx_buffer[ACC_TX_BUFFER_SIZE];
-static acc_data_t               g_acc_data_buf[ACC_DATA_BUFFER_LEN];
-static uint16_t                 g_acc_data_len                          = 0;
+static acc_data_t               g_current_acc_data = {0};
+
+
+LOG_REGISTER();
 
 
 winsens_status_t acc_init(void)
@@ -140,32 +146,67 @@ winsens_status_t acc_subscribe(winsens_event_handler_t event_handler)
     return WINSENS_NO_RESOURCES;
 }
 
-const acc_data_t* acc_get_data(uint16_t* len)
+winsens_status_t acc_get_data(acc_data_t* data)
 {
-    LOG_ERROR_BOOL_RETURN(g_initialized, NULL);
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    *len = g_acc_data_len;
-    return g_acc_data_buf;
+    *data = g_current_acc_data;
+    return WINSENS_OK;
 }
 
 static void event_handler(winsens_event_t event)
 {
     if (SPI_EVT_TRANSFER_DONE == event.id)
     {
+        LOG_DEBUG("SPI_EVT_TRANSFER_DONE: %d, 0x%x", g_current_state, LIS3DH_GET_REG(g_tx_buffer[0]));
+
         switch (g_current_state)
         {
+            case ACC_STATE_INIT:
+                switch (LIS3DH_GET_REG(g_tx_buffer[0]))
+                {
+                case LIS3DH_CTRL_REG1:
+                    write_reg(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
+                    break;
+
+                case LIS3DH_CTRL_REG3:
+                    write_reg(LIS3DH_CTRL_REG4, LIS3DH_CTRL_REG4_VAL);
+                    break;
+
+                case LIS3DH_CTRL_REG4:
+                    write_reg(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
+                    break;
+
+                case LIS3DH_CTRL_REG5:
+                    write_reg(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL);
+                    break;
+
+                case LIS3DH_FIFO_CTRL_REG:
+                    change_state(ACC_STATE_IDLE);
+                    break;
+
+                default:
+                    break;
+                }
+                break;
+
             case ACC_STATE_READ_FIFO:
                 switch (LIS3DH_GET_REG(g_tx_buffer[0]))
                 {
+                case LIS3DH_INT1_SRC:
+                    LOG_DEBUG("INT1_SRC: %u", g_rx_buffer[1]);
+                    read_reg(LIS3DH_FIFO_SRC_REG);
+                    break;
+
                 case LIS3DH_FIFO_SRC_REG:
-                    g_fss = g_rx_buffer[0] & LIS3DH_FSS_BITMASK;
+                    g_fss = g_rx_buffer[1] & LIS3DH_FSS_BITMASK;
+                    LOG_DEBUG("xxx g_fss: %u", g_fss);
                     read_multiple_bytes(LIS3DH_OUT_X_L, g_fss * 6);
                     break;
 
                 case LIS3DH_OUT_X_L:
-                    store_acc_data(g_rx_buffer, g_fss);
-                    g_current_state = ACC_STATE_IDLE;
-                    update_subscribers();
+                    change_state(ACC_STATE_IDLE);
+                    handle_acc_data(&g_rx_buffer[1], g_fss * 6);
                     break;
 
                 default:
@@ -187,12 +228,36 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
     }
 }
 
+static void change_state(acc_state_t state)
+{
+    // Exit actions
+    switch (g_current_state)
+    {
+        default:
+            break;
+    }
+
+    g_current_state = state;
+
+    // Enter actions
+    switch (g_current_state)
+    {
+        case ACC_STATE_INIT:
+            write_reg(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL);
+            break;
+
+        case ACC_STATE_READ_FIFO:
+            read_reg(LIS3DH_INT1_SRC);
+            break;
+
+        default:
+            break;
+    }
+}
+
 static void lis3dh_init(void)
 {
-    write_reg(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL);
-    write_reg(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
-    write_reg(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
-    write_reg(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL);
+    change_state(ACC_STATE_INIT);
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
@@ -205,38 +270,35 @@ static void write_reg(uint8_t reg, uint8_t value)
 static void read_reg(uint8_t reg)
 {
     g_tx_buffer[0] = reg | LIS3DH_READ_REQ_BIT;
-    spi_transfer(g_tx_buffer, 1, g_rx_buffer, 1);
+    spi_transfer(g_tx_buffer, 1, g_rx_buffer, 2);
 }
 
 static void read_multiple_bytes(uint8_t reg, uint16_t len)
 {
     g_tx_buffer[0] = reg | LIS3DH_READ_REQ_BIT | LIS3DH_AUTO_INCREMENT_BIT;
-    spi_transfer(g_tx_buffer, 1, g_rx_buffer, len);
+    spi_transfer(g_tx_buffer, 1, g_rx_buffer, len + 1);
 }
 
 static void read_fifo(void)
 {
-    g_current_state = ACC_STATE_READ_FIFO;
-    read_reg(LIS3DH_FIFO_SRC_REG);
+    change_state(ACC_STATE_READ_FIFO);
 }
 
-static void store_acc_data(uint8_t* data, uint16_t len)
+static void handle_acc_data(uint8_t* data, uint16_t len)
 {
     uint16_t i = 0;
-    uint16_t n = 0;
 
-    while (i < ACC_DATA_BUFFER_LEN && n < len)
+    while (i < len)
     {
-        g_acc_data_buf[i].x = *((uint16_t*)&data[n]);
-        n += 2;
-        g_acc_data_buf[i].y = *((uint16_t*)&data[n]);
-        n += 2;
-        g_acc_data_buf[i].z = *((uint16_t*)&data[n]);
-        n += 2;
-        i++;
-    }
+        g_current_acc_data.x = *((int16_t*)&data[i]);
+        i += 2;
+        g_current_acc_data.y = *((int16_t*)&data[i]);
+        i += 2;
+        g_current_acc_data.z = *((int16_t*)&data[i]);
+        i += 2;
 
-    g_acc_data_len = i;
+        update_subscribers();
+    }
 }
 
 static void update_subscribers(void)
@@ -250,4 +312,7 @@ static void update_subscribers(void)
             g_subscribers[i](e);
         }
     }
+
+    LOG_DEBUG("Acc: %d %d %d", g_current_acc_data.x, g_current_acc_data.y, g_current_acc_data.z);
+    LOG_FLUSH();
 }

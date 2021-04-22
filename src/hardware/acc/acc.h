@@ -19,9 +19,9 @@ typedef enum
 
 typedef struct
 {
-    uint16_t x;
-    uint16_t y;
-    uint16_t z;
+    int16_t x;
+    int16_t y;
+    int16_t z;
 } acc_data_t;
 
 
@@ -29,7 +29,7 @@ winsens_status_t acc_init(void);
 
 winsens_status_t acc_subscribe(winsens_event_handler_t event_handler);
 
-const acc_data_t* acc_get_data(uint16_t* len);
+winsens_status_t acc_get_data(acc_data_t* data);
 
 
 #endif /* ACC_H_ */

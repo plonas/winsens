@@ -24,7 +24,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/window_state/simulator/window_state.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
-  $(PROJ_DIR)/src/firmware/acc/lis3dh/acc.c \
+  $(PROJ_DIR)/src/hardware/acc/lis3dh/acc.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
@@ -37,6 +37,7 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_timer.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_ppi.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_spi.c \
   $(SDK_ROOT)/modules/nrfx/soc/nrfx_atomic.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
@@ -108,7 +109,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
-  $(PROJ_DIR)/src/firmware/acc \
+  $(PROJ_DIR)/src/hardware/acc \
   $(PROJ_DIR)/src/os/log \
   $(PROJ_DIR)/src/os/log/nrf52 \
   $(PROJ_DIR)/src/hardware/button \

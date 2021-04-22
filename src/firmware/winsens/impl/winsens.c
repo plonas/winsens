@@ -12,6 +12,7 @@
 #include "config.h"
 #define ILOG_MODULE_NAME WNSN
 #include "log.h"
+#include "acc.h"
 
 
 LOG_REGISTER();
@@ -27,6 +28,8 @@ winsens_status_t IWinsens_Init(void)
 
     status = hmi_init();
     LOG_ERROR_RETURN(status, status);
+
+    acc_init();
 
     return WINSENS_OK;
 }
