@@ -11,6 +11,7 @@
 #include "spi.h"
 #include "digital_io.h"
 #include "digital_io_cfg.h"
+#include "command.h"
 #define ILOG_MODULE_NAME ACC
 #include "log.h"
 
@@ -76,6 +77,10 @@
 #define ACC_RX_BUFFER_SIZE              (197)
 #define ACC_TX_BUFFER_SIZE              (8)
 #define ACC_DATA_BUFFER_LEN             (12)
+#define ACC_COMMANDS_MAX                (8)
+
+#define ACC_CMD_W_INIT(r, v)            (acc_command_t){.base.command = command_execute, .rx_len = 0, .reg = r, .tx_value = v, .read = false}
+#define ACC_CMD_R_INIT(r, l)            (acc_command_t){.base.command = command_execute, .rx_len = l, .reg = r, .tx_value = 0, .read = true}
 
 
 typedef enum
@@ -84,6 +89,15 @@ typedef enum
     ACC_STATE_INIT,
     ACC_STATE_READ_FIFO,
 } acc_state_t;
+
+typedef struct
+{
+    command_t   base;
+    uint16_t    rx_len;
+    uint8_t     reg;
+    uint8_t     tx_value;
+    bool        read;
+} acc_command_t;
 
 
 static void event_handler(winsens_event_t event);
@@ -98,6 +112,9 @@ static void read_multiple_bytes(uint8_t reg, uint16_t len);
 static void read_fifo(void);
 static void handle_acc_data(uint8_t* data, uint16_t len);
 static void update_subscribers(void);
+static void command_execute(command_t const* command);
+static bool execute_one_cmd(void);
+static void reset_commands(void);
 
 
 static bool                     g_initialized                           = false;
@@ -108,6 +125,9 @@ static winsens_event_handler_t  g_subscribers[ACC_CFG_MAX_SUBSCRIBERS]  = {NULL}
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
 static uint8_t                  g_tx_buffer[ACC_TX_BUFFER_SIZE];
 static acc_data_t               g_current_acc_data = {0};
+static acc_command_t            g_commands[ACC_COMMANDS_MAX];
+static uint8_t                  g_commands_num                           = 0;
+static uint8_t                  g_commands_ran                           = 0;
 
 
 LOG_REGISTER();
@@ -118,6 +138,10 @@ winsens_status_t acc_init(void)
     if (!g_initialized)
     {
         g_initialized = true;
+
+        memset(g_commands, 0, sizeof(acc_command_t) * ACC_COMMANDS_MAX);
+        g_commands_num = 0;
+        g_commands_ran = 0;
 
         spi_init();
         spi_subscribe(event_handler);
@@ -163,54 +187,28 @@ static void event_handler(winsens_event_t event)
         switch (g_current_state)
         {
             case ACC_STATE_INIT:
-                switch (LIS3DH_GET_REG(g_tx_buffer[0]))
+                if (false == execute_one_cmd())
                 {
-                case LIS3DH_CTRL_REG1:
-                    write_reg(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
-                    break;
-
-                case LIS3DH_CTRL_REG3:
-                    write_reg(LIS3DH_CTRL_REG4, LIS3DH_CTRL_REG4_VAL);
-                    break;
-
-                case LIS3DH_CTRL_REG4:
-                    write_reg(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
-                    break;
-
-                case LIS3DH_CTRL_REG5:
-                    write_reg(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL);
-                    break;
-
-                case LIS3DH_FIFO_CTRL_REG:
                     change_state(ACC_STATE_IDLE);
-                    break;
-
-                default:
-                    break;
                 }
                 break;
 
             case ACC_STATE_READ_FIFO:
                 switch (LIS3DH_GET_REG(g_tx_buffer[0]))
                 {
-                case LIS3DH_INT1_SRC:
-                    LOG_DEBUG("INT1_SRC: %u", g_rx_buffer[1]);
-                    read_reg(LIS3DH_FIFO_SRC_REG);
-                    break;
-
                 case LIS3DH_FIFO_SRC_REG:
                     g_fss = g_rx_buffer[1] & LIS3DH_FSS_BITMASK;
-                    LOG_DEBUG("xxx g_fss: %u", g_fss);
-                    read_multiple_bytes(LIS3DH_OUT_X_L, g_fss * 6);
-                    break;
-
-                case LIS3DH_OUT_X_L:
-                    change_state(ACC_STATE_IDLE);
-                    handle_acc_data(&g_rx_buffer[1], g_fss * 6);
+                    g_commands[g_commands_num++] = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * 6);
                     break;
 
                 default:
                     break;
+                }
+
+                if (false == execute_one_cmd())
+                {
+                    change_state(ACC_STATE_IDLE);
+                    handle_acc_data(&g_rx_buffer[1], g_fss * 6);
                 }
                 break;
 
@@ -233,6 +231,14 @@ static void change_state(acc_state_t state)
     // Exit actions
     switch (g_current_state)
     {
+    case ACC_STATE_INIT:
+        reset_commands();
+        break;
+
+    case ACC_STATE_READ_FIFO:
+        reset_commands();
+        break;
+
         default:
             break;
     }
@@ -243,11 +249,17 @@ static void change_state(acc_state_t state)
     switch (g_current_state)
     {
         case ACC_STATE_INIT:
-            write_reg(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG4, LIS3DH_CTRL_REG4_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL);
+            execute_one_cmd();
             break;
 
         case ACC_STATE_READ_FIFO:
-            read_reg(LIS3DH_INT1_SRC);
+            g_commands[g_commands_num++] = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
+            execute_one_cmd();
             break;
 
         default:
@@ -315,4 +327,43 @@ static void update_subscribers(void)
 
     LOG_DEBUG("Acc: %d %d %d", g_current_acc_data.x, g_current_acc_data.y, g_current_acc_data.z);
     LOG_FLUSH();
+}
+
+static void command_execute(command_t const* command)
+{
+    acc_command_t const* acc_cmd = (acc_command_t*)command;
+
+    if (acc_cmd->read)
+    {
+        if (1 == acc_cmd->rx_len)
+        {
+            read_reg(acc_cmd->reg);
+        }
+        else
+        {
+            read_multiple_bytes(acc_cmd->reg, acc_cmd->rx_len);
+        }
+    }
+    else
+    {
+        write_reg(acc_cmd->reg, acc_cmd->tx_value);
+    }
+}
+
+static bool execute_one_cmd(void)
+{
+    if (g_commands_ran < g_commands_num)
+    {
+        g_commands[g_commands_ran].base.command((command_t const*)&g_commands[g_commands_ran]);
+        g_commands_ran++;
+        return true;
+    }
+
+    return false;
+}
+
+static void reset_commands(void)
+{
+    g_commands_num = 0;
+    g_commands_ran = 0;
 }

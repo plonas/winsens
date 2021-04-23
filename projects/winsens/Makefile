@@ -105,6 +105,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/src/utils \
   $(PROJ_DIR)/src/utils/circular_buf \
+  $(PROJ_DIR)/src/utils/command \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \
