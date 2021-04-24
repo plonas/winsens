@@ -57,7 +57,7 @@
 #define LIS3DH_TIME_WINDOW              0x3D
 
 //#define LIS3DH_TEMP_CFG_REG_VAL         0b00000000
-#define LIS3DH_CTRL_REG1_VAL            0b00101111
+#define LIS3DH_CTRL_REG1_VAL            0b00001111
 //#define LIS3DH_CTRL_REG2_VAL            0b00101111
 #define LIS3DH_CTRL_REG3_VAL            0b00000100
 #define LIS3DH_CTRL_REG4_VAL            0b00001000
@@ -106,6 +106,7 @@ static void dio_callback(digital_io_input_pin_t pin, bool on);
 static void change_state(acc_state_t state);
 
 static void lis3dh_init(void);
+static uint8_t get_freq_cfg(void);
 static void write_reg(uint8_t reg, uint8_t value);
 static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
@@ -120,6 +121,8 @@ static void reset_commands(void);
 static bool                     g_initialized                           = false;
 static acc_state_t              g_current_state                         = ACC_STATE_IDLE;
 static uint8_t                  g_fss                                   = 0; // fifo stored samples
+static acc_t                    g_hp_filter                             = {0};
+static uint32_t                 g_skipped_samples                       = 0;
 
 static winsens_event_handler_t  g_subscribers[ACC_CFG_MAX_SUBSCRIBERS]  = {NULL};
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
@@ -143,10 +146,12 @@ winsens_status_t acc_init(void)
         g_commands_num = 0;
         g_commands_ran = 0;
 
+        g_hp_filter = (acc_t){0, 0, 0};
+
         spi_init();
         spi_subscribe(event_handler);
 
-        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_FIFO_INT, dio_callback);
+        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT, dio_callback);
 
         lis3dh_init();
     }
@@ -168,6 +173,14 @@ winsens_status_t acc_subscribe(winsens_event_handler_t event_handler)
     }
 
     return WINSENS_NO_RESOURCES;
+}
+
+winsens_status_t acc_set_high_pass(int16_t x, int16_t y, int16_t z)
+{
+    g_hp_filter.x = x;
+    g_hp_filter.y = y;
+    g_hp_filter.z = z;
+    return WINSENS_OK;
 }
 
 winsens_status_t acc_get_data(acc_data_t* data)
@@ -220,7 +233,7 @@ static void event_handler(winsens_event_t event)
 
 static void dio_callback(digital_io_input_pin_t pin, bool on)
 {
-    if (DIGITAL_IO_INPUT_ACC_FIFO_INT == pin && on)
+    if (DIGITAL_IO_INPUT_ACC_INT == pin && on)
     {
         read_fifo();
     }
@@ -249,7 +262,7 @@ static void change_state(acc_state_t state)
     switch (g_current_state)
     {
         case ACC_STATE_INIT:
-            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL);
+            g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL | get_freq_cfg());
             g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
             g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG4, LIS3DH_CTRL_REG4_VAL);
             g_commands[g_commands_num++] = ACC_CMD_W_INIT(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
@@ -270,6 +283,44 @@ static void change_state(acc_state_t state)
 static void lis3dh_init(void)
 {
     change_state(ACC_STATE_INIT);
+}
+
+static uint8_t get_freq_cfg(void)
+{
+    uint8_t cfg = 0;
+    switch(ACC_CFG_SAMPLE_FREQ)
+    {
+        case 1:
+            cfg = (0x01 << 4);
+        break;
+        case 10:
+            cfg = (0x02 << 4);
+        break;
+        case 25:
+            cfg = (0x03 << 4);
+        break;
+        case 50:
+            cfg = (0x04 << 4);
+        break;
+        case 100:
+            cfg = (0x05 << 4);
+        break;
+        case 200:
+            cfg = (0x06 << 4);
+        break;
+        default:
+        case 400:
+            cfg = (0x07 << 4);
+        break;
+        case 1600:
+            cfg = (0x08 << 4);
+        break;
+        case 5000:
+            cfg = (0x09 << 4);
+        break;
+    }
+
+    return cfg;
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
@@ -302,14 +353,26 @@ static void handle_acc_data(uint8_t* data, uint16_t len)
 
     while (i < len)
     {
-        g_current_acc_data.x = *((int16_t*)&data[i]);
+        g_current_acc_data.acc.x = *((int16_t*)&data[i]);
         i += 2;
-        g_current_acc_data.y = *((int16_t*)&data[i]);
+        g_current_acc_data.acc.y = *((int16_t*)&data[i]);
         i += 2;
-        g_current_acc_data.z = *((int16_t*)&data[i]);
+        g_current_acc_data.acc.z = *((int16_t*)&data[i]);
         i += 2;
 
-        update_subscribers();
+        g_current_acc_data.time_delta = ACC_CFG_SAMPLE_FREQ * (1 + g_skipped_samples);
+
+        if (g_current_acc_data.acc.x >= g_hp_filter.x ||
+            g_current_acc_data.acc.y >= g_hp_filter.y ||
+            g_current_acc_data.acc.z >= g_hp_filter.z)
+        {
+            g_skipped_samples = 0;
+            update_subscribers();
+        }
+        else
+        {
+            g_skipped_samples++;
+        }
     }
 }
 
@@ -325,7 +388,7 @@ static void update_subscribers(void)
         }
     }
 
-    LOG_DEBUG("Acc: %d %d %d", g_current_acc_data.x, g_current_acc_data.y, g_current_acc_data.z);
+    LOG_DEBUG("Acc: %d %d %d", g_current_acc_data.acc.x, g_current_acc_data.acc.y, g_current_acc_data.acc.z);
     LOG_FLUSH();
 }
 

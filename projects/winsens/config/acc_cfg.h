@@ -11,5 +11,7 @@
 
 #define ACC_CFG_MAX_SUBSCRIBERS     (2)
 
+#define ACC_CFG_SAMPLE_FREQ         (10) // Hz
+
 
 #endif /* ACC_CFG_H_ */
