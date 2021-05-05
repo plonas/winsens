@@ -1,5 +1,5 @@
 /*
- * circular_buf.c
+ * circular_buf_safe.c
  *
  *  Created on: 15.04.2021
  *      Author: Damian Plonek
@@ -8,22 +8,31 @@
 
 #include "circular_buf.h"
 #include "critical_region.h"
-#include "nordic_common.h"
-#include "string.h"
+#include "utils.h"
+#include <string.h>
 
 
-winsens_status_t circular_buf_init(circular_buf_t* buf, uint8_t* data_buffer, uint32_t size)
+static uint32_t size(const circular_buf_t* buf);
+static uint32_t push(circular_buf_t *buf, const uint8_t *data, uint32_t len);
+static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len);
+
+
+winsens_status_t circular_buf_safe_init(circular_buf_t* buf, uint8_t* data_buffer, uint32_t cap)
 {
+    buf->mif.pop    = pop;
+    buf->mif.push   = push;
+    buf->mif.size   = size;
+
     buf->full       = false;
     buf->head       = 0;
     buf->tail       = 0;
     buf->buffer     = data_buffer;
-    buf->capacity   = size;
+    buf->capacity   = cap;
 
     return WINSENS_OK;
 }
 
-uint32_t circular_buf_size(const circular_buf_t* buf)
+static uint32_t size(const circular_buf_t* buf)
 {
     CRITICAL_REGION_ENTER();
 
@@ -45,7 +54,7 @@ uint32_t circular_buf_size(const circular_buf_t* buf)
     return size;
 }
 
-uint32_t circular_buf_push(circular_buf_t *buf, const uint8_t *data, uint32_t len)
+static uint32_t push(circular_buf_t *buf, const uint8_t *data, uint32_t len)
 {
     CRITICAL_REGION_ENTER();
 
@@ -85,7 +94,7 @@ uint32_t circular_buf_push(circular_buf_t *buf, const uint8_t *data, uint32_t le
     return copied;
 }
 
-uint32_t circular_buf_pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
+static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
 {
     CRITICAL_REGION_ENTER();
 

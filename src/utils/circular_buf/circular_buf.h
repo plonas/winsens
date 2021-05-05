@@ -12,17 +12,31 @@
 #include "winsens_types.h"
 
 
+struct circular_buf_struct_t;
+
+
+typedef uint32_t (*circular_buf_size_t)(const struct circular_buf_struct_t* buf);
+typedef uint32_t (*circular_buf_push_t)(struct circular_buf_struct_t* buf, const uint8_t* data, uint32_t len);
+typedef uint32_t (*circular_buf_pop_t)(struct circular_buf_struct_t* buf, uint8_t* data, uint32_t len);
+
 typedef struct
 {
-    uint32_t    capacity;
-    bool        full;
-    uint32_t    head;
-    uint32_t    tail;
-    uint8_t*    buffer;
+    circular_buf_size_t size;
+    circular_buf_push_t push;
+    circular_buf_pop_t  pop;
+} circular_buf_mif_t;
+
+typedef struct circular_buf_struct_t
+{
+    circular_buf_mif_t   mif;
+
+    uint32_t            capacity;
+    bool                full;
+    uint32_t            head;
+    uint32_t            tail;
+    uint8_t*            buffer;
 } circular_buf_t;
 
-
-winsens_status_t circular_buf_init(circular_buf_t* buf, uint8_t* data_buffer, uint32_t size);
 
 uint32_t circular_buf_size(const circular_buf_t* buf);
 

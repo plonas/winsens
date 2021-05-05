@@ -29,7 +29,9 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
-  $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf.c \
+  $(PROJ_DIR)/src/utils/circular_buf/circular_buf.c \
+  $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf_safe.c \
+  $(PROJ_DIR)/src/utils/circular_buf/nonsafe/circular_buf_nonsafe.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -106,6 +108,8 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/src/utils \
   $(PROJ_DIR)/src/utils/circular_buf \
+  $(PROJ_DIR)/src/utils/circular_buf/safe \
+  $(PROJ_DIR)/src/utils/circular_buf/nonsafe \
   $(PROJ_DIR)/src/utils/command \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \

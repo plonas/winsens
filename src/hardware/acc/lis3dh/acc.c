@@ -8,7 +8,7 @@
 
 #include "acc.h"
 #include "acc_cfg.h"
-#include "circular_buf.h"
+#include "circular_buf_safe.h"
 #include "spi.h"
 #include "spi_cfg.h"
 #include "digital_io.h"
@@ -144,7 +144,7 @@ winsens_status_t acc_init(void)
 
         g_hp_filter = (acc_t){0, 0, 0};
 
-        circular_buf_init(&g_cmd_buf, (uint8_t*)g_cmd_raw_buf, sizeof(g_cmd_raw_buf));
+        circular_buf_safe_init(&g_cmd_buf, (uint8_t*)g_cmd_raw_buf, sizeof(g_cmd_raw_buf));
 
         spi_init();
         spi_subscribe(SPI_CFG_ACC, event_handler);
