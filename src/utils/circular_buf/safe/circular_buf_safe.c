@@ -34,7 +34,7 @@ winsens_status_t circular_buf_safe_init(circular_buf_t* buf, uint8_t* data_buffe
 
 static uint32_t size(const circular_buf_t* buf)
 {
-    CRITICAL_REGION_ENTER();
+    CRITICAL_REGION_IN();
 
     uint32_t size = buf->capacity;
 
@@ -50,13 +50,13 @@ static uint32_t size(const circular_buf_t* buf)
         }
     }
 
-    CRITICAL_REGION_EXIT();
+    CRITICAL_REGION_OUT();
     return size;
 }
 
 static uint32_t push(circular_buf_t *buf, const uint8_t *data, uint32_t len)
 {
-    CRITICAL_REGION_ENTER();
+    CRITICAL_REGION_IN();
 
     uint32_t copied = 0;
 
@@ -90,13 +90,13 @@ static uint32_t push(circular_buf_t *buf, const uint8_t *data, uint32_t len)
         }
     }
 
-    CRITICAL_REGION_EXIT();
+    CRITICAL_REGION_OUT();
     return copied;
 }
 
 static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
 {
-    CRITICAL_REGION_ENTER();
+    CRITICAL_REGION_IN();
 
     uint32_t copied = 0;
 
@@ -129,7 +129,7 @@ static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
         buf->tail = 0;
     }
 
-    CRITICAL_REGION_EXIT();
+    CRITICAL_REGION_OUT();
     return copied;
 }
 

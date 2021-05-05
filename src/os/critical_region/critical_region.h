@@ -11,8 +11,8 @@
 
 #include "winsens_types.h"
 
-#define CRITICAL_REGION_ENTER()             do{ critical_region_enter(); }while(0)
-#define CRITICAL_REGION_EXIT()              do{ critical_region_exit(); }while(0)
+#define CRITICAL_REGION_IN()            do{ critical_region_enter(); }while(0)
+#define CRITICAL_REGION_OUT()           do{ critical_region_exit(); }while(0)
 
 
 winsens_status_t critical_region_init(void);
