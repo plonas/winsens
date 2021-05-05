@@ -15,14 +15,17 @@
 #include "nrfx_spi.h"
 
 
+#define SPI_CFG_SIZE        (sizeof(g_spi_cfg)/sizeof(g_spi_cfg[0]))
+#define SPI_CFG_NRF_SIZE    (sizeof(g_spi_nrf_cfg)/sizeof(g_spi_nrf_cfg[0]))
+
+
 void event_handler(nrfx_spi_evt_t const *p_event, void *p_context);
 void task_function(void *p_data, uint16_t data_size);
 
 
-static bool                     g_initialized                           = false;
-static nrfx_spi_t               g_spi                                   = NRFX_SPI_INSTANCE(0);
-static winsens_event_handler_t  g_subscribers[SPI_CFG_MAX_SUBSCRIBERS]  = {NULL};
-
+static bool                     g_initialized       = false;
+static nrfx_spi_t               g_spi_nrf_cfg[]     = SPI_CFG_NRF_INIT;
+static spi_cfg_t                g_spi_cfg[]         = SPI_CFG_INIT;
 
 LOG_REGISTER();
 
@@ -33,45 +36,45 @@ winsens_status_t spi_init(void)
     {
         g_initialized = true;
 
-        nrfx_spi_config_t spi_config    = NRFX_SPI_DEFAULT_CONFIG;
-        spi_config.sck_pin              = SPI_CFG_SCK_PIN;
-        spi_config.miso_pin             = SPI_CFG_MISO_PIN;
-        spi_config.mosi_pin             = SPI_CFG_MOSI_PIN;
-        spi_config.ss_pin               = SPI_CFG_SS_PIN;
-        spi_config.frequency            = SPI_CFG_FREQUENCY;
-        spi_config.orc                  = 0x00;
+        LOG_ERROR_BOOL_RETURN(SPI_CFG_NRF_SIZE == SPI_CFG_SIZE, WINSENS_INVALID_PARAMS);
+
+        for (int i = 0; i < SPI_CFG_SIZE; ++i)
+        {
+            nrfx_spi_config_t spi_config    = NRFX_SPI_DEFAULT_CONFIG;
+            spi_config.sck_pin              = g_spi_cfg[i].sck_pin;
+            spi_config.miso_pin             = g_spi_cfg[i].miso_pin;
+            spi_config.mosi_pin             = g_spi_cfg[i].mosi_pin;
+            spi_config.ss_pin               = g_spi_cfg[i].ss_pin;
+            spi_config.frequency            = g_spi_cfg[i].freq;
+            spi_config.orc                  = 0x00;
+
+            nrfx_err_t err = nrfx_spi_init(&g_spi_nrf_cfg[i], &spi_config, event_handler, (void*)i);
+            LOG_NRF_DEBUG_CHECK(err);
+            LOG_FLUSH();
+        }
 
         task_queue_init();
-        nrfx_err_t err = nrfx_spi_init(&g_spi, &spi_config, event_handler, NULL);
-        LOG_NRF_DEBUG_CHECK(err);
-        LOG_FLUSH();
     }
 
     return WINSENS_OK;
 }
 
-winsens_status_t spi_subscribe(winsens_event_handler_t event_handler)
+winsens_status_t spi_subscribe(spi_t spi, winsens_event_handler_t evt_handler)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    LOG_ERROR_BOOL_RETURN(SPI_CFG_SIZE > spi, WINSENS_INVALID_PARAMS);
 
-    for (int i = 0; i < SPI_CFG_MAX_SUBSCRIBERS; ++i)
-    {
-        if (NULL == g_subscribers[i])
-        {
-            g_subscribers[i] = event_handler;
-            return WINSENS_OK;
-        }
-    }
+    g_spi_cfg[spi].evt_handler = evt_handler;
 
-    return WINSENS_NO_RESOURCES;
+    return WINSENS_OK;
 }
 
-winsens_status_t spi_transfer(uint8_t *tx, uint16_t tx_len, uint8_t *rx, uint16_t rx_len)
+winsens_status_t spi_transfer(spi_t spi, uint8_t *tx, uint16_t tx_len, uint8_t *rx, uint16_t rx_len)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
     nrfx_spi_xfer_desc_t desc = { .p_rx_buffer = rx, .rx_length = rx_len, .p_tx_buffer = tx, .tx_length = tx_len };
-    nrfx_err_t err = nrfx_spi_xfer(&g_spi, &desc, 0);
+    nrfx_err_t err = nrfx_spi_xfer(&g_spi_nrf_cfg[spi], &desc, 0);
     LOG_NRF_DEBUG_CHECK(err);
     LOG_FLUSH();
 
@@ -82,18 +85,20 @@ void event_handler(nrfx_spi_evt_t const *p_event, void *p_context)
 {
     if (NRFX_SPI_EVENT_DONE == p_event->type)
     {
-        task_queue_add(NULL, 0, task_function);
+        task_queue_add((spi_t*)&p_context, sizeof(spi_t), task_function);
     }
 }
 
 void task_function(void *p_data, uint16_t data_size)
 {
-    for (int i = 0; i < SPI_CFG_MAX_SUBSCRIBERS; ++i)
+    LOG_ERROR_BOOL_RETURN(sizeof(spi_t) == data_size, );
+
+    const spi_t spi = *(spi_t*)p_data;
+    LOG_ERROR_BOOL_RETURN(SPI_CFG_SIZE > spi, );
+
+    if (g_spi_cfg[spi].evt_handler)
     {
-        if (g_subscribers[i])
-        {
-            winsens_event_t e = { .id = SPI_EVT_TRANSFER_DONE, .data = 0 };
-            g_subscribers[i](e);
-        }
+        winsens_event_t e = { .id = SPI_EVT_TRANSFER_DONE, .data = 0 };
+        g_spi_cfg[spi].evt_handler(e);
     }
 }

@@ -12,14 +12,26 @@
 #include "nrf_gpio.h"
 
 
-#define SPI_CFG_MAX_SUBSCRIBERS     (2)
+#define SPI_CFG_NRF_INIT    { \
+    NRFX_SPI_INSTANCE(0), \
+}
 
-#define SPI_CFG_FREQUENCY           NRF_SPI_FREQ_125K
+#define SPI_CFG_INIT        { \
+    { \
+    .evt_handler    = NULL, \
+    .freq           = NRF_SPI_FREQ_125K, \
+    .sck_pin        = NRF_GPIO_PIN_MAP(1, 15), \
+    .miso_pin       = NRF_GPIO_PIN_MAP(1, 13), \
+    .mosi_pin       = NRF_GPIO_PIN_MAP(0, 2), \
+    .ss_pin         = NRF_GPIO_PIN_MAP(1, 10) \
+    } \
+}
 
-#define SPI_CFG_SCK_PIN             NRF_GPIO_PIN_MAP(1, 15)
-#define SPI_CFG_MISO_PIN            NRF_GPIO_PIN_MAP(1, 13)
-#define SPI_CFG_MOSI_PIN            NRF_GPIO_PIN_MAP(0, 2)
-#define SPI_CFG_SS_PIN              NRF_GPIO_PIN_MAP(1, 10)
+
+typedef enum
+{
+    SPI_CFG_ACC
+} spi_cfg_enum_t;
 
 
 #endif /* SPI_CFG_H_ */
