@@ -1,9 +1,10 @@
-PROJECT_NAME     := winSens
+PROJECT_NAME     := winsens
 TARGETS          := nrf52840_xxaa
 OUTPUT_DIRECTORY := ../../../$(PROJECT_NAME)_build
+PROJ_DIR         := ../..
 
-SDK_ROOT := C:/Damian/dev/nRF5_SDK_17.0.2_d674dde
-PROJ_DIR := ../..
+include $(PROJ_DIR)/Makefile.cfg
+
 
 $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
   LINKER_SCRIPT := nrf52_memory.ld

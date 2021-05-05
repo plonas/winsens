@@ -3,3 +3,6 @@
 .settings/org.eclipse.cdt.codan.core.prefs
 .cproject
 project.emSession
+Makefile.cfg
+.DS_Store
+.settings/org.eclipse.cdt.core.prefs
