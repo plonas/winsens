@@ -13,5 +13,12 @@
 
 #define UTILS_STRING(x)         #x
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
+#endif
+
 
 #endif /* UTILS_H_ */
