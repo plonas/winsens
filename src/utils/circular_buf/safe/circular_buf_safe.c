@@ -40,7 +40,7 @@ static uint32_t size(const circular_buf_t* buf)
 
     if (!buf->full)
     {
-        if (buf->head > buf->tail)
+        if (buf->head >= buf->tail)
         {
             size = buf->head - buf->tail;
         }
@@ -62,7 +62,7 @@ static uint32_t push(circular_buf_t *buf, const uint8_t *data, uint32_t len)
 
     if (!buf->full)
     {
-        if (buf->head > buf->tail)
+        if (buf->head >= buf->tail)
         {
             uint32_t to_copy = MIN(len, buf->capacity - buf->head);
             memcpy(&buf->buffer[buf->head], data, to_copy);
@@ -100,7 +100,7 @@ static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
 
     uint32_t copied = 0;
 
-    if (buf->head > buf->tail)
+    if (buf->head >= buf->tail)
     {
         uint32_t to_copy = MIN(len, buf->head - buf->tail);
         memcpy(data, &buf->buffer[buf->tail], to_copy);
@@ -124,7 +124,7 @@ static uint32_t pop(circular_buf_t *buf, uint8_t *data, uint32_t len)
 
     if (buf->head == buf->tail)
     {
-        buf->full = true;
+        buf->full = false;
         buf->head = 0;
         buf->tail = 0;
     }
