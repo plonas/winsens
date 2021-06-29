@@ -7,6 +7,7 @@
 
 
 #include "critical_region.h"
+#include "log.h"
 #include "nrf_nvic.h"
 
 
@@ -20,13 +21,22 @@ winsens_status_t critical_region_init(void)
 
 winsens_status_t critical_region_enter(void)
 {
-
-    sd_nvic_critical_region_enter(&g_nested);
+    uint8_t nested = 0;
+    sd_nvic_critical_region_enter(&nested);
+    g_nested++;
     return WINSENS_OK;
 }
 
 winsens_status_t critical_region_exit(void)
 {
-    sd_nvic_critical_region_exit(g_nested);
+    if (0 == g_nested)
+    {
+        LOG_WARNING("Critical region exited too many times");
+        return WINSENS_ERROR;
+    }
+
+    uint8_t nested = (1 < g_nested ? 1 : 0);
+    g_nested--;
+    sd_nvic_critical_region_exit(nested);
     return WINSENS_OK;
 }

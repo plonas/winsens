@@ -29,6 +29,8 @@ winsens_status_t circular_buf_safe_init(circular_buf_t* buf, uint8_t* data_buffe
     buf->buffer     = data_buffer;
     buf->capacity   = cap;
 
+    critical_region_init();
+
     return WINSENS_OK;
 }
 
