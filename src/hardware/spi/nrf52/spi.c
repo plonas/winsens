@@ -20,7 +20,6 @@
 
 
 void event_handler(nrfx_spi_evt_t const *p_event, void *p_context);
-void task_function(void *p_data, uint16_t data_size);
 
 
 static bool                     g_initialized       = false;
@@ -85,20 +84,11 @@ void event_handler(nrfx_spi_evt_t const *p_event, void *p_context)
 {
     if (NRFX_SPI_EVENT_DONE == p_event->type)
     {
-        task_queue_add((spi_t*)&p_context, sizeof(spi_t), task_function);
-    }
-}
-
-void task_function(void *p_data, uint16_t data_size)
-{
-    LOG_ERROR_BOOL_RETURN(sizeof(spi_t) == data_size, );
-
-    const spi_t spi = *(spi_t*)p_data;
-    LOG_ERROR_BOOL_RETURN(SPI_CFG_SIZE > spi, );
-
-    if (g_spi_cfg[spi].evt_handler)
-    {
-        winsens_event_t e = { .id = SPI_EVT_TRANSFER_DONE, .data = 0 };
-        g_spi_cfg[spi].evt_handler(e);
+        const spi_t spi = (spi_t)(uint32_t)p_context;
+        if (g_spi_cfg[spi].evt_handler)
+        {
+            winsens_event_t e = { .id = SPI_EVT_TRANSFER_DONE, .data = 0 };
+            g_spi_cfg[spi].evt_handler(e);
+        }
     }
 }

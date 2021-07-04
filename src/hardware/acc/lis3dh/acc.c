@@ -30,6 +30,7 @@
 #define LIS3DH_INT_COUNTER_REG          0x0E
 #define LIS3DH_WHO_AM_I                 0x0F
 
+#define LIS3DH_CTRL_REG0                0x1E
 #define LIS3DH_TEMP_CFG_REG             0x1F
 #define LIS3DH_CTRL_REG1                0x20
 #define LIS3DH_CTRL_REG2                0x21
@@ -59,14 +60,17 @@
 #define LIS3DH_TIME_LATENCY             0x3C
 #define LIS3DH_TIME_WINDOW              0x3D
 
-//#define LIS3DH_TEMP_CFG_REG_VAL         0b00000000
+#define LIS3DH_WHO_AM_I_VAL             0b00110011
+#define LIS3DH_CTRL_REG0_VAL            0b00010000
+#define LIS3DH_TEMP_CFG_REG_VAL         0b00000000
 #define LIS3DH_CTRL_REG1_VAL            0b00001111
-//#define LIS3DH_CTRL_REG2_VAL            0b00101111
+#define LIS3DH_CTRL_REG2_VAL            0b00000000
 #define LIS3DH_CTRL_REG3_VAL            0b00000100
-#define LIS3DH_CTRL_REG4_VAL            0b00001000
+#define LIS3DH_CTRL_REG4_VAL            0b00000000
 #define LIS3DH_CTRL_REG5_VAL            0b01000000
-//#define LIS3DH_CTRL_REG6_VAL            0b00000000
-#define LIS3DH_FIFO_CTRL_REG_VAL        0b10001010
+#define LIS3DH_CTRL_REG6_VAL            0b00000000
+#define LIS3DH_FIFO_CTRL_REG_VAL        0b10000000
+#define LIS3DH_INT1_DURATION_VAL        0b00000001
 
 #define LIS3DH_REG_BITMASK              0b00111111
 #define LIS3DH_FSS_BITMASK              0b00011111
@@ -80,7 +84,8 @@
 #define ACC_RX_BUFFER_SIZE              (197)
 #define ACC_TX_BUFFER_SIZE              (8)
 #define ACC_DATA_BUFFER_LEN             (12)
-#define ACC_COMMANDS_MAX                (8)
+#define ACC_COMMANDS_MAX                (20)
+#define ACC_READ_BUF_SIZE               (ACC_RX_BUFFER_SIZE)
 
 #define ACC_CMD_W_INIT(r, v)            (acc_command_t){.base.command = command_execute, .rx_len = 0, .reg = r, .tx_value = v, .read = false}
 #define ACC_CMD_R_INIT(r, l)            (acc_command_t){.base.command = command_execute, .rx_len = l, .reg = r, .tx_value = 0, .read = true}
@@ -111,7 +116,7 @@ static void write_reg(uint8_t reg, uint8_t value);
 static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
 static void read_fifo(void);
-static void handle_acc_data(uint8_t* data, uint16_t len);
+static void filter_and_store_data(uint8_t* data, uint16_t len);
 static void update_subscribers(void);
 static void command_execute(command_t const* command);
 static bool execute_one_cmd(void);
@@ -122,14 +127,14 @@ static bool                     g_initialized                           = false;
 static acc_state_t              g_current_state                         = ACC_STATE_IDLE;
 static uint8_t                  g_fss                                   = 0; // fifo stored samples
 static acc_t                    g_hp_filter                             = {0};
-static uint32_t                 g_skipped_samples                       = 0;
 
-static winsens_event_handler_t  g_subscribers[ACC_CFG_MAX_SUBSCRIBERS]  = {NULL};
+static winsens_event_handler_t  g_subscriber                            = NULL;
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
 static uint8_t                  g_tx_buffer[ACC_TX_BUFFER_SIZE];
-static acc_data_t               g_current_acc_data = {0};
 static circular_buf_t           g_cmd_buf;
 static acc_command_t            g_cmd_raw_buf[ACC_COMMANDS_MAX];
+static circular_buf_t           g_read_buf;
+static acc_command_t            g_read_raw_buf[ACC_READ_BUF_SIZE];
 
 
 LOG_REGISTER();
@@ -146,6 +151,7 @@ winsens_status_t acc_init(void)
         critical_region_init();
 
         circular_buf_safe_init(&g_cmd_buf, (uint8_t*)g_cmd_raw_buf, sizeof(g_cmd_raw_buf));
+        circular_buf_safe_init(&g_read_buf, (uint8_t*)g_read_raw_buf, sizeof(g_read_raw_buf));
 
         spi_init();
         spi_subscribe(SPI_CFG_ACC, event_handler);
@@ -162,13 +168,10 @@ winsens_status_t acc_subscribe(winsens_event_handler_t event_handler)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    for (int i = 0; i < ACC_CFG_MAX_SUBSCRIBERS; ++i)
+    if (NULL == g_subscriber)
     {
-        if (NULL == g_subscribers[i])
-        {
-            g_subscribers[i] = event_handler;
-            return WINSENS_OK;
-        }
+        g_subscriber = event_handler;
+        return WINSENS_OK;
     }
 
     return WINSENS_NO_RESOURCES;
@@ -185,33 +188,65 @@ winsens_status_t acc_set_high_pass(int16_t x, int16_t y, int16_t z)
     return WINSENS_OK;
 }
 
-winsens_status_t acc_get_data(acc_data_t* data)
+winsens_status_t acc_get_data(acc_t* data, uint16_t len)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    *data = g_current_acc_data;
+    circular_buf_pop(&g_read_buf, (uint8_t*)data, len * sizeof(acc_t));
     return WINSENS_OK;
+}
+
+uint16_t acc_get_data_len(void)
+{
+    return circular_buf_size(&g_read_buf) / sizeof(acc_t);
 }
 
 static void event_handler(winsens_event_t event)
 {
     if (SPI_EVT_TRANSFER_DONE == event.id)
     {
-        LOG_DEBUG("SPI_EVT_TRANSFER_DONE: %d, 0x%x", g_current_state, LIS3DH_GET_REG(g_tx_buffer[0]));
-
         switch (LIS3DH_GET_REG(g_tx_buffer[0]))
         {
             case LIS3DH_FIFO_SRC_REG:
             {
                 g_fss = g_rx_buffer[1] & LIS3DH_FSS_BITMASK;
-                acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * 6);
-                circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+                if (5 < g_fss)
+                {
+                    acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * sizeof(acc_t));
+                    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+                }
                 break;
             }
 
             case LIS3DH_OUT_X_L:
             {
-                handle_acc_data(&g_rx_buffer[1], g_fss * 6);
+                filter_and_store_data(&g_rx_buffer[1], g_fss * sizeof(acc_t));
+//                acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
+//                circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+                update_subscribers();
+                break;
+            }
+
+            case LIS3DH_INT1_SRC:
+            {
+                break;
+            }
+
+            case LIS3DH_CTRL_REG0:
+            {
+                if (LIS3DH_CTRL_REG0_VAL != g_rx_buffer[1])
+                {
+                    LOG_ERROR("LIS3DH_CTRL_REG0 read failed, value: 0x%02x", g_rx_buffer[1]);
+                }
+                break;
+            }
+
+            case LIS3DH_WHO_AM_I:
+            {
+                if (LIS3DH_WHO_AM_I_VAL != g_rx_buffer[1])
+                {
+                    LOG_ERROR("LIS3DH_WHO_AM_I read failed, value: 0x%02x", g_rx_buffer[1]);
+                }
                 break;
             }
 
@@ -233,15 +268,40 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
 
 static void lis3dh_init(void)
 {
-    acc_command_t cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL | get_freq_cfg());
+    acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_WHO_AM_I, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_R_INIT(LIS3DH_CTRL_REG0, 1);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL | get_freq_cfg());
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG2, LIS3DH_CTRL_REG2_VAL);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
     cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG3, LIS3DH_CTRL_REG3_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
     cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG4, LIS3DH_CTRL_REG4_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
     cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG5, LIS3DH_CTRL_REG5_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
-    cmd = ACC_CMD_W_INIT(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL);
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG6, LIS3DH_CTRL_REG6_VAL);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL | ACC_CFG_FIFO_SAMPLES_NUM);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT1_DURATION, LIS3DH_INT1_DURATION_VAL);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     execute_one_cmd();
@@ -311,49 +371,35 @@ static void read_fifo(void)
     execute_one_cmd();
 }
 
-static void handle_acc_data(uint8_t* data, uint16_t len)
+static void filter_and_store_data(uint8_t* data, uint16_t len)
 {
     uint16_t i = 0;
 
     while (i < len)
     {
-        g_current_acc_data.acc.x = *((int16_t*)&data[i]);
-        i += 2;
-        g_current_acc_data.acc.y = *((int16_t*)&data[i]);
-        i += 2;
-        g_current_acc_data.acc.z = *((int16_t*)&data[i]);
-        i += 2;
-
-        g_current_acc_data.time_delta = ACC_CFG_SAMPLE_FREQ * (1 + g_skipped_samples);
-
-        if (g_current_acc_data.acc.x >= g_hp_filter.x ||
-            g_current_acc_data.acc.y >= g_hp_filter.y ||
-            g_current_acc_data.acc.z >= g_hp_filter.z)
+        if (*((int16_t*)&data[i]) >= g_hp_filter.x ||
+            *((int16_t*)&data[i + 2]) >= g_hp_filter.y ||
+            *((int16_t*)&data[i + 4]) >= g_hp_filter.z)
         {
-            g_skipped_samples = 0;
-            update_subscribers();
+            circular_buf_push(&g_read_buf, &data[i], sizeof(acc_t));
         }
-        else
-        {
-            g_skipped_samples++;
-        }
+
+        i += sizeof(acc_t);
     }
 }
 
 static void update_subscribers(void)
 {
-    winsens_event_t e = { .id = ACC_EVT_NEW_DATA, .data = 0 };
-
-    for (int i = 0; i < ACC_CFG_MAX_SUBSCRIBERS; ++i)
+    const uint32_t len = (circular_buf_size(&g_read_buf) / sizeof(acc_t));
+    if (len)
     {
-        if (g_subscribers[i])
+        winsens_event_t e = { .id = ACC_EVT_NEW_DATA, .data = len };
+
+        if (g_subscriber)
         {
-            g_subscribers[i](e);
+            g_subscriber(e);
         }
     }
-
-    LOG_DEBUG("Acc: %d %d %d", g_current_acc_data.acc.x, g_current_acc_data.acc.y, g_current_acc_data.acc.z);
-    LOG_FLUSH();
 }
 
 static void command_execute(command_t const* command)
@@ -429,3 +475,4 @@ static bool execute_one_cmd_force(void)
 
     return executed;
 }
+
