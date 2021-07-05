@@ -210,7 +210,7 @@ static void event_handler(winsens_event_t event)
             case LIS3DH_FIFO_SRC_REG:
             {
                 g_fss = g_rx_buffer[1] & LIS3DH_FSS_BITMASK;
-                if (5 < g_fss)
+                if (ACC_CFG_FIFO_SAMPLES_NUM < g_fss)
                 {
                     acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * sizeof(acc_t));
                     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
