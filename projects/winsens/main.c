@@ -12,6 +12,7 @@
 #define ILOG_MODULE_NAME MAIN
 #include "log.h"
 #include "log_internal_nrf52.h"
+#include "acc.h"
 
 #include "boards.h"
 #include "app_timer.h"
@@ -19,21 +20,35 @@
 
 
 LOG_REGISTER();
-APP_TIMER_DEF(ws_timer);
+APP_TIMER_DEF(blink_timer);
 
 
-static void WS_TimerCallback(
-    void *p_data,
-    uint16_t data_size)
+static void WS_TimerCallback(void *p_data, uint16_t data_size)
 {
     bsp_board_led_invert( 0 );
 }
 
-static void WS_TimerIrqHandler(
-    void* context)
+static void WS_TimerIrqHandler(void* context)
 {
     task_queue_add(NULL, 0, WS_TimerCallback);
 //    bsp_board_led_invert( 0 );
+}
+
+static void acc_task(void *p_data, uint16_t data_size)
+{
+    while (0 != acc_get_data_len())
+    {
+        acc_t acc_data;
+        winsens_status_t status = acc_get_data(&acc_data, 1);
+        LOG_WARNING_RETURN(status, );
+
+        LOG_DEBUG("acc: \nx: %6d\ny: %6d\nz: %6d", acc_data.x, acc_data.y, acc_data.z);
+    }
+}
+
+void acc_event_handler(winsens_event_t event)
+{
+    task_queue_add(NULL, 0, acc_task);
 }
 
 
@@ -59,13 +74,19 @@ int main(void)
     status = IWinsens_Init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
+    status = acc_init();
+    LOG_ERROR_RETURN(status, WINSENS_ERROR);
+
     bsp_board_init(BSP_INIT_LEDS);
 
-    err_code = app_timer_create(&ws_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
+    err_code = app_timer_create(&blink_timer, APP_TIMER_MODE_REPEATED, WS_TimerIrqHandler);
     LOG_WARNING_CHECK(err_code);
 
-    err_code = app_timer_start(ws_timer, APP_TIMER_TICKS(500), NULL);
+    err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
     LOG_WARNING_CHECK(err_code);
+
+    status = acc_subscribe(acc_event_handler);
+    LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     while (true)
     {
