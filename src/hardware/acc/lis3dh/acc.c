@@ -8,13 +8,14 @@
 
 #include "acc.h"
 #include "acc_cfg.h"
+#include "command.h"
 #include "circular_buf_safe.h"
 #include "critical_region.h"
-#include "spi.h"
-#include "spi_cfg.h"
 #include "digital_io.h"
 #include "digital_io_cfg.h"
-#include "command.h"
+#include "spi.h"
+#include "spi_cfg.h"
+#include "task_queue.h"
 #define ILOG_MODULE_NAME ACC
 #include "log.h"
 
@@ -64,16 +65,19 @@
 #define LIS3DH_CTRL_REG0_VAL            0b00010000
 #define LIS3DH_TEMP_CFG_REG_VAL         0b00000000
 #define LIS3DH_CTRL_REG1_VAL            0b00001111
-#define LIS3DH_CTRL_REG2_VAL            0b00000000
-#define LIS3DH_CTRL_REG3_VAL            0b00000100
+#define LIS3DH_CTRL_REG2_VAL            0b11001001
+#define LIS3DH_CTRL_REG3_VAL            0b01000100
 #define LIS3DH_CTRL_REG4_VAL            0b00000000
-#define LIS3DH_CTRL_REG5_VAL            0b01000000
+#define LIS3DH_CTRL_REG5_VAL            0b01001000
 #define LIS3DH_CTRL_REG6_VAL            0b00000000
-#define LIS3DH_FIFO_CTRL_REG_VAL        0b10000000
-#define LIS3DH_INT1_DURATION_VAL        0b00000001
+#define LIS3DH_FIFO_CTRL_REG_VAL        0b00000000
+#define LIS3DH_INT1_CFG_VAL             0b00101010
+//#define LIS3DH_INT1_THS_VAL             0b00001000
+#define LIS3DH_INT1_DURATION_VAL        0b00000000
 
 #define LIS3DH_REG_BITMASK              0b00111111
 #define LIS3DH_FSS_BITMASK              0b00011111
+#define LIS3DH_INT1_SRC_IA_BITMASK      0b01000000
 
 #define LIS3DH_READ_REQ_BIT             0x80
 #define LIS3DH_AUTO_INCREMENT_BIT       0x40
@@ -109,14 +113,15 @@ typedef struct
 
 static void event_handler(winsens_event_t event);
 static void dio_callback(digital_io_input_pin_t pin, bool on);
+void hpf_task(void *p_data, uint16_t data_size);
 
 static void lis3dh_init(void);
 static uint8_t get_freq_cfg(void);
+static uint8_t get_threshold_cfg(void);
 static void write_reg(uint8_t reg, uint8_t value);
 static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
-static void read_fifo(void);
-static void filter_and_store_data(uint8_t* data, uint16_t len);
+static void store_data(uint8_t* data, uint16_t size);
 static void update_subscribers(void);
 static void command_execute(command_t const* command);
 static bool execute_one_cmd(void);
@@ -126,7 +131,6 @@ static bool execute_one_cmd_force(void);
 static bool                     g_initialized                           = false;
 static acc_state_t              g_current_state                         = ACC_STATE_IDLE;
 static uint8_t                  g_fss                                   = 0; // fifo stored samples
-static acc_t                    g_hp_filter                             = {0};
 
 static winsens_event_handler_t  g_subscriber                            = NULL;
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
@@ -145,8 +149,6 @@ winsens_status_t acc_init(void)
     if (!g_initialized)
     {
         g_initialized = true;
-
-        g_hp_filter = (acc_t){0, 0, 0};
 
         critical_region_init();
 
@@ -175,17 +177,6 @@ winsens_status_t acc_subscribe(winsens_event_handler_t event_handler)
     }
 
     return WINSENS_NO_RESOURCES;
-}
-
-winsens_status_t acc_set_high_pass(int16_t x, int16_t y, int16_t z)
-{
-    g_hp_filter.x = x;
-    g_hp_filter.y = y;
-    g_hp_filter.z = z;
-
-    // todo set filter to lis3dh
-
-    return WINSENS_OK;
 }
 
 winsens_status_t acc_get_data(acc_t* data, uint16_t len)
@@ -218,17 +209,27 @@ static void event_handler(winsens_event_t event)
                 break;
             }
 
-            case LIS3DH_OUT_X_L:
+            case LIS3DH_INT1_SRC:
             {
-                filter_and_store_data(&g_rx_buffer[1], g_fss * sizeof(acc_t));
-//                acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
-//                circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
-                update_subscribers();
+                uint8_t ia = g_rx_buffer[1] & LIS3DH_INT1_SRC_IA_BITMASK;
+
+                if (0 != ia)
+                {
+                    winsens_event_t e = { .id = ACC_EVT_HIPASS_INT, .data = 0 };
+
+                    if (g_subscriber)
+                    {
+                        g_subscriber(e);
+                    }
+                    task_queue_add(&g_rx_buffer[1], 1, hpf_task);
+                }
                 break;
             }
 
-            case LIS3DH_INT1_SRC:
+            case LIS3DH_OUT_X_L:
             {
+                store_data(&g_rx_buffer[1], g_fss * sizeof(acc_t));
+                update_subscribers();
                 break;
             }
 
@@ -262,8 +263,19 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
 {
     if (DIGITAL_IO_INPUT_ACC_INT == pin && on)
     {
-        read_fifo();
+        acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
+        circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
+        circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        execute_one_cmd();
     }
+}
+
+void hpf_task(void *p_data, uint16_t data_size)
+{
+    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void lis3dh_init(void)
@@ -292,16 +304,28 @@ static void lis3dh_init(void)
     cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG6, LIS3DH_CTRL_REG6_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
+
     cmd = ACC_CMD_W_INIT(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL | ACC_CFG_FIFO_SAMPLES_NUM);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT1_THS, get_threshold_cfg());
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT1_CFG, LIS3DH_INT1_CFG_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     cmd = ACC_CMD_W_INIT(LIS3DH_INT1_DURATION, LIS3DH_INT1_DURATION_VAL);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
+
     cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_R_INIT(LIS3DH_REFERENCE, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     execute_one_cmd();
@@ -316,6 +340,7 @@ static uint8_t get_freq_cfg(void)
             cfg = (0x01 << 4);
         break;
         case 10:
+        default:
             cfg = (0x02 << 4);
         break;
         case 25:
@@ -330,7 +355,6 @@ static uint8_t get_freq_cfg(void)
         case 200:
             cfg = (0x06 << 4);
         break;
-        default:
         case 400:
             cfg = (0x07 << 4);
         break;
@@ -343,6 +367,29 @@ static uint8_t get_freq_cfg(void)
     }
 
     return cfg;
+}
+
+static uint8_t get_threshold_cfg(void)
+{
+    uint8_t lsb_val = 0;
+    switch(ACC_CFG_RANGE)
+    {
+        case 2:
+        default:
+            lsb_val = 16;
+        break;
+        case 4:
+            lsb_val = 32;
+        break;
+        case 8:
+            lsb_val = 62;
+        break;
+        case 16:
+            lsb_val = 186;
+        break;
+    }
+
+    return ACC_CFG_HIPASS_THRESHOLD / lsb_val;
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
@@ -364,28 +411,9 @@ static void read_multiple_bytes(uint8_t reg, uint16_t len)
     spi_transfer(SPI_CFG_ACC, g_tx_buffer, 1, g_rx_buffer, len + 1);
 }
 
-static void read_fifo(void)
+static void store_data(uint8_t* data, uint16_t size)
 {
-    acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
-    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
-    execute_one_cmd();
-}
-
-static void filter_and_store_data(uint8_t* data, uint16_t len)
-{
-    uint16_t i = 0;
-
-    while (i < len)
-    {
-        if (*((int16_t*)&data[i]) >= g_hp_filter.x ||
-            *((int16_t*)&data[i + 2]) >= g_hp_filter.y ||
-            *((int16_t*)&data[i + 4]) >= g_hp_filter.z)
-        {
-            circular_buf_push(&g_read_buf, &data[i], sizeof(acc_t));
-        }
-
-        i += sizeof(acc_t);
-    }
+    circular_buf_push(&g_read_buf, data, size);
 }
 
 static void update_subscribers(void)

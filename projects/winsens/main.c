@@ -42,7 +42,7 @@ static void acc_task(void *p_data, uint16_t data_size)
         winsens_status_t status = acc_get_data(&acc_data, 1);
         LOG_WARNING_RETURN(status, );
 
-        LOG_DEBUG("acc: \nx: %6d\ny: %6d\nz: %6d", acc_data.x, acc_data.y, acc_data.z);
+//        LOG_DEBUG("acc: \nx: %6.3f\ny: %6.3f\nz: %6.3f", g(acc_data.x), g(acc_data.y), g(acc_data.z));
     }
 }
 
