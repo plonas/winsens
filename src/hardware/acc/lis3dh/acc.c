@@ -53,6 +53,10 @@
 #define LIS3DH_INT1_SRC                 0x31
 #define LIS3DH_INT1_THS                 0x32
 #define LIS3DH_INT1_DURATION            0x33
+#define LIS3DH_INT2_CFG                 0x34
+#define LIS3DH_INT2_SRC                 0x35
+#define LIS3DH_INT2_THS                 0x36
+#define LIS3DH_INT2_DURATION            0x37
 
 #define LIS3DH_CLICK_CFG                0x38
 #define LIS3DH_CLICK_SRC                0x39
@@ -74,6 +78,9 @@
 #define LIS3DH_INT1_CFG_VAL             0b00101010
 //#define LIS3DH_INT1_THS_VAL             0b00001000
 #define LIS3DH_INT1_DURATION_VAL        0b00000000
+#define LIS3DH_INT2_CFG_VAL             0b10010101
+//#define LIS3DH_INT2_THS_VAL             0b00001000
+#define LIS3DH_INT2_DURATION_VAL        0b00000001
 
 #define LIS3DH_REG_BITMASK              0b00111111
 #define LIS3DH_FSS_BITMASK              0b00011111
@@ -117,7 +124,8 @@ void hpf_task(void *p_data, uint16_t data_size);
 
 static void lis3dh_init(void);
 static uint8_t get_freq_cfg(void);
-static uint8_t get_threshold_cfg(void);
+static uint8_t get_hp_threshold_cfg(void);
+static uint8_t get_ff_threshold_cfg(void);
 static void write_reg(uint8_t reg, uint8_t value);
 static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
@@ -275,7 +283,7 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
 
 void hpf_task(void *p_data, uint16_t data_size)
 {
-    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_threshold_cfg(), *(uint8_t*)p_data);
+    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void lis3dh_init(void)
@@ -286,6 +294,8 @@ static void lis3dh_init(void)
     cmd = ACC_CMD_R_INIT(LIS3DH_CTRL_REG0, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
+
+    // Set config registers
     cmd = ACC_CMD_W_INIT(LIS3DH_CTRL_REG1, LIS3DH_CTRL_REG1_VAL | get_freq_cfg());
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
@@ -305,11 +315,13 @@ static void lis3dh_init(void)
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
 
+    // Set fifo registers
     cmd = ACC_CMD_W_INIT(LIS3DH_FIFO_CTRL_REG, LIS3DH_FIFO_CTRL_REG_VAL | ACC_CFG_FIFO_SAMPLES_NUM);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
 
-    cmd = ACC_CMD_W_INIT(LIS3DH_INT1_THS, get_threshold_cfg());
+    // Set int 1 registers
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT1_THS, get_hp_threshold_cfg());
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     cmd = ACC_CMD_W_INIT(LIS3DH_INT1_CFG, LIS3DH_INT1_CFG_VAL);
@@ -319,6 +331,18 @@ static void lis3dh_init(void)
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
 
+    // Set int 2 registers
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT2_THS, get_ff_threshold_cfg());
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT2_CFG, LIS3DH_INT2_CFG_VAL);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_W_INIT(LIS3DH_INT2_DURATION, LIS3DH_INT2_DURATION_VAL);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+
+    // Read status registers
     cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
@@ -369,7 +393,7 @@ static uint8_t get_freq_cfg(void)
     return cfg;
 }
 
-static uint8_t get_threshold_cfg(void)
+static uint8_t get_hp_threshold_cfg(void)
 {
     uint8_t lsb_val = 0;
     switch(ACC_CFG_RANGE)
@@ -390,6 +414,29 @@ static uint8_t get_threshold_cfg(void)
     }
 
     return ACC_CFG_HIPASS_THRESHOLD / lsb_val;
+}
+
+static uint8_t get_ff_threshold_cfg(void)
+{
+    uint8_t lsb_val = 0;
+    switch(ACC_CFG_RANGE)
+    {
+        case 2:
+        default:
+            lsb_val = 16;
+        break;
+        case 4:
+            lsb_val = 32;
+        break;
+        case 8:
+            lsb_val = 62;
+        break;
+        case 16:
+            lsb_val = 186;
+        break;
+    }
+
+    return ACC_CFG_FREEFALL_THRESHOLD / lsb_val;
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
