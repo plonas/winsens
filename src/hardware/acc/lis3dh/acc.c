@@ -72,15 +72,15 @@
 #define LIS3DH_CTRL_REG2_VAL            0b11001001
 #define LIS3DH_CTRL_REG3_VAL            0b01000100
 #define LIS3DH_CTRL_REG4_VAL            0b00000000
-#define LIS3DH_CTRL_REG5_VAL            0b01001000
-#define LIS3DH_CTRL_REG6_VAL            0b00000000
+#define LIS3DH_CTRL_REG5_VAL            0b01001010
+#define LIS3DH_CTRL_REG6_VAL            0b00100000
 #define LIS3DH_FIFO_CTRL_REG_VAL        0b00000000
 #define LIS3DH_INT1_CFG_VAL             0b00101010
 //#define LIS3DH_INT1_THS_VAL             0b00001000
 #define LIS3DH_INT1_DURATION_VAL        0b00000000
 #define LIS3DH_INT2_CFG_VAL             0b10010101
 //#define LIS3DH_INT2_THS_VAL             0b00001000
-#define LIS3DH_INT2_DURATION_VAL        0b00000001
+#define LIS3DH_INT2_DURATION_VAL        0b00000000
 
 #define LIS3DH_REG_BITMASK              0b00111111
 #define LIS3DH_FSS_BITMASK              0b00011111
@@ -95,7 +95,7 @@
 #define ACC_RX_BUFFER_SIZE              (197)
 #define ACC_TX_BUFFER_SIZE              (8)
 #define ACC_DATA_BUFFER_LEN             (12)
-#define ACC_COMMANDS_MAX                (20)
+#define ACC_COMMANDS_MAX                (25)
 #define ACC_READ_BUF_SIZE               (ACC_RX_BUFFER_SIZE)
 
 #define ACC_CMD_W_INIT(r, v)            (acc_command_t){.base.command = command_execute, .rx_len = 0, .reg = r, .tx_value = v, .read = false}
@@ -120,7 +120,8 @@ typedef struct
 
 static void event_handler(winsens_event_t event);
 static void dio_callback(digital_io_input_pin_t pin, bool on);
-void hpf_task(void *p_data, uint16_t data_size);
+static void hpf_task(void *p_data, uint16_t data_size);
+static void ff_task(void *p_data, uint16_t data_size);
 
 static void lis3dh_init(void);
 static uint8_t get_freq_cfg(void);
@@ -166,7 +167,8 @@ winsens_status_t acc_init(void)
         spi_init();
         spi_subscribe(SPI_CFG_ACC, event_handler);
 
-        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT, dio_callback);
+        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_1, dio_callback);
+        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_2, dio_callback);
 
         lis3dh_init();
     }
@@ -234,6 +236,23 @@ static void event_handler(winsens_event_t event)
                 break;
             }
 
+            case LIS3DH_INT2_SRC:
+            {
+                uint8_t ia = g_rx_buffer[1] & LIS3DH_INT1_SRC_IA_BITMASK;
+
+                if (0 != ia)
+                {
+                    winsens_event_t e = { .id = ACC_EVT_FREEFALL_INT, .data = 0 };
+
+                    if (g_subscriber)
+                    {
+                        g_subscriber(e);
+                    }
+                    task_queue_add(&g_rx_buffer[1], 1, ff_task);
+                }
+                break;
+            }
+
             case LIS3DH_OUT_X_L:
             {
                 store_data(&g_rx_buffer[1], g_fss * sizeof(acc_t));
@@ -269,7 +288,7 @@ static void event_handler(winsens_event_t event)
 
 static void dio_callback(digital_io_input_pin_t pin, bool on)
 {
-    if (DIGITAL_IO_INPUT_ACC_INT == pin && on)
+    if (DIGITAL_IO_INPUT_ACC_INT_1 == pin && on)
     {
         acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
         circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
@@ -279,11 +298,23 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
 
         execute_one_cmd();
     }
+    else if (DIGITAL_IO_INPUT_ACC_INT_2 == pin && on)
+    {
+        acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_INT2_SRC, 1);
+        circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        execute_one_cmd();
+    }
 }
 
-void hpf_task(void *p_data, uint16_t data_size)
+static void hpf_task(void *p_data, uint16_t data_size)
 {
     LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
+}
+
+static void ff_task(void *p_data, uint16_t data_size)
+{
+    LOG_DEBUG("xxx xxx xxx FF 0x%02x INT 0x%x xxx xxx xxx", get_ff_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void lis3dh_init(void)
@@ -344,6 +375,9 @@ static void lis3dh_init(void)
 
     // Read status registers
     cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    cmd = ACC_CMD_R_INIT(LIS3DH_INT2_SRC, 1);
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 
     cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);

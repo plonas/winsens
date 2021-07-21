@@ -16,6 +16,7 @@ typedef enum
 {
     ACC_EVT_NEW_DATA = (WINSENS_IDS_MODULE_ACC << 16),
     ACC_EVT_HIPASS_INT,
+    ACC_EVT_FREEFALL_INT,
 } acc_evt_t;
 
 #pragma pack(push, 1)
