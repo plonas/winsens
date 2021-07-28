@@ -13,8 +13,8 @@
 
 #define ACC_CFG_RANGE               (2) // +-[2, 4, 8, 16]mg (milli g-force)
 
-#define ACC_CFG_HIPASS_THRESHOLD    (100) // mg (milli g-force)
-#define ACC_CFG_FREEFALL_THRESHOLD  (350) // mg (milli g-force)
+#define ACC_CFG_HIPASS_THRESHOLD    ((uint16_t) 100) // mg (milli g-force)
+#define ACC_CFG_FREEFALL_THRESHOLD  ((uint16_t) 350) // mg (milli g-force)
 
 #define ACC_CFG_FIFO_SAMPLES_NUM    (1) // <= 32
 

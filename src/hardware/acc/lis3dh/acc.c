@@ -132,6 +132,10 @@ static void read_reg(uint8_t reg);
 static void read_multiple_bytes(uint8_t reg, uint16_t len);
 static void store_data(uint8_t* data, uint16_t size);
 static void update_subscribers(void);
+
+static void update_ff_threshold(void);
+static void update_hp_threshold(void);
+
 static void command_execute(command_t const* command);
 static bool execute_one_cmd(void);
 static bool execute_one_cmd_force(void);
@@ -140,6 +144,8 @@ static bool execute_one_cmd_force(void);
 static bool                     g_initialized                           = false;
 static acc_state_t              g_current_state                         = ACC_STATE_IDLE;
 static uint8_t                  g_fss                                   = 0; // fifo stored samples
+static uint16_t                 g_ff_threshold                          = ACC_CFG_FREEFALL_THRESHOLD;
+static uint16_t                 g_hp_threshold                          = ACC_CFG_HIPASS_THRESHOLD;
 
 static winsens_event_handler_t  g_subscriber                            = NULL;
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
@@ -200,6 +206,48 @@ winsens_status_t acc_get_data(acc_t* data, uint16_t len)
 uint16_t acc_get_data_len(void)
 {
     return circular_buf_size(&g_read_buf) / sizeof(acc_t);
+}
+
+void acc_set_ff_threshold(uint8_t threshold)
+{
+    if (threshold != g_ff_threshold)
+    {
+        g_ff_threshold = threshold;
+        update_ff_threshold();
+
+        winsens_event_t e = { .id = ACC_EVT_FREEFALL_THRESHOLD_CHANGE, .data = threshold };
+
+        if (g_subscriber)
+        {
+            g_subscriber(e);
+        }
+    }
+}
+
+uint8_t acc_get_ff_threshold(void)
+{
+    return g_ff_threshold;
+}
+
+void acc_set_hp_threshold(uint8_t threshold)
+{
+    if (threshold != g_hp_threshold)
+    {
+        g_hp_threshold = threshold;
+        update_hp_threshold();
+
+        winsens_event_t e = { .id = ACC_EVT_HIPASS_THRESHOLD_CHANGE, .data = threshold };
+
+        if (g_subscriber)
+        {
+            g_subscriber(e);
+        }
+    }
+}
+
+uint8_t acc_get_hp_threshold(void)
+{
+    return g_hp_threshold;
 }
 
 static void event_handler(winsens_event_t event)
@@ -447,7 +495,12 @@ static uint8_t get_hp_threshold_cfg(void)
         break;
     }
 
-    return ACC_CFG_HIPASS_THRESHOLD / lsb_val;
+    if (0x7F < g_hp_threshold)
+    {
+        return 0x7F / lsb_val;
+    }
+
+    return g_hp_threshold / lsb_val;
 }
 
 static uint8_t get_ff_threshold_cfg(void)
@@ -470,7 +523,12 @@ static uint8_t get_ff_threshold_cfg(void)
         break;
     }
 
-    return ACC_CFG_FREEFALL_THRESHOLD / lsb_val;
+    if (0x7F < g_ff_threshold)
+    {
+        return 0x7F / lsb_val;
+    }
+
+    return g_ff_threshold / lsb_val;
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
@@ -509,6 +567,18 @@ static void update_subscribers(void)
             g_subscriber(e);
         }
     }
+}
+
+static void update_ff_threshold(void)
+{
+    acc_command_t cmd = ACC_CMD_W_INIT(LIS3DH_INT2_THS, get_ff_threshold_cfg());
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+}
+
+static void update_hp_threshold(void)
+{
+    acc_command_t cmd = ACC_CMD_W_INIT(LIS3DH_INT1_THS, get_hp_threshold_cfg());
+    circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
 }
 
 static void command_execute(command_t const* command)
