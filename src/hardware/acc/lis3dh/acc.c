@@ -573,12 +573,14 @@ static void update_ff_threshold(void)
 {
     acc_command_t cmd = ACC_CMD_W_INIT(LIS3DH_INT2_THS, get_ff_threshold_cfg());
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+    execute_one_cmd();
 }
 
 static void update_hp_threshold(void)
 {
     acc_command_t cmd = ACC_CMD_W_INIT(LIS3DH_INT1_THS, get_hp_threshold_cfg());
     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+    execute_one_cmd();
 }
 
 static void command_execute(command_t const* command)
