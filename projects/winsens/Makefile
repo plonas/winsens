@@ -33,6 +33,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/utils/circular_buf/circular_buf.c \
   $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf_safe.c \
   $(PROJ_DIR)/src/utils/circular_buf/nonsafe/circular_buf_nonsafe.c \
+  $(PROJ_DIR)/src/utils/subscribers/impl/subscribers.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -112,6 +113,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/utils/circular_buf/safe \
   $(PROJ_DIR)/src/utils/circular_buf/nonsafe \
   $(PROJ_DIR)/src/utils/command \
+  $(PROJ_DIR)/src/utils/subscribers \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
   $(PROJ_DIR)/src/firmware/winsens \

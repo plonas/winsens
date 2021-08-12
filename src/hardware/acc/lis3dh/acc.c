@@ -15,6 +15,7 @@
 #include "digital_io_cfg.h"
 #include "spi.h"
 #include "spi_cfg.h"
+#include "subscribers.h"
 #include "task_queue.h"
 #define ILOG_MODULE_NAME ACC
 #include "log.h"
@@ -147,13 +148,14 @@ static uint8_t                  g_fss                                   = 0; // 
 static uint16_t                 g_ff_threshold                          = ACC_CFG_FREEFALL_THRESHOLD;
 static uint16_t                 g_hp_threshold                          = ACC_CFG_HIPASS_THRESHOLD;
 
-static winsens_event_handler_t  g_subscriber                            = NULL;
+static subscribers_t            g_subscribers                           = { NULL, 0 };
 static uint8_t                  g_rx_buffer[ACC_RX_BUFFER_SIZE];
 static uint8_t                  g_tx_buffer[ACC_TX_BUFFER_SIZE];
 static circular_buf_t           g_cmd_buf;
 static acc_command_t            g_cmd_raw_buf[ACC_COMMANDS_MAX];
 static circular_buf_t           g_read_buf;
 static acc_command_t            g_read_raw_buf[ACC_READ_BUF_SIZE];
+static winsens_event_handler_t  g_evt_handlers[ACC_CFG_SUBSCRIBERS_NUM] = { NULL };
 
 
 LOG_REGISTER();
@@ -176,6 +178,8 @@ winsens_status_t acc_init(void)
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_1, dio_callback);
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_2, dio_callback);
 
+        subscribers_init(&g_subscribers, g_evt_handlers, ACC_CFG_SUBSCRIBERS_NUM);
+
         lis3dh_init();
     }
 
@@ -186,13 +190,7 @@ winsens_status_t acc_subscribe(winsens_event_handler_t event_handler)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    if (NULL == g_subscriber)
-    {
-        g_subscriber = event_handler;
-        return WINSENS_OK;
-    }
-
-    return WINSENS_NO_RESOURCES;
+    return subscribers_add(&g_subscribers, event_handler);
 }
 
 winsens_status_t acc_get_data(acc_t* data, uint16_t len)
@@ -208,7 +206,7 @@ uint16_t acc_get_data_len(void)
     return circular_buf_size(&g_read_buf) / sizeof(acc_t);
 }
 
-void acc_set_ff_threshold(uint8_t threshold)
+void acc_set_ff_threshold(uint16_t threshold)
 {
     if (threshold != g_ff_threshold)
     {
@@ -216,20 +214,16 @@ void acc_set_ff_threshold(uint8_t threshold)
         update_ff_threshold();
 
         winsens_event_t e = { .id = ACC_EVT_FREEFALL_THRESHOLD_CHANGE, .data = threshold };
-
-        if (g_subscriber)
-        {
-            g_subscriber(e);
-        }
+        subscribers_update(&g_subscribers, e);
     }
 }
 
-uint8_t acc_get_ff_threshold(void)
+uint16_t acc_get_ff_threshold(void)
 {
     return g_ff_threshold;
 }
 
-void acc_set_hp_threshold(uint8_t threshold)
+void acc_set_hp_threshold(uint16_t threshold)
 {
     if (threshold != g_hp_threshold)
     {
@@ -237,15 +231,11 @@ void acc_set_hp_threshold(uint8_t threshold)
         update_hp_threshold();
 
         winsens_event_t e = { .id = ACC_EVT_HIPASS_THRESHOLD_CHANGE, .data = threshold };
-
-        if (g_subscriber)
-        {
-            g_subscriber(e);
-        }
+        subscribers_update(&g_subscribers, e);
     }
 }
 
-uint8_t acc_get_hp_threshold(void)
+uint16_t acc_get_hp_threshold(void)
 {
     return g_hp_threshold;
 }
@@ -274,11 +264,8 @@ static void event_handler(winsens_event_t event)
                 if (0 != ia)
                 {
                     winsens_event_t e = { .id = ACC_EVT_HIPASS_INT, .data = 0 };
+                    subscribers_update(&g_subscribers, e);
 
-                    if (g_subscriber)
-                    {
-                        g_subscriber(e);
-                    }
                     task_queue_add(&g_rx_buffer[1], 1, hpf_task);
                 }
                 break;
@@ -291,11 +278,8 @@ static void event_handler(winsens_event_t event)
                 if (0 != ia)
                 {
                     winsens_event_t e = { .id = ACC_EVT_FREEFALL_INT, .data = 0 };
+                    subscribers_update(&g_subscribers, e);
 
-                    if (g_subscriber)
-                    {
-                        g_subscriber(e);
-                    }
                     task_queue_add(&g_rx_buffer[1], 1, ff_task);
                 }
                 break;
@@ -495,12 +479,14 @@ static uint8_t get_hp_threshold_cfg(void)
         break;
     }
 
-    if (0x7F < g_hp_threshold)
+    uint16_t reg_val = g_hp_threshold / lsb_val;
+
+    if (0x7F < reg_val)
     {
-        return 0x7F / lsb_val;
+        reg_val = 0x7F;
     }
 
-    return g_hp_threshold / lsb_val;
+    return (uint8_t)reg_val;
 }
 
 static uint8_t get_ff_threshold_cfg(void)
@@ -523,12 +509,14 @@ static uint8_t get_ff_threshold_cfg(void)
         break;
     }
 
-    if (0x7F < g_ff_threshold)
+    uint16_t reg_val = g_ff_threshold / lsb_val;
+
+    if (0x7F < reg_val)
     {
-        return 0x7F / lsb_val;
+        reg_val = 0x7F;
     }
 
-    return g_ff_threshold / lsb_val;
+    return (uint8_t)reg_val;
 }
 
 static void write_reg(uint8_t reg, uint8_t value)
@@ -561,11 +549,7 @@ static void update_subscribers(void)
     if (len)
     {
         winsens_event_t e = { .id = ACC_EVT_NEW_DATA, .data = len };
-
-        if (g_subscriber)
-        {
-            g_subscriber(e);
-        }
+        subscribers_update(&g_subscribers, e);
     }
 }
 

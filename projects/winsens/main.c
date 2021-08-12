@@ -13,6 +13,7 @@
 #include "log.h"
 #include "log_internal_nrf52.h"
 #include "acc.h"
+#include "acc_ctrl.h"
 
 #include "boards.h"
 #include "app_timer.h"
@@ -48,7 +49,10 @@ static void acc_task(void *p_data, uint16_t data_size)
 
 void acc_event_handler(winsens_event_t event)
 {
-    task_queue_add(NULL, 0, acc_task);
+    if (ACC_EVT_NEW_DATA == event.id)
+    {
+        task_queue_add(NULL, 0, acc_task);
+    }
 }
 
 
@@ -56,6 +60,8 @@ int main(void)
 {
     winsens_status_t status = WINSENS_ERROR;
     ret_code_t err_code;
+
+    NRF_WDT->CONFIG &= 0x00000001;
 
     LOG_INIT(NULL);
 
@@ -75,6 +81,9 @@ int main(void)
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     status = acc_init();
+    LOG_ERROR_RETURN(status, WINSENS_ERROR);
+
+    status = acc_ctrl_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     bsp_board_init(BSP_INIT_LEDS);

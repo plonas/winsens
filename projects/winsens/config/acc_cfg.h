@@ -18,5 +18,7 @@
 
 #define ACC_CFG_FIFO_SAMPLES_NUM    (1) // <= 32
 
+#define ACC_CFG_SUBSCRIBERS_NUM     (3)
+
 
 #endif /* ACC_CFG_H_ */

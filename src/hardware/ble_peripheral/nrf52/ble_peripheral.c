@@ -276,18 +276,38 @@ winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback
     return WINSENS_NO_RESOURCES;
 }
 
-winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value)
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    ble_gatts_hvx_params_t hv_params;
-    hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
-    hv_params.type = BLE_GATT_HVX_NOTIFICATION;
-    hv_params.offset = 0;
-    hv_params.p_len = &value_len;
-    hv_params.p_data = value;
+    ret_code_t err_code;
 
-    sd_ble_gatts_hvx(g_conn_handle, &hv_params);
+    if (BLE_CONN_HANDLE_INVALID == g_conn_handle || !g_characteristics[char_id].notification_enabled)
+    {
+        ble_gatts_value_t gatts_value;
+        memset(&gatts_value, 0, sizeof(gatts_value));
+
+        gatts_value.len     = value_len;
+        gatts_value.offset  = 0;
+        gatts_value.p_value = value;
+
+        err_code = sd_ble_gatts_value_set(BLE_CONN_HANDLE_INVALID, g_characteristics[char_id].char_handle.value_handle, &gatts_value);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+    }
+    else
+    {
+        ble_gatts_hvx_params_t hv_params;
+        hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
+        hv_params.type = BLE_GATT_HVX_NOTIFICATION;
+        hv_params.offset = 0;
+        hv_params.p_len = &value_len;
+        hv_params.p_data = value;
+
+        err_code = sd_ble_gatts_hvx(g_conn_handle, &hv_params);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        LOG_ERROR_CHECK(0 != *hv_params.p_len);
+    }
+
     return WINSENS_OK;
 }
 

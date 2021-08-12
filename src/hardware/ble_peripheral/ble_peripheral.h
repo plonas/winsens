@@ -83,7 +83,7 @@ winsens_status_t ble_peripheral_unbond(void);
 winsens_status_t ble_peripheral_subscribe(winsens_event_handler_t evt_handler);
 
 winsens_status_t ble_peripheral_attr_subscribe(ble_peripheral_attr_cb_t callback);
-winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t const *value);
+winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_peripheral_char_id_t char_id, uint16_t value_len, uint8_t *value);
 
 ble_peripheral_state_enum_t ble_peripheral_get_state(void);
 

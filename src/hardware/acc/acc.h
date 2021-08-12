@@ -39,11 +39,11 @@ winsens_status_t acc_get_data(acc_t* data, uint16_t len);
 
 uint16_t acc_get_data_len(void);
 
-void acc_set_ff_threshold(uint8_t threshold);
-uint8_t acc_get_ff_threshold(void);
+void acc_set_ff_threshold(uint16_t threshold);
+uint16_t acc_get_ff_threshold(void);
 
-void acc_set_hp_threshold(uint8_t threshold);
-uint8_t acc_get_hp_threshold(void);
+void acc_set_hp_threshold(uint16_t threshold);
+uint16_t acc_get_hp_threshold(void);
 
 
 #endif /* ACC_H_ */

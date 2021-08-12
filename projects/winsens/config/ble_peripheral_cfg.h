@@ -13,15 +13,15 @@
 #define BLE_PERIPERAL_MAX_EVT_HANDLERS                  3
 
 #define BLE_UUID_WMS_BASE_UUID                          {{0x23, 0xD1, 0x13, 0xEF, 0x5F, 0x78, 0x23, 0x15, 0xDE, 0xEF, 0x12, 0x12, 0x00, 0x00, 0x00, 0x00}} // 128-bit base UUID
-#define BLE_UUID_CS_SERVICE_UUID                        0xE00D // Just a random, but recognizable value
-#define BLE_UUID_WMS_SERVICE_UUID                       0xF00D // Just a random, but recognizable value
-#define BLE_UUID_ACC_SERVICE_UUID                       0xD00D // Just a random, but recognizable value
+#define BLE_UUID_CS_SERVICE_UUID                        0xA001 // Just a random, but recognizable value
+#define BLE_UUID_WMS_SERVICE_UUID                       0xA002 // Just a random, but recognizable value
+#define BLE_UUID_ACC_SERVICE_UUID                       0xA003 // Just a random, but recognizable value
 
 #define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE   0xF000 // Just a random, but recognizable value
 #define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE     0xF010 // Just a random, but recognizable value
-#define BLE_UUID_WMS_STATE_CHARACTERISTC_UUID           0xBEEF // Just a random, but recognizable value
-#define BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID     0xA000 // Just a random, but recognizable value
-#define BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID     0xA010 // Just a random, but recognizable value
+#define BLE_UUID_WMS_STATE_CHARACTERISTC_UUID           0xF020 // Just a random, but recognizable value
+#define BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID     0xF030 // Just a random, but recognizable value
+#define BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID     0xF040 // Just a random, but recognizable value
 
 typedef enum
 {
