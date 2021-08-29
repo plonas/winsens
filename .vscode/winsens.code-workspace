@@ -1,0 +1,87 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../winsens_master"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"timer.h": "c",
+			"nrfx_saadc.h": "c",
+			"nrfx_saadc_v2.h": "c",
+			"adc_cfg.h": "c",
+			"log.h": "c",
+			"string.h": "c",
+			"nrfx_timer.h": "c",
+			"log_internal_nrf52.h": "c",
+			"nrfx.h": "c",
+			"log_internal.h": "c",
+			"nrfx_common.h": "c",
+			"nrf_log_ctrl.h": "c",
+			"nrf_log.h": "c",
+			"nrf_timer.h": "c",
+			"nrfx_ppi.h": "c",
+			"adc.h": "c",
+			"app_timer.h": "c"
+		},
+		"makefile.makeDirectory": "projects/winsens",
+		"makefile.loggingLevel": "Verbose",
+		"commentAnchors.tags.matchCase": false,
+		"commentAnchors.workspace.excludeFiles": "**/{node_modules,.git,.idea,.vscode,target,out,build,dist,vendor}/**/*",
+		"commentAnchors.tags.list": [
+			{
+				"tag": "ANCHOR",
+				"iconColor": "default",
+				"highlightColor": "#A8C023",
+				"scope": "file"
+			},
+			{
+				"tag": "TODO",
+				"iconColor": "blue",
+				"highlightColor": "#3ea8ff",
+				"scope": "workspace"
+			},
+			{
+				"tag": "FIXME",
+				"iconColor": "red",
+				"highlightColor": "#F44336",
+				"scope": "workspace"
+			},
+			{
+				"tag": "STUB",
+				"iconColor": "purple",
+				"highlightColor": "#BA68C8",
+				"scope": "file"
+			},
+			{
+				"tag": "NOTE",
+				"iconColor": "orange",
+				"highlightColor": "#FFB300",
+				"scope": "file"
+			},
+			{
+				"tag": "REVIEW",
+				"iconColor": "green",
+				"highlightColor": "#64DD17",
+				"scope": "workspace"
+			},
+			{
+				"tag": "SECTION",
+				"iconColor": "blurple",
+				"highlightColor": "#896afc",
+				"scope": "workspace",
+				"behavior": "region"
+			},
+			{
+				"tag": "LINK",
+				"iconColor": "#2ecc71",
+				"highlightColor": "#2ecc71",
+				"scope": "workspace",
+				"behavior": "link"
+			}
+		]
+	}
+}
