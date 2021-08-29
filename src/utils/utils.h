@@ -12,6 +12,7 @@
 #define UTILS_ASSERT(x)         while(false == (x))
 
 #define UTILS_STRING(x)         #x
+#define UTILS_CONCAT2(a, b)     a ## b
 
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))

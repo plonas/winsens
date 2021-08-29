@@ -47,13 +47,7 @@ winsens_status_t distance_enable(
 
     g_callbacks[channelId] = callback;
 
-    winsens_status_t status = adc_enable_channel(channelId, adc_event_handler);
-    if (WINSENS_OK != status)
-    {
-        g_callbacks[channelId] = NULL;
-    }
-
-    return status;
+    return adc_start(channelId, adc_event_handler);
 }
 
 void distance_disable(
@@ -66,28 +60,9 @@ void distance_disable(
 
     UTILS_ASSERT(ADC_CHANNELS_NUMBER > channelId);
 
-    adc_disable_channel(channelId);
+    adc_stop(channelId);
+
     g_callbacks[channelId] = NULL;
-}
-
-winsens_status_t distance_start(void)
-{
-    if (!g_initialized)
-    {
-        return WINSENS_NOT_INITIALIZED;
-    }
-
-    return adc_start();
-}
-
-void distance_stop(void)
-{
-    if (!g_initialized)
-    {
-        return;
-    }
-
-    adc_stop();
 }
 
 static void adc_event_handler(

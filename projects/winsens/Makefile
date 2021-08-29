@@ -22,7 +22,8 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hardware/button/common/button.c \
   $(PROJ_DIR)/src/os/timer/nrf52/timer.c \
   $(PROJ_DIR)/src/os/log/nrf52/log_internal.c \
-  $(PROJ_DIR)/src/firmware/window_state/simulator/window_state.c \
+  $(PROJ_DIR)/src/firmware/window_state/dist/window_state.c \
+  $(PROJ_DIR)/src/firmware/distance/cny70/distance.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/hardware/acc/lis3dh/acc.c \
@@ -116,6 +117,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/utils/subscribers \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
+  $(PROJ_DIR)/src/firmware/distance \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
   $(PROJ_DIR)/src/hardware/acc \

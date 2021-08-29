@@ -341,12 +341,12 @@ static void dio_callback(digital_io_input_pin_t pin, bool on)
 
 static void hpf_task(void *p_data, uint16_t data_size)
 {
-    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
+//    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void ff_task(void *p_data, uint16_t data_size)
 {
-    LOG_DEBUG("xxx xxx xxx FF 0x%02x INT 0x%x xxx xxx xxx", get_ff_threshold_cfg(), *(uint8_t*)p_data);
+//    LOG_DEBUG("xxx xxx xxx FF 0x%02x INT 0x%x xxx xxx xxx", get_ff_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void lis3dh_init(void)

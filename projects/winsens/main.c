@@ -77,7 +77,7 @@ int main(void)
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
     LOG_FLUSH();
 
-    status = IWinsens_Init();
+    status = winsens_init();
     LOG_ERROR_RETURN(status, WINSENS_ERROR);
 
     status = acc_init();

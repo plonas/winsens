@@ -9,15 +9,17 @@
 #define WINDOW_STATE_CFG_H_
 
 
+#include "adc_cfg.h"
+
+
 typedef enum
 {
-    WINDOW_STATE_CFG_WINDOW_LEFT,
+    WINDOW_STATE_CFG_WINDOW_LEFT = ADC_CHANNEL_DISTANCE,
     WINDOW_STATE_CFG_WINDOW_RIGHT,
 
     WINDOW_STATE_CFG_NUMBER
 
 } window_id_enum_t;
 
-#define WINDOW_STATE_CFG_UPDATE_INTERVAL        1000 //sec.
 
 #endif /* WINDOW_STATE_CFG_H_ */

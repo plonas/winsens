@@ -10,10 +10,15 @@
 #include "distance.h"
 #include "adc_cfg.h"
 #include "utils.h"
+#define ILOG_MODULE_NAME WS
+#include "log.h"
 #include <string.h>
 
 
-#define OPEN_THRESHOLD_DEFAULT      400
+#define OPEN_THRESHOLD_DEFAULT      50
+
+
+LOG_REGISTER();
 
 
 /*
@@ -21,20 +26,14 @@
  * Function prototypes
  ******************************************************************************
  */
-static void distance_callback(
-    adc_channel_id_t id,
-    int16_t value);
-
+static void distance_callback(adc_channel_id_t id, int16_t value);
 static winsens_status_t start_distance_sensors(void);
-static window_id_t get_window_id(const adc_channel_id_t windows_id);
 
 /*
  ******************************************************************************
  * Variables
  ******************************************************************************
  */
-static const adc_channel_id_t   WINDOW_ADC_MAP[WINDOW_STATE_CFG_NUMBER] = WINDOW_STATE_CFG_WINDOW_MAP_INIT;
-
 static bool                     g_initialized = false;
 static window_state_type_t      g_window_state[WINDOW_STATE_CFG_NUMBER];
 static window_state_callback_t  g_callbacks[WINDOW_STATE_CFG_NUMBER] = {NULL};
@@ -119,28 +118,29 @@ void window_state_unsubscribe(
  * Private functions
  ******************************************************************************
  */
-static void distance_callback(
-    adc_channel_id_t id,
-    int16_t value)
+static void distance_callback(adc_channel_id_t id, int16_t value)
 {
-    window_state_type_t wStatus = WINDOW_STATE_UNKNOWN;
+    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_NUMBER > id, ;);
+
+    window_state_type_t win_status = WINDOW_STATE_UNKNOWN;
 
     if (g_open_closed_threshold < value)
     {
-        wStatus = WINDOW_STATE_OPEN;
+        win_status = WINDOW_STATE_OPEN;
     }
     else
     {
-        wStatus = WINDOW_STATE_CLOSED;
+        win_status = WINDOW_STATE_CLOSED;
     }
 
-    const window_id_t win_id = get_window_id(id);
-    if (wStatus != g_window_state[win_id])
+    LOG_DEBUG("dist %u", value);
+
+    if (win_status != g_window_state[id])
     {
-        g_window_state[win_id] = wStatus;
-        if (g_callbacks[win_id])
+        g_window_state[id] = win_status;
+        if (g_callbacks[id])
         {
-            g_callbacks[win_id](win_id, wStatus);
+            g_callbacks[id](id, win_status);
         }
     }
 }
@@ -150,33 +150,6 @@ static winsens_status_t start_distance_sensors(void)
     winsens_status_t status = WINSENS_ERROR;
 
     status = distance_enable(ADC_CHANNEL_DISTANCE, distance_callback);
-    if (WINSENS_OK != status)
-    {
-        return status;
-    }
 
-//    status = WS_DistanceEnable(WS_ADC_ADAPTER_CHANNEL_2, WS_DistanceCallback);
-//    if (WINSENS_OK != status)
-//    {
-//        WS_DistanceDisable(WS_ADC_ADAPTER_CHANNEL_1);
-//        return status;
-//    }
-
-    return distance_start();
-}
-
-static window_id_t get_window_id(const adc_channel_id_t adc_channel_id)
-{
-    window_id_t window_id;
-    for (window_id = 0; window_id < WINDOW_STATE_CFG_NUMBER; window_id++)
-    {
-        if (adc_channel_id == WINDOW_ADC_MAP[window_id])
-        {
-            break;
-        }
-    }
-
-    UTILS_ASSERT(WINDOW_STATE_CFG_NUMBER == window_id);
-
-    return window_id;
+    return status;
 }

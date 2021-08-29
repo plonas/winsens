@@ -16,15 +16,8 @@ typedef void (*distance_callback_t)(adc_channel_id_t id, int16_t value);
 
 winsens_status_t distance_init(void);
 
-winsens_status_t distance_enable(
-    adc_channel_id_t channelId,
-    distance_callback_t callback);
+winsens_status_t distance_enable(adc_channel_id_t channelId, distance_callback_t callback);
 
-void distance_disable(
-    adc_channel_id_t channelId);
-
-winsens_status_t distance_start(void);
-
-void distance_stop(void);
+void distance_disable(adc_channel_id_t channelId);
 
 #endif /* DISTANCE_H_ */
