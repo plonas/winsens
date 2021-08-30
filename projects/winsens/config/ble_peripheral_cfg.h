@@ -18,7 +18,6 @@
 #define BLE_UUID_ACC_SERVICE_UUID                       0xA003 // Just a random, but recognizable value
 
 #define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE   0xF000 // Just a random, but recognizable value
-#define BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE     0xF010 // Just a random, but recognizable value
 #define BLE_UUID_WMS_STATE_CHARACTERISTC_UUID           0xF020 // Just a random, but recognizable value
 #define BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID     0xF030 // Just a random, but recognizable value
 #define BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID     0xF040 // Just a random, but recognizable value
@@ -32,10 +31,7 @@ typedef enum
 
 typedef enum
 {
-    BLE_PERIPERAL_CHAR_CS_ENABLED_LEFT,
-    BLE_PERIPERAL_CHAR_CS_ENABLED_RIGHT,
-    BLE_PERIPERAL_CHAR_CS_THRESHOLD_LEFT,
-    BLE_PERIPERAL_CHAR_CS_THRESHOLD_RIGHT,
+    BLE_PERIPERAL_CHAR_CS_THRESHOLD_WINDOW,
     BLE_PERIPERAL_CHAR_WMS_STATE,
     BLE_PERIPERAL_CHAR_ACC_FF,
     BLE_PERIPERAL_CHAR_ACC_HP,
@@ -80,39 +76,12 @@ typedef struct
 #define BLE_PERIPHERAL_CHARS_INIT       { \
     { \
     .service_id = BLE_PERIPERAL_SVC_CS, \
-    .char_uuid = {.uuid = BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_LEFT}, \
-    .read_enabled = true , \
-    .write_enabled = true, \
-    .notification_enabled = false, \
-    .value_len = sizeof(bool), \
-    .desc = "Enable left window", \
-    }, \
-    { \
-    .service_id = BLE_PERIPERAL_SVC_CS, \
-    .char_uuid = {.uuid = BLE_UUID_CS_ENABLED_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_RIGHT}, \
-    .read_enabled = true , \
-    .write_enabled = true, \
-    .notification_enabled = false, \
-    .value_len = sizeof(bool), \
-    .desc = "Enable right window", \
-    }, \
-    { \
-    .service_id = BLE_PERIPERAL_SVC_CS, \
-    .char_uuid = {.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_LEFT}, \
+    .char_uuid = {.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW}, \
     .read_enabled = true , \
     .write_enabled = true, \
     .notification_enabled = false, \
     .value_len = sizeof(uint16_t), \
-    .desc = "Left window's threshold", \
-    }, \
-    { \
-    .service_id = BLE_PERIPERAL_SVC_CS, \
-    .char_uuid = {.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW_RIGHT}, \
-    .read_enabled = true , \
-    .write_enabled = true, \
-    .notification_enabled = false, \
-    .value_len = sizeof(uint16_t), \
-    .desc = "Right window's threshold", \
+    .desc = "Window's threshold", \
     }, \
     { \
     .service_id = BLE_PERIPERAL_SVC_WMS, \

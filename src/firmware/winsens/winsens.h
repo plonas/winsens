@@ -9,7 +9,6 @@
 #define IWINSENS_H_
 
 #include "winsens_types.h"
-#include "config.h"
 
 winsens_status_t winsens_init(void);
 

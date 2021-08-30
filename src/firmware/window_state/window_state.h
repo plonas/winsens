@@ -19,18 +19,22 @@ typedef enum
 
 } window_state_type_t;
 
-typedef uint8_t window_id_t;
+typedef enum
+{
+    WINDOW_STATE_EVT_OPEN = (WINSENS_IDS_MODULE_WINDOW_STATE << 16),
+    WINDOW_STATE_EVT_CLOSED
 
-typedef void (*window_state_callback_t)(window_id_t window, window_state_type_t state);
+} window_state_evt_t;
+
+typedef uint8_t window_id_t;
 
 
 winsens_status_t window_state_init(void);
 
-winsens_status_t window_state_subscribe(
-    window_id_t windowsId,
-    window_state_callback_t callback);
-void window_state_unsubscribe(
-    window_id_t windowsId,
-    window_state_callback_t callback);
+winsens_status_t window_state_subscribe(winsens_event_handler_t callback);
+
+winsens_status_t window_status_enable(window_id_t win_id);
+void window_status_disable(window_id_t win_id);
+
 
 #endif /* WINDOW_STATE_H_ */

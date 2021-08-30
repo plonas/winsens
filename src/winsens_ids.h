@@ -18,6 +18,7 @@ typedef enum
     WINSENS_IDS_MODULE_BLE_PERIPHERAL,
     WINSENS_IDS_MODULE_SPI,
     WINSENS_IDS_MODULE_ACC,
+    WINSENS_IDS_MODULE_WINDOW_STATE,
 } winsens_ids_module_enum_t;
 
 typedef uint16_t winsens_ids_module_t;

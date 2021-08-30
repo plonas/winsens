@@ -25,7 +25,11 @@
 			"nrf_timer.h": "c",
 			"nrfx_ppi.h": "c",
 			"adc.h": "c",
-			"app_timer.h": "c"
+			"app_timer.h": "c",
+			"distance.h": "c",
+			"window_state_cfg.h": "c",
+			"window_state.h": "c",
+			"winsens.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",
