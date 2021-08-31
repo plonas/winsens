@@ -29,10 +29,11 @@ typedef struct timer_t
 
 winsens_status_t timer_init(void);
 
-winsens_status_t timer_create(timer_ws_t *timer, winsens_event_handler_t callback, void* context);
+winsens_status_t timer_create(timer_ws_t* timer, winsens_event_handler_t callback, void* context);
 void timer_destroy(timer_ws_t *timer);
 
-winsens_status_t timer_start(timer_ws_t *timer, uint32_t interval_ms, bool repeat);
+winsens_status_t timer_start(timer_ws_t* timer, uint32_t interval_ms, bool repeat);
+winsens_status_t timer_restart(timer_ws_t* timer, uint32_t interval_ms);
 void timer_stop(timer_ws_t *timer);
 
 

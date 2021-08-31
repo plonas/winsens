@@ -49,7 +49,7 @@ winsens_status_t timer_init(void)
     return WINSENS_OK;
 }
 
-winsens_status_t timer_create(timer_ws_t *timer, winsens_event_handler_t callback, void* context)
+winsens_status_t timer_create(timer_ws_t* timer, winsens_event_handler_t callback, void* context)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
     LOG_ERROR_BOOL_RETURN(NULL != callback, WINSENS_INVALID_PARAMS);
@@ -72,7 +72,7 @@ void timer_destroy(timer_ws_t *timer)
     NRF_TMR(timer)->used = false;
 }
 
-winsens_status_t timer_start(timer_ws_t *timer, uint32_t interval_ms, bool repeat)
+winsens_status_t timer_start(timer_ws_t* timer, uint32_t interval_ms, bool repeat)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
@@ -83,6 +83,19 @@ winsens_status_t timer_start(timer_ws_t *timer, uint32_t interval_ms, bool repea
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 
     ret = app_timer_start(app_tmr, APP_TIMER_TICKS(interval_ms), timer);
+    LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+
+    return WINSENS_OK;
+}
+
+winsens_status_t timer_restart(timer_ws_t* timer, uint32_t interval_ms)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+
+    ret_code_t ret = app_timer_stop(&NRF_TMR(timer)->app_timer);
+    LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+
+    ret = app_timer_start(&NRF_TMR(timer)->app_timer, APP_TIMER_TICKS(interval_ms), timer);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 
     return WINSENS_OK;
