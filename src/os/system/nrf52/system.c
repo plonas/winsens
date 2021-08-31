@@ -80,5 +80,8 @@ static void soc_evt_handler(uint32_t evt_id, void* p_context)
 }
 static void tmt_evt_handler(winsens_event_t evt)
 {
-    ++g_tmr_counter;
+    if (TIMER_EVT_SIGNAL ==  evt.id)
+    {
+        ++g_tmr_counter;
+    }
 }
