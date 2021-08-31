@@ -19,6 +19,7 @@ typedef enum
     WINSENS_IDS_MODULE_SPI,
     WINSENS_IDS_MODULE_ACC,
     WINSENS_IDS_MODULE_WINDOW_STATE,
+    WINSENS_IDS_MODULE_TIMER,
 } winsens_ids_module_enum_t;
 
 typedef uint16_t winsens_ids_module_t;

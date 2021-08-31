@@ -22,15 +22,13 @@
 #define SYSTEM_BUTTON_HOLD_DURATION             20 // it is 2000ms in 100ms unit
 
 
-static void timer_callback(
-    WS_TimerId_t timerId);
-static void soc_event_handler(
-    uint32_t evt_id,
-    void * p_context);
+static void soc_evt_handler(uint32_t evt_id, void* p_context);
+static void tmt_evt_handler(winsens_event_t evt);
 
-static bool                             g_initialized = false;
-static WS_TimerId_t                     g_system_timer = 0;
-static uint32_t                         g_time_counter = 0;
+
+static bool         g_initialized = false;
+static timer_ws_t   g_timer;
+static uint32_t     g_tmr_counter = 0;
 
 
 LOG_REGISTER();
@@ -44,24 +42,22 @@ winsens_status_t system_init(void)
     {
         g_initialized = true;
 
-        uint32_t err_code;
-
-        err_code = nrf_sdh_enable_request();
+        ret_code_t err_code = nrf_sdh_enable_request();
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
         // Register handlers for SoC events.
-        NRF_SDH_SOC_OBSERVER(m_soc_observer, APP_SOC_OBSERVER_PRIO, soc_event_handler, NULL);
+        NRF_SDH_SOC_OBSERVER(m_soc_observer, APP_SOC_OBSERVER_PRIO, soc_evt_handler, NULL);
 
-        status = ITimer_Init();
+        status = timer_init();
         LOG_ERROR_RETURN(status, status);
 
-        status = digital_io_init();
+        status = timer_create(&g_timer, tmt_evt_handler, NULL);
+        LOG_ERROR_RETURN(status, status);
+
+        status = timer_start(&g_timer, 100, true);
         LOG_ERROR_RETURN(status, status);
 
         status = button_init();
-        LOG_ERROR_RETURN(status, status);
-
-        status = ITimer_SetTimer(100, true, timer_callback, &g_system_timer);
         LOG_ERROR_RETURN(status, status);
     }
 
@@ -70,16 +66,10 @@ winsens_status_t system_init(void)
 
 uint32_t system_get_time(void)
 {
-    return g_time_counter;
+    return g_tmr_counter;
 }
 
-static void timer_callback(
-    WS_TimerId_t timerId)
-{
-    ++g_time_counter;
-}
-
-static void soc_event_handler(uint32_t evt_id, void * p_context)
+static void soc_evt_handler(uint32_t evt_id, void* p_context)
 {
     switch (evt_id)
     {
@@ -88,4 +78,7 @@ static void soc_event_handler(uint32_t evt_id, void * p_context)
             break;
     }
 }
-
+static void tmt_evt_handler(winsens_event_t evt)
+{
+    ++g_tmr_counter;
+}
