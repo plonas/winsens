@@ -12,7 +12,7 @@
 #include "window_state_cfg.h"
 
 
-#define WINSENS_CFG_WINDOWS_INIT    { WINDOW_STATE_CFG_WINDOW }
+#define WINSENS_CFG_SENSORS_INIT    { ADC_CHANNEL_WIN_DISTANCE }
 
 
 #endif /* WINSENS_CFG_H_ */

@@ -27,7 +27,7 @@ LOG_REGISTER();
  * Function prototypes
  ******************************************************************************
  */
-static void distance_callback(adc_channel_id_t id, int16_t value);
+static void distance_callback(winsens_event_t evt);
 
 /*
  ******************************************************************************
@@ -35,7 +35,7 @@ static void distance_callback(adc_channel_id_t id, int16_t value);
  ******************************************************************************
  */
 static bool                     g_initialized = false;
-static window_state_type_t      g_window_state[WINDOW_STATE_CFG_NUMBER];
+static window_state_type_t      g_window_state[WINDOW_STATE_CFG_WINDOW_NUMBER];
 static winsens_event_handler_t  g_callbacks[WINDOW_STATE_CFG_SUBSCRIBERS_NUM] = { NULL };
 static uint16_t                 g_open_closed_threshold = 0;
 static subscribers_t            g_subscribers;
@@ -60,11 +60,18 @@ winsens_status_t window_state_init(void)
             return status;
         }
 
+        distance_subscribe(distance_callback);
+
         g_open_closed_threshold = OPEN_THRESHOLD_DEFAULT;
 
-        memset(g_window_state, WINDOW_STATE_UNKNOWN, sizeof(window_state_type_t) * WINDOW_STATE_CFG_NUMBER);
+        memset(g_window_state, WINDOW_STATE_UNKNOWN, sizeof(window_state_type_t) * WINDOW_STATE_CFG_WINDOW_NUMBER);
 
         status = subscribers_init(&g_subscribers, g_callbacks, WINDOW_STATE_CFG_SUBSCRIBERS_NUM);
+
+        for (window_id_t id = 0; id < WINDOW_STATE_CFG_WINDOW_NUMBER; ++id)
+        {
+            distance_enable(id);
+        }
     }
 
     return status;
@@ -80,14 +87,15 @@ winsens_status_t window_state_subscribe(winsens_event_handler_t callback)
     return subscribers_add(&g_subscribers, callback);;
 }
 
-winsens_status_t window_status_enable(window_id_t win_id)
+window_state_type_t window_status_get(window_id_t window)
 {
-    return distance_enable(win_id, distance_callback);
-}
+    if (!g_initialized)
+    {
+        return WINDOW_STATE_UNKNOWN;
+    }
+    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > window, WINDOW_STATE_UNKNOWN);
 
-void window_status_disable(window_id_t win_id)
-{
-    distance_disable(win_id);
+    return g_window_state[window];
 }
 
 /*
@@ -95,24 +103,27 @@ void window_status_disable(window_id_t win_id)
  * Private functions
  ******************************************************************************
  */
-static void distance_callback(adc_channel_id_t id, int16_t value)
+static void distance_callback(winsens_event_t evt)
 {
-    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_NUMBER > id, ;);
+    const window_id_t id = (window_id_t)evt.data;
+    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > id, ;);
+    winsens_event_t new_evt;
+    int16_t value = 0;
 
-    winsens_event_t evt;
+    distance_get((adc_channel_id_t)id, &value);
 
     if (g_open_closed_threshold < value)
     {
         g_window_state[id] = WINDOW_STATE_OPEN;
-        evt.id = WINDOW_STATE_EVT_OPEN;
+        new_evt.id = WINDOW_STATE_EVT_OPEN;
     }
     else
     {
         g_window_state[id] = WINDOW_STATE_CLOSED;
-        evt.id = WINDOW_STATE_EVT_CLOSED;
+        new_evt.id = WINDOW_STATE_EVT_CLOSED;
     }
-    evt.data = id;
-    subscribers_update(&g_subscribers, evt);
+    new_evt.data = id;
+    subscribers_update(&g_subscribers, new_evt);
 
     LOG_DEBUG("dist %u", value);
 }
