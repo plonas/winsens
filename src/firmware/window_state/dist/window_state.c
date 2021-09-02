@@ -87,7 +87,7 @@ winsens_status_t window_state_subscribe(winsens_event_handler_t callback)
     return subscribers_add(&g_subscribers, callback);;
 }
 
-window_state_type_t window_status_get(window_id_t window)
+window_state_type_t window_state_get(window_id_t window)
 {
     if (!g_initialized)
     {

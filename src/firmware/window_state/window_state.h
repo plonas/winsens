@@ -33,7 +33,7 @@ winsens_status_t window_state_init(void);
 
 winsens_status_t window_state_subscribe(winsens_event_handler_t callback);
 
-window_state_type_t window_status_get(window_id_t window);
+window_state_type_t window_state_get(window_id_t window);
 
 
 #endif /* WINDOW_STATE_H_ */

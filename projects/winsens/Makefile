@@ -12,6 +12,7 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 # Source files common to all targets
 SRC_FILES += \
   $(PROJ_DIR)/projects/winsens/main.c \
+  $(PROJ_DIR)/projects/winsens/app/app.c \
   $(PROJ_DIR)/src/hardware/adc/nrf52/adc.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
@@ -23,6 +24,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/os/timer/nrf52/timer.c \
   $(PROJ_DIR)/src/os/log/nrf52/log_internal.c \
   $(PROJ_DIR)/src/firmware/window_state/dist/window_state.c \
+  $(PROJ_DIR)/src/firmware/window_state/observer/ble/window_state_observer.c \
   $(PROJ_DIR)/src/firmware/distance/cny70/distance.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
@@ -108,6 +110,7 @@ SRC_FILES += \
 
 INC_FOLDERS += \
   ./config \
+  ./app \
   $(PROJ_DIR)/src \
   $(PROJ_DIR)/src/utils \
   $(PROJ_DIR)/src/utils/circular_buf \
@@ -117,6 +120,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/utils/subscribers \
   $(PROJ_DIR)/src/hardware \
   $(PROJ_DIR)/src/firmware/window_state \
+  $(PROJ_DIR)/src/firmware/window_state/observer \
   $(PROJ_DIR)/src/firmware/distance \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \

@@ -64,7 +64,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/projects/winsens/config",
-                "${nrfIncludePath}"
+                "${nrfIncludePath}",
+                "${workspaceFolder}/src/utils/subscribers"
             ],
             "defines": [
                 "NRFX_SAADC_API_V2",
