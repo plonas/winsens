@@ -29,7 +29,8 @@
 			"distance.h": "c",
 			"window_state_cfg.h": "c",
 			"window_state.h": "c",
-			"winsens.h": "c"
+			"winsens.h": "c",
+			"winsens_cfg.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",
@@ -86,6 +87,7 @@
 				"scope": "workspace",
 				"behavior": "link"
 			}
-		]
+		],
+		"commentAnchors.workspace.matchFiles": "**/{*.c,*.h}"
 	}
 }
