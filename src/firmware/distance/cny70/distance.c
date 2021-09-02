@@ -42,40 +42,40 @@ winsens_status_t distance_subscribe(winsens_event_handler_t callback)
     return subscribers_add(&g_subscribers, callback);
 }
 
-winsens_status_t distance_get(adc_channel_id_t ch, int16_t* value)
+winsens_status_t distance_get(distance_sensor_id_t id, int16_t* value)
 {
-    if (ADC_CHANNELS_NUMBER <= ch)
+    if (ADC_CHANNELS_NUMBER <= id)
     {
         return WINSENS_INVALID_PARAMS;
     }
 
-    *value = g_values[ch];
+    *value = g_values[id];
 
     return WINSENS_OK;
 }
 
-winsens_status_t distance_enable(adc_channel_id_t ch)
+winsens_status_t distance_enable(distance_sensor_id_t id)
 {
     if (!g_initialized)
     {
         return WINSENS_NOT_INITIALIZED;
     }
 
-    UTILS_ASSERT(ADC_CHANNELS_NUMBER > ch);
+    UTILS_ASSERT(ADC_CHANNELS_NUMBER > id);
 
-    return adc_start(ch, adc_event_handler);
+    return adc_start(id, adc_event_handler);
 }
 
-void distance_disable(adc_channel_id_t ch)
+void distance_disable(distance_sensor_id_t id)
 {
     if (!g_initialized)
     {
         return;
     }
 
-    UTILS_ASSERT(ADC_CHANNELS_NUMBER > ch);
+    UTILS_ASSERT(ADC_CHANNELS_NUMBER > id);
 
-    adc_stop(ch);
+    adc_stop(id);
 }
 
 static void adc_event_handler(adc_channel_id_t id, int16_t value)

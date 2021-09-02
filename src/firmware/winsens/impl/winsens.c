@@ -26,9 +26,9 @@ static void acc_evt_handler(winsens_event_t evt);
 static void tmr_evt_handler(winsens_event_t evt);
 
 
-static adc_channel_id_t g_dist_sensors[]    = WINSENS_CFG_SENSORS_INIT;
-static bool             g_sensors_enabled   = false;
-static timer_ws_t       g_timer;
+static distance_sensor_id_t g_dist_sensors[]    = WINSENS_CFG_SENSORS_INIT;
+static bool                 g_sensors_enabled   = false;
+static timer_ws_t           g_timer;
 
 
 winsens_status_t winsens_init(void)
@@ -65,7 +65,7 @@ static void acc_evt_handler(winsens_event_t evt)
     {
         if (!g_sensors_enabled)
         {
-            for (adc_channel_id_t sensor_id = 0; sensor_id < WINSENS_SENSORS_NUM; ++sensor_id)
+            for (distance_sensor_id_t sensor_id = 0; sensor_id < WINSENS_SENSORS_NUM; ++sensor_id)
             {
                 distance_enable(g_dist_sensors[sensor_id]);
             }
@@ -84,7 +84,7 @@ static void tmr_evt_handler(winsens_event_t evt)
 {
     if (TIMER_EVT_SIGNAL ==  evt.id)
     {
-        for (adc_channel_id_t sensor_id = 0; sensor_id < WINSENS_SENSORS_NUM; ++sensor_id)
+        for (distance_sensor_id_t sensor_id = 0; sensor_id < WINSENS_SENSORS_NUM; ++sensor_id)
         {
             distance_disable(g_dist_sensors[sensor_id]);
         }
