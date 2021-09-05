@@ -30,7 +30,9 @@
 			"window_state_cfg.h": "c",
 			"window_state.h": "c",
 			"winsens.h": "c",
-			"winsens_cfg.h": "c"
+			"winsens_cfg.h": "c",
+			"nrfx_errors.h": "c",
+			"nrfx_glue.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",

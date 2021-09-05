@@ -175,6 +175,7 @@ winsens_status_t acc_init(void)
         spi_init();
         spi_subscribe(SPI_CFG_ACC, event_handler);
 
+        digital_io_init();
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_1, dio_callback);
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_2, dio_callback);
 

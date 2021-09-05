@@ -22,11 +22,11 @@
 
 typedef struct
 {
-    nrfx_saadc_channel_t    channel_conf;
     app_timer_t             timer;
     uint32_t                interval_ms;
-    adc_callback_t          callback;
     uint32_t                channel_mask;
+    nrf_saadc_input_t       ain;
+    adc_callback_t          callback;
 } adc_channel_t;
 
 
@@ -41,7 +41,6 @@ static adc_channel_t        g_channels[ADC_CHANNELS_NUMBER] = ADC_CFG_CHANNEL_IN
 static nrf_saadc_value_t    g_adc_buffer[ADC_CHANNELS_NUMBER];
 static uint32_t             g_ch_mask_queue = 0;
 static uint32_t             g_ch_triggered = 0;
-
 static bool                 g_initialized = false;
 
 
@@ -54,6 +53,7 @@ winsens_status_t adc_init(void)
     {
         g_initialized = true;
 
+        nrfx_saadc_channel_t channels_conf[ADC_CHANNELS_NUMBER];
         nrfx_err_t err_code = NRF_ERROR_INTERNAL;
 
         // init a timer
@@ -74,9 +74,14 @@ winsens_status_t adc_init(void)
             err_code = app_timer_create(&timer_id, APP_TIMER_MODE_REPEATED, timer_isr);
             LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
-            err_code = nrfx_saadc_channels_config(&g_channels[ch].channel_conf, 1);
-            LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+            g_channels[ch].channel_mask = (1 << ch);
+
+            channels_conf[ch] = (nrfx_saadc_channel_t)NRFX_SAADC_DEFAULT_CHANNEL_SE(g_channels[ch].ain, ch);
         }
+
+        // channels need to be configured at once
+        err_code = nrfx_saadc_channels_config(channels_conf, ADC_CHANNELS_NUMBER);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
     }
 
     return WINSENS_OK;
