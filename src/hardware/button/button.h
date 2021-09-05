@@ -22,7 +22,7 @@ typedef uint8_t button_id_t;
 
 typedef struct
 {
-    digital_io_input_pin_t  pin;
+    digital_io_pin_t        pin;
     bool                    active_low;
 } button_cfg_t;
 

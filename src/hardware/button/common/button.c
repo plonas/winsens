@@ -13,7 +13,7 @@
 #include "system.h"
 
 
-#define BUTTONS_NUMBER                  (sizeof(g_buttons_config) / sizeof(digital_io_input_pin_t))
+#define BUTTONS_NUMBER                      (sizeof(g_buttons_config) / sizeof(digital_io_pin_t))
 #define BUTTON_CALLBACK_INIT                { DIGITAL_INPUT_PIN_INVALID, 0, NULL }
 
 #define BUTTON_PUSH_NORMAL_DURATION         1   // 100ms
@@ -21,14 +21,14 @@
 #define BUTTON_PUSH_VERY_LONG_DURATION      25  // 2500ms
 
 typedef struct {
-    digital_io_input_pin_t pin;
+    digital_io_pin_t pin;
     uint32_t onTime;
     winsens_event_handler_t eventHandler;
 
 } button_pin_callback_t;
 
 static void digital_input_callback(
-    digital_io_input_pin_t pin,
+    digital_io_pin_t pin,
     bool on);
 
 static bool g_initialized = false;
@@ -86,7 +86,7 @@ void button_unregister_callback(
 }
 
 static void digital_input_callback(
-    digital_io_input_pin_t pin,
+    digital_io_pin_t pin,
     bool on)
 {
     uint32_t i;

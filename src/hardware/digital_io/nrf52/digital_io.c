@@ -18,28 +18,25 @@
 
 #define DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT     { DIGITAL_INPUT_PIN_INVALID, NULL, false }
 #define DIGITAL_IO_INPUT_PINS_NUMBER            (sizeof(DIGITAL_IO_INPUT_CONFIG) / sizeof(digital_io_input_pin_cfg_t))
+#define DIGITAL_IO_OUTPUT_PINS_NUMBER           (sizeof(DIGITAL_IO_OUTPUT_CONFIG) / sizeof(digital_io_output_pin_cfg_t))
 
 
 typedef struct
 {
-    digital_io_input_pin_t      pin_no;
+    digital_io_pin_t            pin_no;
     digitalio_input_callback_t  callback;
     bool                        status;
 
 } digital_io_input_pin_callback_t;
 
 
-static void digital_io_input_isr(
-    nrfx_gpiote_pin_t pin_no,
-    nrf_gpiote_polarity_t action);
-static void digital_io_input_event_handler(
-    void *p_event_data,
-    uint16_t event_size);
+static void digital_io_input_isr(nrfx_gpiote_pin_t pin_no, nrf_gpiote_polarity_t action);
+static void digital_io_input_event_handler(void *p_event_data, uint16_t event_size);
 
-static nrf_gpio_pin_pull_t convert_pull_up_down(
-    digital_io_pull_up_down_t pull);
+static nrf_gpio_pin_pull_t convert_pull_up_down(digital_io_pull_up_down_t pull);
 
 static const digital_io_input_pin_cfg_t     DIGITAL_IO_INPUT_CONFIG[] = DIGITAL_IO_CFG_INPUT_INIT;
+static const digital_io_output_pin_cfg_t    DIGITAL_IO_OUTPUT_CONFIG[] = DIGITAL_IO_CFG_OUTPUT_INIT;
 static bool                                 g_initialized = false;
 static digital_io_input_pin_callback_t      g_pin_callbacks[DIGITAL_IO_INPUT_PINS_NUMBER];
 
@@ -64,18 +61,32 @@ winsens_status_t digital_io_init(void)
         err_code = nrfx_gpiote_init();
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
-//        for (i = 0; i < DIGITAL_IO_INPUT_PINS_NUMBER; ++i)
-//        {
-//            nrf_gpio_cfg_input(DIGITAL_IO_INPUT_CONFIG[i].pin_no, convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[i].pullUpDown));
-//        }
+        for (int i = 0; i < DIGITAL_IO_OUTPUT_PINS_NUMBER; ++i)
+        {
+            nrf_gpio_cfg_output(DIGITAL_IO_OUTPUT_CONFIG[i].pin_no);
+        }
     }
 
     return WINSENS_OK;
 }
 
-winsens_status_t digital_io_register_callback(
-    digital_io_input_pin_t pin,
-    digitalio_input_callback_t callback)
+winsens_status_t digital_io_set(digital_io_pin_t pin, bool on)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    
+    if (on)
+    {
+        nrf_gpio_pin_set(DIGITAL_IO_OUTPUT_CONFIG[pin].pin_no);
+    }
+    else
+    {
+        nrf_gpio_pin_clear(DIGITAL_IO_OUTPUT_CONFIG[pin].pin_no);
+    }
+
+    return WINSENS_OK;
+}
+
+winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_input_callback_t callback)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
@@ -99,8 +110,7 @@ winsens_status_t digital_io_register_callback(
     return WINSENS_NOT_FOUND;
 }
 
-void digital_io_unregister_callback(
-    digital_io_input_pin_t pin)
+void digital_io_unregister_callback(digital_io_pin_t pin)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, );
 
@@ -113,9 +123,7 @@ void digital_io_unregister_callback(
     }
 }
 
-static void digital_io_input_isr(
-    nrfx_gpiote_pin_t pin_no,
-    nrf_gpiote_polarity_t action)
+static void digital_io_input_isr(nrfx_gpiote_pin_t pin_no, nrf_gpiote_polarity_t action)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, );
 
@@ -133,22 +141,19 @@ static void digital_io_input_isr(
     }
 }
 
-static void digital_io_input_event_handler(
-    void *p_event_data,
-    uint16_t event_size)
+static void digital_io_input_event_handler(void *p_event_data, uint16_t event_size)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, );
 
     const uint8_t *pi =  p_event_data;
-    const digital_io_input_pin_t pin = *pi;
+    const digital_io_pin_t pin = *pi;
     UNUSED_PARAMETER(event_size);
 
     g_pin_callbacks[pin].status = nrfx_gpiote_in_is_set(DIGITAL_IO_INPUT_CONFIG[pin].pin_no);
     g_pin_callbacks[pin].callback(pin, g_pin_callbacks[pin].status);
 }
 
-static nrf_gpio_pin_pull_t convert_pull_up_down(
-    digital_io_pull_up_down_t pull)
+static nrf_gpio_pin_pull_t convert_pull_up_down(digital_io_pull_up_down_t pull)
 {
     switch (pull)
     {

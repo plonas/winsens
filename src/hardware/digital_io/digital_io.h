@@ -11,10 +11,9 @@
 #include "winsens_types.h"
 
 #define DIGITAL_INPUT_PIN_INVALID           (-1)
-#define DIGITAL_INPUT_PIN_CFG_INIT          { WS_DIGITAL_INPUT_PULL_NONE }
 
 
-typedef uint16_t digital_io_input_pin_t;
+typedef uint16_t digital_io_pin_t;
 
 typedef enum
 {
@@ -31,15 +30,20 @@ typedef struct
 
 } digital_io_input_pin_cfg_t;
 
-typedef void (*digitalio_input_callback_t)(digital_io_input_pin_t pin, bool on);
+typedef struct
+{
+    uint32_t pin_no;
+
+} digital_io_output_pin_cfg_t;
+
+typedef void (*digitalio_input_callback_t)(digital_io_pin_t pin, bool on);
 
 
 winsens_status_t digital_io_init(void);
 
-winsens_status_t digital_io_register_callback(
-    digital_io_input_pin_t pin,
-    digitalio_input_callback_t callback);
-void digital_io_unregister_callback(
-    digital_io_input_pin_t pin);
+winsens_status_t digital_io_set(digital_io_pin_t pin, bool on);
+
+winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_input_callback_t callback);
+void digital_io_unregister_callback(digital_io_pin_t pin);
 
 #endif /* DIGITAL_IO_H_ */

@@ -120,7 +120,7 @@ typedef struct
 
 
 static void event_handler(winsens_event_t event);
-static void dio_callback(digital_io_input_pin_t pin, bool on);
+static void dio_callback(digital_io_pin_t pin, bool on);
 static void hpf_task(void *p_data, uint16_t data_size);
 static void ff_task(void *p_data, uint16_t data_size);
 
@@ -319,7 +319,7 @@ static void event_handler(winsens_event_t event)
     execute_one_cmd_force();
 }
 
-static void dio_callback(digital_io_input_pin_t pin, bool on)
+static void dio_callback(digital_io_pin_t pin, bool on)
 {
     if (DIGITAL_IO_INPUT_ACC_INT_1 == pin && on)
     {
