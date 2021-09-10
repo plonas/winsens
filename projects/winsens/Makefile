@@ -13,13 +13,13 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 SRC_FILES += \
   $(PROJ_DIR)/projects/winsens/main.c \
   $(PROJ_DIR)/projects/winsens/app/app.c \
-  $(PROJ_DIR)/src/hardware/adc/nrf52/adc.c \
+  $(PROJ_DIR)/src/hal/adc/nrf52/adc.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
-  $(PROJ_DIR)/src/hardware/spi/nrf52/spi.c \
+  $(PROJ_DIR)/src/hal/spi/nrf52/spi.c \
   $(PROJ_DIR)/src/os/system/nrf52/system.c \
   $(PROJ_DIR)/src/os/critical_region/nrf52/critical_region.c \
-  $(PROJ_DIR)/src/hardware/digital_io/nrf52/digital_io.c \
+  $(PROJ_DIR)/src/hal/digital_io/nrf52/digital_io.c \
   $(PROJ_DIR)/src/hardware/button/common/button.c \
   $(PROJ_DIR)/src/os/timer/nrf52/timer.c \
   $(PROJ_DIR)/src/os/log/nrf52/log_internal.c \
@@ -130,11 +130,11 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/os/log/nrf52 \
   $(PROJ_DIR)/src/hardware/button \
   $(PROJ_DIR)/src/hardware/storage \
-  $(PROJ_DIR)/src/hardware/adc \
-  $(PROJ_DIR)/src/hardware/digital_io \
+  $(PROJ_DIR)/src/hal/adc \
+  $(PROJ_DIR)/src/hal/digital_io \
   $(PROJ_DIR)/src/hardware/ble_peripheral \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl \
-  $(PROJ_DIR)/src/hardware/spi \
+  $(PROJ_DIR)/src/hal/spi \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \
