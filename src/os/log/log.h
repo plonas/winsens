@@ -25,6 +25,11 @@
 #define LOG_INFO_CHECK(s)               LOG_IF_INFO(WINSENS_OK != (s), #s "(%u) != WINSENS_OK | %s:%u", s, __FUNCTION__, __LINE__)
 #define LOG_DEBUG_CHECK(s)              LOG_IF_DEBUG(WINSENS_OK != (s), #s "(%u) != WINSENS_OK | %s:%u", s, __FUNCTION__, __LINE__)
 
+#define LOG_ERROR_BOOL_CHECK(s)         LOG_IF_ERROR(!(s), #s "(%u) | %s:%u", s, __FUNCTION__, __LINE__)
+#define LOG_WARNING_BOOL_CHECK(s)       LOG_IF_WARNING(!(s), #s "(%u) | %s:%u", s, __FUNCTION__, __LINE__)
+#define LOG_INFO_BOOL_CHECK(s)          LOG_IF_INFO(!(s), #s "(%u) | %s:%u", s, __FUNCTION__, __LINE__)
+#define LOG_DEBUG_BOOL_CHECK(s)         LOG_IF_DEBUG(!(s), #s "(%u) | %s:%u", s, __FUNCTION__, __LINE__)
+
 #define LOG_ERROR_RETURN(s, r)          do{ if (WINSENS_OK != (s)) { LOG_ERROR_INTERNAL(#s "(%u) != WINSENS_OK | %s:%u", s, __FUNCTION__, __LINE__); return r; } }while(0)
 #define LOG_WARNING_RETURN(s, r)        do{ if (WINSENS_OK != (s)) { LOG_WARNING_INTERNAL(#s "(%u) != WINSENS_OK | %s:%u", s, __FUNCTION__, __LINE__); return r; } }while(0)
 #define LOG_INFO_RETURN(s, r)           do{ if (WINSENS_OK != (s)) { LOG_INFO_INTERNAL(#s "(%u) != WINSENS_OK | %s:%u", s, __FUNCTION__, __LINE__); return r; } }while(0)

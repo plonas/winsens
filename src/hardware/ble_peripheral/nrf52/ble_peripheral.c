@@ -7,8 +7,6 @@
 
 #include "ble_peripheral.h"
 #include "ble_peripheral_cfg.h"
-#include "config.h"
-#include "config_cfg.h"
 #define ILOG_MODULE_NAME SVBT
 #include "log.h"
 #include "log_internal_nrf52.h"
@@ -305,7 +303,7 @@ winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_pe
 
         err_code = sd_ble_gatts_hvx(g_conn_handle, &hv_params);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-        LOG_ERROR_CHECK(0 != *hv_params.p_len);
+        LOG_ERROR_BOOL_CHECK(0 != *hv_params.p_len);
     }
 
     return WINSENS_OK;
@@ -600,6 +598,9 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
             LOG_NRF_ERROR_CHECK(err_code);
             break;
         }
+
+        case BLE_GATTS_EVT_HVN_TX_COMPLETE:
+            break;
 
         default:
             LOG_DEBUG("on_ble_evt event %u not handled", p_ble_evt->header.evt_id);
