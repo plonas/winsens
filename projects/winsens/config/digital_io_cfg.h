@@ -26,7 +26,7 @@ typedef enum {
 } digital_io_output_pin_enum_t;
 
 #define DIGITAL_IO_CFG_OUTPUT_INIT { \
-    { NRF_GPIO_PIN_MAP(0, 18) }, \
+    { NRF_GPIO_PIN_MAP(0, 20) }, \
 }
 
 

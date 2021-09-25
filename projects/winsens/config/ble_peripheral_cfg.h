@@ -80,7 +80,7 @@ typedef struct
     .read_enabled = true , \
     .write_enabled = true, \
     .notification_enabled = false, \
-    .value_len = sizeof(uint16_t), \
+    .value_len = sizeof(int16_t), \
     .desc = "Window's threshold", \
     }, \
     { \

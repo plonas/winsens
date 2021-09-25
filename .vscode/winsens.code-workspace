@@ -32,7 +32,8 @@
 			"winsens.h": "c",
 			"winsens_cfg.h": "c",
 			"nrfx_errors.h": "c",
-			"nrfx_glue.h": "c"
+			"nrfx_glue.h": "c",
+			"ble_peripheral.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",

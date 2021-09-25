@@ -23,5 +23,9 @@ typedef enum
 
 } window_id_enum_t;
 
+#define WINDOW_STATE_CFG_THRESHOLD_INIT     { \
+    50 \
+}
+
 
 #endif /* WINDOW_STATE_CFG_H_ */

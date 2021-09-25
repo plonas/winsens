@@ -37,7 +37,7 @@ static void distance_callback(winsens_event_t evt);
 static bool                     g_initialized = false;
 static window_state_type_t      g_window_state[WINDOW_STATE_CFG_WINDOW_NUMBER];
 static winsens_event_handler_t  g_callbacks[WINDOW_STATE_CFG_SUBSCRIBERS_NUM] = { NULL };
-static uint16_t                 g_open_closed_threshold = 0;
+static window_state_threshold_t g_open_closed_thresholds[WINDOW_STATE_CFG_WINDOW_NUMBER] = WINDOW_STATE_CFG_THRESHOLD_INIT;
 static subscribers_t            g_subscribers;
 
 /*
@@ -62,8 +62,6 @@ winsens_status_t window_state_init(void)
 
         distance_subscribe(distance_callback);
 
-        g_open_closed_threshold = OPEN_THRESHOLD_DEFAULT;
-
         memset(g_window_state, WINDOW_STATE_UNKNOWN, sizeof(window_state_type_t) * WINDOW_STATE_CFG_WINDOW_NUMBER);
 
         status = subscribers_init(&g_subscribers, g_callbacks, WINDOW_STATE_CFG_SUBSCRIBERS_NUM);
@@ -79,23 +77,44 @@ winsens_status_t window_state_init(void)
 
 winsens_status_t window_state_subscribe(winsens_event_handler_t callback)
 {
-    if (!g_initialized)
-    {
-        return WINSENS_NOT_INITIALIZED;
-    }
-
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
     return subscribers_add(&g_subscribers, callback);;
 }
 
 window_state_type_t window_state_get(window_id_t window)
 {
-    if (!g_initialized)
-    {
-        return WINDOW_STATE_UNKNOWN;
-    }
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
     LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > window, WINDOW_STATE_UNKNOWN);
 
     return g_window_state[window];
+}
+
+uint8_t window_state_get_windows_number(void)
+{
+    return WINDOW_STATE_CFG_WINDOW_NUMBER;
+}
+
+winsens_status_t window_state_threshold_get(window_id_t window, window_state_threshold_t* th)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    LOG_ERROR_BOOL_RETURN(NULL != th, WINSENS_INVALID_PARAMS);
+    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > window, WINSENS_INVALID_PARAMS);
+
+    *th = g_open_closed_thresholds[window];
+    return WINSENS_OK;
+}
+
+winsens_status_t window_state_threshold_set(window_id_t window, window_state_threshold_t th)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > window, WINSENS_INVALID_PARAMS);
+
+    g_open_closed_thresholds[window] = th;
+
+    winsens_event_t new_evt = { .id = WINDOW_STATE_EVT_THRESHOLD_UPDATE, .data = th };
+    subscribers_update(&g_subscribers, new_evt);
+
+    return WINSENS_OK;
 }
 
 /*
@@ -108,11 +127,11 @@ static void distance_callback(winsens_event_t evt)
     const window_id_t id = (window_id_t)evt.data;
     LOG_WARNING_BOOL_RETURN(WINDOW_STATE_CFG_WINDOW_NUMBER > id, ;);
     winsens_event_t new_evt;
-    int16_t value = 0;
+    window_state_threshold_t value = 0;
 
     distance_get((adc_channel_id_t)id, &value);
 
-    if (g_open_closed_threshold < value)
+    if (g_open_closed_thresholds[id] < value)
     {
         g_window_state[id] = WINDOW_STATE_OPEN;
         new_evt.id = WINDOW_STATE_EVT_OPEN;
@@ -125,5 +144,5 @@ static void distance_callback(winsens_event_t evt)
     new_evt.data = id;
     subscribers_update(&g_subscribers, new_evt);
 
-    LOG_DEBUG("dist %u", value);
+    LOG_DEBUG("dist %d", value);
 }
