@@ -93,6 +93,7 @@ void distance_disable(distance_sensor_id_t id)
     LOG_ERROR_BOOL_RETURN(g_initialized, ;);
     LOG_WARNING_BOOL_RETURN(DISTANCE_ADC_IDS_NUM > id, ;);
 
+    digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_OFF);
     timer_stop(&g_timer);
     adc_stop(g_adc_ids[id]);
 }
@@ -103,6 +104,8 @@ static void adc_evt_handler(adc_channel_id_t id, int16_t value)
     {
         return;
     }
+
+    digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_OFF);
 
     g_values[g_adc_ids[id]] = value;
 
@@ -116,6 +119,5 @@ static void tmr_evt_handler(winsens_event_t event)
     {
         digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_ON);
         adc_probe(g_adc_ids, DISTANCE_ADC_IDS_NUM);
-        digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_OFF);
     }
 }
