@@ -33,7 +33,9 @@
 			"winsens_cfg.h": "c",
 			"nrfx_errors.h": "c",
 			"nrfx_glue.h": "c",
-			"ble_peripheral.h": "c"
+			"ble_peripheral.h": "c",
+			"digital_io.h": "c",
+			"app_error.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",
@@ -91,6 +93,18 @@
 				"behavior": "link"
 			}
 		],
-		"commentAnchors.workspace.matchFiles": "**/{*.c,*.h}"
+		"commentAnchors.workspace.matchFiles": "**/{*.c,*.h}",
+		"nrf-connect.toolchain.path": "/opt/nordic/ncs/v1.7.0/toolchain",
+		"nrf-connect.topdir": "/opt/nordic/ncs/v1.7.0",
+		"nrf-connect.applications": [
+			"/Users/damian/dev/nrf_example"
+		],
+		"kconfig.zephyr.west": "/opt/nordic/ncs/v1.7.0/toolchain/bin/west",
+		"kconfig.zephyr.base": "/opt/nordic/ncs/v1.7.0/zephyr",
+		"kconfig.zephyr.board": {
+			"board": "nrf52840dongle_nrf52840",
+			"arch": "arm",
+			"dir": "/opt/nordic/ncs/v1.7.0/zephyr/boards/arm/nrf52840dongle_nrf52840"
+		}
 	}
 }

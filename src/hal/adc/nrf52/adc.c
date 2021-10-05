@@ -34,6 +34,8 @@ static void adc_isr(nrfx_saadc_evt_t const *event);
 static void timer_isr(void *context);
 static void adc_event_handler(void *p_event_data, uint16_t event_size);
 static bool trigger_adc(uint32_t channels_mask);
+static void probe(uint32_t channels_mask);
+static uint32_t calc_ch_mask(const adc_channel_id_t *channel_ids, uint16_t len);
 static uint8_t count_bits(uint32_t n);
 
 
@@ -70,9 +72,12 @@ winsens_status_t adc_init(void)
         // configure adc channels and timers
         for (int ch = 0; ch < ADC_CHANNELS_NUMBER; ++ch)
         {
-            app_timer_id_t timer_id = &g_channels[ch].timer;
-            err_code = app_timer_create(&timer_id, APP_TIMER_MODE_REPEATED, timer_isr);
-            LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+            if (0 < g_channels[ch].interval_ms)
+            {
+                app_timer_id_t timer_id = &g_channels[ch].timer;
+                err_code = app_timer_create(&timer_id, APP_TIMER_MODE_REPEATED, timer_isr);
+                LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+            }
 
             g_channels[ch].channel_mask = (1 << ch);
 
@@ -93,9 +98,11 @@ winsens_status_t adc_start(adc_channel_id_t channel_id, adc_callback_t callback)
     LOG_ERROR_BOOL_RETURN(ADC_CHANNELS_NUMBER > channel_id, WINSENS_NOT_FOUND);
 
     g_channels[channel_id].callback = callback;
-
-    nrfx_err_t err_code = app_timer_start((app_timer_id_t)&g_channels[channel_id].timer, g_channels[channel_id].interval_ms, &g_channels[channel_id]);
-    LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+    if (0 < g_channels[channel_id].interval_ms)
+    {
+        nrfx_err_t err_code = app_timer_start((app_timer_id_t)&g_channels[channel_id].timer, g_channels[channel_id].interval_ms, &g_channels[channel_id]);
+        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+    }
 
     return WINSENS_OK;
 }
@@ -103,11 +110,21 @@ winsens_status_t adc_start(adc_channel_id_t channel_id, adc_callback_t callback)
 void adc_stop(adc_channel_id_t channel_id)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, );
+    LOG_ERROR_BOOL_RETURN(ADC_CHANNELS_NUMBER > channel_id, ;);
 
     g_channels[channel_id].callback = NULL;
 
-    nrfx_err_t err_code = app_timer_stop((app_timer_id_t)&g_channels[channel_id].timer);
-    LOG_NRF_ERROR_RETURN(err_code, ;);
+    if (0 < g_channels[channel_id].interval_ms)
+    {
+        nrfx_err_t err_code = app_timer_stop((app_timer_id_t)&g_channels[channel_id].timer);
+        LOG_NRF_ERROR_RETURN(err_code, ;);
+    }
+}
+
+void adc_probe(adc_channel_id_t *channel_ids, uint16_t len)
+{
+    uint32_t mask = calc_ch_mask(channel_ids, len);
+    probe(mask);
 }
 
 static void adc_isr(nrfx_saadc_evt_t const *event)
@@ -135,31 +152,18 @@ static void adc_isr(nrfx_saadc_evt_t const *event)
         g_ch_triggered = 0;
     }
 
-    if (g_ch_mask_queue)
-    {
-        if (trigger_adc(g_ch_mask_queue))
-        {
-            g_ch_triggered = g_ch_mask_queue;
-            g_ch_mask_queue = 0;
-        }
-    }
+    probe(g_ch_mask_queue);
 }
 
 static void timer_isr(void *context)
 {
     LOG_ERROR_BOOL_RETURN(NULL != context, ;);
 
-    adc_channel_t *ch = context;
+    const adc_channel_t *ch = (adc_channel_t *)context;
 
     if (ch->callback)
     {
-        g_ch_mask_queue |= ch->channel_mask;
-
-        if (trigger_adc(g_ch_mask_queue))
-        {
-            g_ch_triggered = g_ch_mask_queue;
-            g_ch_mask_queue = 0;
-        }
+        probe(ch->channel_mask);
     }
 }
 
@@ -193,6 +197,39 @@ static bool trigger_adc(uint32_t channels_mask)
     LOG_NRF_ERROR_RETURN(err_code, false);
 
     return true;
+}
+
+static void probe(uint32_t channels_mask)
+{
+    if (channels_mask)
+    {
+        g_ch_mask_queue |= channels_mask;
+
+        if (trigger_adc(g_ch_mask_queue))
+        {
+            g_ch_triggered = g_ch_mask_queue;
+            g_ch_mask_queue = 0;
+        }
+    }
+}
+
+static uint32_t calc_ch_mask(const adc_channel_id_t *channel_ids, uint16_t len)
+{
+    uint32_t mask = 0;
+
+    for (uint16_t id = 0; id < len; ++id)
+    {
+        if (ADC_CHANNELS_NUMBER > channel_ids[id])
+        {
+            const adc_channel_t *ch = &g_channels[channel_ids[id]];
+            if (ch->callback)
+            {
+                mask |= ch->channel_mask;
+            }
+        }
+    }
+
+    return mask;
 }
 
 static uint8_t count_bits(uint32_t n)

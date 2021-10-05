@@ -23,8 +23,10 @@ typedef struct
 
 winsens_status_t adc_init(void);
 
-winsens_status_t adc_start(adc_channel_id_t channelId, adc_callback_t callback);
+winsens_status_t adc_start(adc_channel_id_t channel_id, adc_callback_t callback);
 
-void adc_stop(adc_channel_id_t channelId);
+void adc_stop(adc_channel_id_t channel_id);
+
+void adc_probe(adc_channel_id_t *channel_ids, uint16_t len);
 
 #endif /* ADC_H_ */
