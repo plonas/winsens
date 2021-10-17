@@ -34,6 +34,7 @@
             "${nrfSdkRoot}/components/libraries/experimental_section_vars",
             "${nrfSdkRoot}/components/boards",
             "${nrfSdkRoot}/components/libraries/button",
+            "${nrfSdkRoot}/components/libraries/pwr_mgmt",
             "${nrfSdkRoot}/external/segger_rtt",
             "${nrfSdkRoot}/external/fprintf",
             "${nrfSdkRoot}/modules/nrfx",
@@ -65,7 +66,10 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/projects/winsens/config",
                 "${nrfIncludePath}",
-                "${workspaceFolder}/src/utils/subscribers"
+                "${workspaceFolder}/src/utils/subscribers",
+                "${workspaceFolder}/src/hal/pwr_mgr",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/firmware/winsens"
             ],
             "defines": [
                 "NRFX_SAADC_API_V2",

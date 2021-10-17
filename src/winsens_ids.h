@@ -21,6 +21,8 @@ typedef enum
     WINSENS_IDS_MODULE_WINDOW_STATE,
     WINSENS_IDS_MODULE_TIMER,
     WINSENS_IDS_MODULE_DISTANCE,
+    WINSENS_IDS_MODULE_PWR_MGR,
+    WINSENS_IDS_MODULE_WINSENS,
 } winsens_ids_module_enum_t;
 
 typedef uint16_t winsens_ids_module_t;

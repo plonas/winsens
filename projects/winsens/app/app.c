@@ -12,6 +12,7 @@
 #include "acc.h"
 #include "acc_ctrl.h"
 #include "ble/window_state_observer.h"
+#include "pwr_mgr.h"
 #define ILOG_MODULE_NAME winsens_app
 #include "log.h"
 #include "log_internal_nrf52.h"
@@ -90,6 +91,9 @@ void app_init(void)
     LOG_WARNING_CHECK(err_code);
 
     err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
+    LOG_WARNING_CHECK(err_code);
+
+    err_code = winsens_subscribe(pwr_mgr_callback);
     LOG_WARNING_CHECK(err_code);
 
     status = acc_subscribe(acc_event_handler);

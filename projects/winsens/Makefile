@@ -14,6 +14,7 @@ SRC_FILES += \
   $(PROJ_DIR)/projects/winsens/main.c \
   $(PROJ_DIR)/projects/winsens/app/app.c \
   $(PROJ_DIR)/src/hal/adc/nrf52/adc.c \
+  $(PROJ_DIR)/src/hal/pwr_mgr/nrf52/pwr_mgr.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
   $(PROJ_DIR)/src/hal/spi/nrf52/spi.c \
@@ -74,6 +75,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/bsp/bsp.c \
   $(SDK_ROOT)/components/libraries/bsp/bsp_btn_ble.c \
   $(SDK_ROOT)/components/libraries/button/app_button.c \
+  $(SDK_ROOT)/components/libraries/pwr_mgmt/nrf_pwr_mgmt.c \
   $(SDK_ROOT)/components/boards/boards.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_ppi.c \
 
@@ -131,6 +133,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/hardware/button \
   $(PROJ_DIR)/src/hardware/storage \
   $(PROJ_DIR)/src/hal/adc \
+  $(PROJ_DIR)/src/hal/pwr_mgr \
   $(PROJ_DIR)/src/hal/digital_io \
   $(PROJ_DIR)/src/hardware/ble_peripheral \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl \
@@ -163,6 +166,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/ringbuf \
   $(SDK_ROOT)/components/libraries/mutex \
   $(SDK_ROOT)/components/libraries/bsp \
+  $(SDK_ROOT)/components/libraries/pwr_mgmt \
   $(SDK_ROOT)/components/boards \
   $(SDK_ROOT)/components/libraries/button \
   $(SDK_ROOT)/external/segger_rtt \

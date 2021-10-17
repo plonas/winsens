@@ -11,8 +11,8 @@
 
 typedef enum {
     DIGITAL_IO_INPUT_PAIR_BTN,
-    DIGITAL_IO_INPUT_ACC_INT_1,
-    DIGITAL_IO_INPUT_ACC_INT_2,
+    DIGITAL_IO_INPUT_ACC_INT_HPF,
+    DIGITAL_IO_INPUT_ACC_INT_FF,
 } digital_io_input_pin_enum_t;
 
 #define DIGITAL_IO_CFG_INPUT_INIT { \

@@ -45,5 +45,6 @@ winsens_status_t digital_io_set(digital_io_pin_t pin, bool on);
 
 winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_input_callback_t callback);
 void digital_io_unregister_callback(digital_io_pin_t pin);
+void digital_io_unregister_all(void);
 
 #endif /* DIGITAL_IO_H_ */
