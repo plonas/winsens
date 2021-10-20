@@ -28,7 +28,7 @@ APP_TIMER_DEF(blink_timer);
 
 static void timer_callback(void *p_data, uint16_t data_size)
 {
-    bsp_board_led_invert( 0 );
+    bsp_board_led_invert(0);
 }
 
 static void timer_isr(void* context)
@@ -49,11 +49,17 @@ static void acc_task(void *p_data, uint16_t data_size)
     }
 }
 
-void acc_event_handler(winsens_event_t event)
+static void event_handler(winsens_event_t event)
 {
     if (ACC_EVT_NEW_DATA == event.id)
     {
         task_queue_add(NULL, 0, acc_task);
+    }
+    else if (PWR_MGR_EVT_PREPARE_TO_SLEEP == event.id ||
+             PWR_MGR_EVT_PREPARE_TO_SHUTDOWN == event.id)
+    {
+        app_timer_stop(blink_timer);
+        bsp_board_led_off(0);
     }
 }
 
@@ -96,7 +102,10 @@ void app_init(void)
     err_code = winsens_subscribe(pwr_mgr_callback);
     LOG_WARNING_CHECK(err_code);
 
-    status = acc_subscribe(acc_event_handler);
+    status = acc_subscribe(event_handler);
+    LOG_ERROR_RETURN(status, ;);
+
+    status = pwr_mgr_subscribe(event_handler);
     LOG_ERROR_RETURN(status, ;);
 }
 
