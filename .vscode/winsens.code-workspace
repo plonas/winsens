@@ -40,7 +40,10 @@
 			"winsens_ids.h": "c",
 			"task_queue_cfg.h": "c",
 			"task_queue.h": "c",
-			"nrf_pwr_mgmt.h": "c"
+			"nrf_pwr_mgmt.h": "c",
+			"winsens_types.h": "c",
+			"battery.h": "c",
+			"ble_peripheral_cfg.h": "c"
 		},
 		"makefile.makeDirectory": "projects/winsens",
 		"makefile.loggingLevel": "Verbose",

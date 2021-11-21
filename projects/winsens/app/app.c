@@ -11,6 +11,7 @@
 #include "task_queue.h"
 #include "acc.h"
 #include "acc_ctrl.h"
+#include "battery_observer.h"
 #include "ble/window_state_observer.h"
 #include "pwr_mgr.h"
 #define ILOG_MODULE_NAME winsens_app
@@ -89,6 +90,9 @@ void app_init(void)
     LOG_ERROR_RETURN(status, ;);
 
     status = window_state_observer_ble_init();
+    LOG_ERROR_RETURN(status, ;);
+
+    status = battery_observer_init();
     LOG_ERROR_RETURN(status, ;);
 
     bsp_board_init(BSP_INIT_LEDS);

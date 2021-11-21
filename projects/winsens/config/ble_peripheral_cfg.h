@@ -16,17 +16,20 @@
 #define BLE_UUID_CS_SERVICE_UUID                        0xA001 // Just a random, but recognizable value
 #define BLE_UUID_WMS_SERVICE_UUID                       0xA002 // Just a random, but recognizable value
 #define BLE_UUID_ACC_SERVICE_UUID                       0xA003 // Just a random, but recognizable value
+#define BLE_UUID_BAT_SERVICE_UUID                       0xA004 // Just a random, but recognizable value
 
 #define BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE   0xF000 // Just a random, but recognizable value
 #define BLE_UUID_WMS_STATE_CHARACTERISTC_UUID           0xF020 // Just a random, but recognizable value
 #define BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID     0xF030 // Just a random, but recognizable value
 #define BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID     0xF040 // Just a random, but recognizable value
+#define BLE_UUID_BAT_LEVEL_CHARACTERISTC_UUID           0xF050 // Just a random, but recognizable value
 
 typedef enum
 {
     BLE_PERIPERAL_SVC_CS,
     BLE_PERIPERAL_SVC_WMS,
     BLE_PERIPERAL_SVC_ACC,
+    BLE_PERIPERAL_SVC_BAT,
 } ble_peripheral_svc_id_enum_t;
 
 typedef enum
@@ -35,6 +38,7 @@ typedef enum
     BLE_PERIPERAL_CHAR_WMS_STATE,
     BLE_PERIPERAL_CHAR_ACC_FF,
     BLE_PERIPERAL_CHAR_ACC_HP,
+    BLE_PERIPERAL_CHAR_BAT_LVL,
 } ble_peripheral_char_id_enum_t;
 
 /*
@@ -57,7 +61,11 @@ typedef struct
     { \
     .service_base_uuid = BLE_UUID_WMS_BASE_UUID, \
     .service_uuid = {.uuid = BLE_UUID_ACC_SERVICE_UUID} \
-    } \
+    }, \
+    { \
+    .service_base_uuid = BLE_UUID_WMS_BASE_UUID, \
+    .service_uuid = {.uuid = BLE_UUID_BAT_SERVICE_UUID} \
+    }, \
 }
 
 /*
@@ -109,6 +117,15 @@ typedef struct
     .notification_enabled = false, \
     .value_len = sizeof(uint16_t), \
     .desc = "High pass sensitivity", \
+    }, \
+    { \
+    .service_id = BLE_PERIPERAL_SVC_BAT, \
+    .char_uuid = {.uuid = BLE_UUID_BAT_LEVEL_CHARACTERISTC_UUID}, \
+    .read_enabled = true , \
+    .write_enabled = false, \
+    .notification_enabled = true, \
+    .value_len = sizeof(uint8_t), \
+    .desc = "Battery level", \
     }, \
 }
 
