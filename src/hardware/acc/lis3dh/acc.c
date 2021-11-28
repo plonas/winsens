@@ -176,8 +176,8 @@ winsens_status_t acc_init(void)
         spi_subscribe(SPI_CFG_ACC, event_handler);
 
         digital_io_init();
-        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_1, dio_callback);
-        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_2, dio_callback);
+        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_HPF, dio_callback);
+        digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_FF, dio_callback);
 
         subscribers_init(&g_subscribers, g_evt_handlers, ACC_CFG_SUBSCRIBERS_NUM);
 
@@ -321,7 +321,7 @@ static void event_handler(winsens_event_t event)
 
 static void dio_callback(digital_io_pin_t pin, bool on)
 {
-    if (DIGITAL_IO_INPUT_ACC_INT_1 == pin && on)
+    if (DIGITAL_IO_INPUT_ACC_INT_HPF == pin && on)
     {
         acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
         circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
@@ -331,7 +331,7 @@ static void dio_callback(digital_io_pin_t pin, bool on)
 
         execute_one_cmd();
     }
-    else if (DIGITAL_IO_INPUT_ACC_INT_2 == pin && on)
+    else if (DIGITAL_IO_INPUT_ACC_INT_FF == pin && on)
     {
         acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_INT2_SRC, 1);
         circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));

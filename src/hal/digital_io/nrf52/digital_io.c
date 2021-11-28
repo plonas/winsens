@@ -125,7 +125,7 @@ void digital_io_unregister_callback(digital_io_pin_t pin)
 
 void digital_io_unregister_all(void)
 {
-    for (digital_io_pin_t pin; pin < DIGITAL_IO_INPUT_PINS_NUMBER; ++pin)
+    for (digital_io_pin_t pin = 0; pin < DIGITAL_IO_INPUT_PINS_NUMBER; ++pin)
     {
         g_pin_callbacks[pin] = (digital_io_input_pin_callback_t) DIGITAL_IO_INPUT_PIN_CALLBACKS_INIT;
 
