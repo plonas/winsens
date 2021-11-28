@@ -4,15 +4,16 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "winsens Debug",
-            "cwd": "${workspaceRoot}",
-            "executable": "../winsens_build/nrf52840_xxaa.out",
-            "request": "launch",
-            "type": "cortex-debug",
-            "servertype": "jlink",
-            "serialNumber": "",
-            "device": "nRF52840_xxAA"
-        }
+    {
+        "name": "winsens Debug",
+        "cwd": "${workspaceRoot}",
+        "executable": "../winsens_build/nrf52840_xxaa.out",
+        "request": "launch",
+        "type": "cortex-debug",
+        "servertype": "jlink",
+        "serialNumber": "",
+        "device": "nRF52840_xxAA",
+        "runToMain": true,
+    }
     ]
 }

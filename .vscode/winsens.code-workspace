@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../../winsens_master"
+		},
+		{
+			"path": "../../hello-rust"
 		}
 	],
 	"settings": {
