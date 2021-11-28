@@ -60,7 +60,7 @@ winsens_status_t battery_subscribe(winsens_event_handler_t callback)
 
     for (uint8_t i = 0; i < BATTERY_CB_NUMBER; ++i)
     {
-        if (NULL == g_callbacks)
+        if (NULL == g_callbacks[i])
         {
             g_callbacks[i] = callback;
             return WINSENS_OK;
@@ -72,7 +72,12 @@ winsens_status_t battery_subscribe(winsens_event_handler_t callback)
 
 winsens_status_t battery_get_level(battery_level_t *level)
 {
-    return g_level;
+    if (level)
+    {
+        *level = g_level;
+    }
+
+    return WINSENS_OK;
 }
 
 /*
