@@ -18,6 +18,7 @@
 
 
 #define DISTANCE_ADC_IDS_NUM        ( sizeof(g_adc_ids)/sizeof(g_adc_ids[0]) )
+#define DISTANCE_CB_NUM             ( 3 )
 
 
 static void adc_evt_handler(adc_channel_id_t id, int16_t value);
@@ -25,10 +26,11 @@ static void tmr_evt_handler(winsens_event_t event);
 
 static bool g_initialized = false;
 static adc_channel_id_t g_adc_ids[] = DISTANCE_CFG_ADC_IDS_INIT;
-static winsens_event_handler_t g_callbacks[DISTANCE_ADC_IDS_NUM];
+static winsens_event_handler_t g_callbacks[DISTANCE_CB_NUM];
 static subscribers_t g_subscribers;
 static int16_t g_values[DISTANCE_ADC_IDS_NUM] = {0};
 static timer_ws_t g_timer;
+static bool g_enabled = false;
 
 
 LOG_REGISTER();
@@ -45,7 +47,7 @@ winsens_status_t distance_init(void)
         status = digital_io_init();
         LOG_ERROR_RETURN(status, status);
 
-        status = subscribers_init(&g_subscribers, g_callbacks, DISTANCE_ADC_IDS_NUM);
+        status = subscribers_init(&g_subscribers, g_callbacks, DISTANCE_CB_NUM);
         LOG_ERROR_RETURN(status, status);
 
         status = adc_init();
@@ -56,6 +58,8 @@ winsens_status_t distance_init(void)
 
         status = timer_create(&g_timer, tmr_evt_handler, NULL);
         LOG_ERROR_RETURN(status, status);
+
+        g_enabled = false;
     }
 
     return status;
@@ -82,6 +86,8 @@ winsens_status_t distance_enable(distance_sensor_id_t id)
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
     LOG_WARNING_BOOL_RETURN(DISTANCE_ADC_IDS_NUM > id, WINSENS_INVALID_PARAMS);
 
+    g_enabled = true;
+
     winsens_status_t status = adc_start(g_adc_ids[id], adc_evt_handler);
     LOG_ERROR_RETURN(status, status);
 
@@ -92,6 +98,8 @@ void distance_disable(distance_sensor_id_t id)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, ;);
     LOG_WARNING_BOOL_RETURN(DISTANCE_ADC_IDS_NUM > id, ;);
+
+    g_enabled = false;
 
     timer_stop(&g_timer);
     adc_stop(g_adc_ids[id]);
@@ -115,9 +123,12 @@ static void adc_evt_handler(adc_channel_id_t id, int16_t value)
 
 static void tmr_evt_handler(winsens_event_t event)
 {
-    if (TIMER_EVT_SIGNAL == event.id)
+    if (g_enabled)
     {
-        digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_ON);
-        adc_probe(g_adc_ids, DISTANCE_ADC_IDS_NUM);
+        if (TIMER_EVT_SIGNAL == event.id)
+        {
+            digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_ON);
+            adc_probe(g_adc_ids, DISTANCE_ADC_IDS_NUM);
+        }
     }
 }
