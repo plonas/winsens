@@ -27,6 +27,8 @@ winsens_status_t adc_start(adc_channel_id_t channel_id, adc_callback_t callback)
 
 void adc_stop(adc_channel_id_t channel_id);
 
-void adc_probe(adc_channel_id_t *channel_ids, uint16_t len);
+void adc_probe(const adc_channel_id_t *channel_ids, uint16_t len);
+
+int16_t adc_get_voltage(int16_t value);
 
 #endif /* ADC_H_ */

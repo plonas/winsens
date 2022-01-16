@@ -121,10 +121,15 @@ void adc_stop(adc_channel_id_t channel_id)
     }
 }
 
-void adc_probe(adc_channel_id_t *channel_ids, uint16_t len)
+void adc_probe(const adc_channel_id_t *channel_ids, uint16_t len)
 {
     uint32_t mask = calc_ch_mask(channel_ids, len);
     probe(mask);
+}
+
+int16_t adc_get_voltage(int16_t value)
+{
+    return (value * ADC_CFG_REFERENCE_VOL) / ADC_CFG_RESOLUTION;
 }
 
 static void adc_isr(nrfx_saadc_evt_t const *event)

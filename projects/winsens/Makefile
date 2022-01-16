@@ -26,7 +26,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/os/log/nrf52/log_internal.c \
   $(PROJ_DIR)/src/firmware/window_state/dist/window_state.c \
   $(PROJ_DIR)/src/firmware/window_state/observer/ble/window_state_observer.c \
-  $(PROJ_DIR)/src/firmware/battery/simulator/battery.c \
+  $(PROJ_DIR)/src/firmware/battery/cr2032/battery.c \
   $(PROJ_DIR)/src/firmware/battery/observer/ble/battery_observer.c \
   $(PROJ_DIR)/src/firmware/distance/cny70/distance.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
