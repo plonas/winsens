@@ -14,6 +14,7 @@
 #include "log_internal_nrf52.h"
 
 #include "nrf_pwr_mgmt.h"
+#include "nrf_gpio.h"
 
 
 #define PWR_MGR_ACTIVITY_MAP_LEN    ( sizeof(g_activity_map)/sizeof(g_activity_map[0]) )
@@ -26,10 +27,17 @@ typedef struct
     pwr_mgr_activity_t  activity;
 } pwr_mgr_activity_pair_t;
 
+typedef struct 
+{
+    digital_io_pin_t    pin;
+    bool                hi;
+} pwr_mgr_wake_up_pin_t;
+
 
 static winsens_status_t shutdown(pwr_mgr_activity_t a);
 static void set_wkup_pins(void);
 static bool shutdown_handler(nrf_pwr_mgmt_evt_t event);
+static nrf_gpio_pin_pull_t convert_pull_up_down(digital_io_pull_up_down_t pull);
 
 
 static pwr_mgr_activity_t               g_activity = PWR_MGR_ACTIVITY_IDLE;
@@ -38,7 +46,7 @@ static uint32_t                         g_subs_index = 0;
 static const pwr_mgr_activity_pair_t    g_activity_map[] = PWR_MGR_CFG_ACTIVITY_MAP_INIT;
 static subscribers_t                    g_subscribers;
 static winsens_event_handler_t          g_evt_handlers[PWR_MGR_CFG_SUBSCRIBERS_NUM];
-static const digital_io_pin_t           g_wakeup_pins[] = PWR_MGR_CFG_WAKEUP_PINS;
+static const pwr_mgr_wake_up_pin_t      g_wakeup_pins[] = PWR_MGR_CFG_WAKEUP_PINS;
 
 
 // Register application shutdown handler with priority 0
@@ -153,7 +161,15 @@ static void set_wkup_pins(void)
 {
     for (uint8_t i = 0; i < PWR_MGR_WAKEUP_PINS_LEN; ++i)
     {
-        digital_io_register_callback(g_wakeup_pins[i], NULL);
+        const nrf_gpio_pin_sense_t sense = g_wakeup_pins[i].hi ? NRF_GPIO_PIN_SENSE_HIGH : NRF_GPIO_PIN_SENSE_LOW;
+        digital_io_input_pin_cfg_t pin_cfg;
+
+        winsens_status_t status = digital_io_in_get_cfg(g_wakeup_pins[i].pin, &pin_cfg);
+        LOG_ERROR_RETURN(status, );
+
+        (void)convert_pull_up_down;
+        (void)sense;
+        nrf_gpio_cfg_sense_input(pin_cfg.pin_no, convert_pull_up_down(pin_cfg.pullUpDown), sense);
     }
 }
 
@@ -185,4 +201,21 @@ static bool shutdown_handler(nrf_pwr_mgmt_evt_t event)
     }
 
     return true;
+}
+
+static nrf_gpio_pin_pull_t convert_pull_up_down(digital_io_pull_up_down_t pull)
+{
+    switch (pull)
+    {
+    case DIGITAL_IO_INPUT_PULL_UP:
+        return NRF_GPIO_PIN_PULLUP;
+        break;
+    case DIGITAL_IO_INPUT_PULL_DOWN:
+        return NRF_GPIO_PIN_PULLDOWN;
+        break;
+    default:
+        break;
+    }
+
+    return NRF_GPIO_PIN_NOPULL;
 }

@@ -9,7 +9,6 @@
 #include "winsens.h"
 #include "system.h"
 #include "task_queue.h"
-#include "acc.h"
 #include "acc_ctrl.h"
 #include "battery_observer.h"
 #include "ble/window_state_observer.h"
@@ -24,53 +23,34 @@
 
 
 LOG_REGISTER();
-APP_TIMER_DEF(blink_timer);
+// APP_TIMER_DEF(blink_timer);
 
 
-static void timer_callback(void *p_data, uint16_t data_size)
-{
-    bsp_board_led_invert(0);
-}
+// static void timer_callback(void *p_data, uint16_t data_size)
+// {
+//     bsp_board_led_invert(0);
+// }
 
-static void timer_isr(void* context)
-{
-    task_queue_add(NULL, 0, timer_callback);
-//    bsp_board_led_invert( 0 );
-}
-
-static void acc_task(void *p_data, uint16_t data_size)
-{
-    while (0 != acc_get_data_len())
-    {
-        acc_t acc_data;
-        winsens_status_t status = acc_get_data(&acc_data, 1);
-        LOG_WARNING_RETURN(status, );
-
-//        LOG_DEBUG("acc: \nx: %6.3f\ny: %6.3f\nz: %6.3f", g(acc_data.x), g(acc_data.y), g(acc_data.z));
-    }
-}
+// static void timer_isr(void* context)
+// {
+//     task_queue_add(NULL, 0, timer_callback);
+// //    bsp_board_led_invert( 0 );
+// }
 
 static void event_handler(winsens_event_t event)
 {
-    if (ACC_EVT_NEW_DATA == event.id)
+    if (PWR_MGR_EVT_PREPARE_TO_SLEEP == event.id ||
+        PWR_MGR_EVT_PREPARE_TO_SHUTDOWN == event.id)
     {
-        task_queue_add(NULL, 0, acc_task);
-    }
-    else if (PWR_MGR_EVT_PREPARE_TO_SLEEP == event.id ||
-             PWR_MGR_EVT_PREPARE_TO_SHUTDOWN == event.id)
-    {
-        app_timer_stop(blink_timer);
-        bsp_board_led_off(0);
+        // app_timer_stop(blink_timer);
+        // bsp_board_led_off(0);
     }
 }
-
 
 void app_init(void)
 {
     winsens_status_t status = WINSENS_ERROR;
-    ret_code_t err_code;
 
-    NRF_WDT->CONFIG &= 0x00000001;
 
     LOG_INIT(NULL);
 
@@ -81,9 +61,6 @@ void app_init(void)
     LOG_ERROR_RETURN(status, ;);
 
     status = winsens_init();
-    LOG_ERROR_RETURN(status, ;);
-
-    status = acc_init();
     LOG_ERROR_RETURN(status, ;);
 
     status = acc_ctrl_init();
@@ -97,17 +74,15 @@ void app_init(void)
 
     bsp_board_init(BSP_INIT_LEDS);
 
-    err_code = app_timer_create(&blink_timer, APP_TIMER_MODE_REPEATED, timer_isr);
-    LOG_WARNING_CHECK(err_code);
+    ret_code_t err_code;
+    // err_code = app_timer_create(&blink_timer, APP_TIMER_MODE_REPEATED, timer_isr);
+    // LOG_WARNING_CHECK(err_code);
 
-    err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
-    LOG_WARNING_CHECK(err_code);
+    // err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
+    // LOG_WARNING_CHECK(err_code);
 
     err_code = winsens_subscribe(pwr_mgr_callback);
     LOG_WARNING_CHECK(err_code);
-
-    status = acc_subscribe(event_handler);
-    LOG_ERROR_RETURN(status, ;);
 
     status = pwr_mgr_subscribe(event_handler);
     LOG_ERROR_RETURN(status, ;);

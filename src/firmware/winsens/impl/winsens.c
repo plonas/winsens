@@ -89,6 +89,7 @@ static void acc_evt_handler(winsens_event_t evt)
         else
         {
             timer_restart(&g_timer, WINSENS_SCAN_DURATION);
+            LOG_DEBUG("timer_restart");
         }
     }
 }
@@ -97,6 +98,7 @@ static void tmr_evt_handler(winsens_event_t evt)
 {
     if (TIMER_EVT_SIGNAL ==  evt.id)
     {
+        LOG_DEBUG("WINSENS_EVT_IDLE");
         for (distance_sensor_id_t sensor_id = 0; sensor_id < WINSENS_SENSORS_NUM; ++sensor_id)
         {
             distance_disable(g_dist_sensors[sensor_id]);

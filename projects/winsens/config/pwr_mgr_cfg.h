@@ -11,14 +11,14 @@
 #include "winsens.h"
 #include "digital_io_cfg.h"
 
-#define PWR_MGR_CFG_SUBSCRIBERS_NUM     (2)
+#define PWR_MGR_CFG_SUBSCRIBERS_NUM     (3)
 #define PWR_MGR_CFG_ACTIVITY_MAP_INIT   { \
     { WINSENS_EVT_IDLE, PWR_MGR_ACTIVITY_GOTO_SLEEP } \
 }
 
 #define PWR_MGR_CFG_WAKEUP_PINS         { \
-    DIGITAL_IO_INPUT_ACC_INT_HPF, \
-    DIGITAL_IO_INPUT_ACC_INT_FF, \
+    { DIGITAL_IO_INPUT_ACC_INT_HPF, true }, \
+    { DIGITAL_IO_INPUT_ACC_INT_FF, true }, \
 }
 
 

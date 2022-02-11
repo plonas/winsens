@@ -38,10 +38,12 @@ typedef struct
 
 typedef void (*digitalio_input_callback_t)(digital_io_pin_t pin, bool on);
 
-
 winsens_status_t digital_io_init(void);
 
+winsens_status_t digital_io_in_get_cfg(digital_io_pin_t pin, digital_io_input_pin_cfg_t* cfg);
+
 winsens_status_t digital_io_set(digital_io_pin_t pin, bool on);
+bool digital_io_get(digital_io_pin_t pin);
 
 winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_input_callback_t callback);
 void digital_io_unregister_callback(digital_io_pin_t pin);

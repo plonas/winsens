@@ -8,6 +8,7 @@
 
 #include "spi.h"
 #include "spi_cfg.h"
+#include "pwr_mgr.h"
 #include "task_queue.h"
 #define ILOG_MODULE_NAME WSPI
 #include "log.h"
@@ -19,7 +20,8 @@
 #define SPI_CFG_NRF_SIZE    (sizeof(g_spi_nrf_cfg)/sizeof(g_spi_nrf_cfg[0]))
 
 
-void event_handler(nrfx_spi_evt_t const *p_event, void *p_context);
+static void event_handler(nrfx_spi_evt_t const *p_event, void *p_context);
+static void pwr_mgr_evt_handler(winsens_event_t event);
 
 
 static bool                     g_initialized       = false;
@@ -53,6 +55,8 @@ winsens_status_t spi_init(void)
         }
 
         task_queue_init();
+        pwr_mgr_init();
+        pwr_mgr_subscribe(pwr_mgr_evt_handler);
     }
 
     return WINSENS_OK;
@@ -80,7 +84,7 @@ winsens_status_t spi_transfer(spi_t spi, uint8_t *tx, uint16_t tx_len, uint8_t *
     return WINSENS_OK;
 }
 
-void event_handler(nrfx_spi_evt_t const *p_event, void *p_context)
+static void event_handler(nrfx_spi_evt_t const *p_event, void *p_context)
 {
     if (NRFX_SPI_EVENT_DONE == p_event->type)
     {
@@ -89,6 +93,18 @@ void event_handler(nrfx_spi_evt_t const *p_event, void *p_context)
         {
             winsens_event_t e = { .id = SPI_EVT_TRANSFER_DONE, .data = 0 };
             g_spi_cfg[spi].evt_handler(e);
+        }
+    }
+}
+
+static void pwr_mgr_evt_handler(winsens_event_t event)
+{
+    if (PWR_MGR_EVT_PREPARE_TO_SLEEP == event.id ||
+        PWR_MGR_EVT_PREPARE_TO_SHUTDOWN == event.id)
+    {
+        for (int i = 0; i < SPI_CFG_SIZE; ++i)
+        {
+            nrfx_spi_uninit(&g_spi_nrf_cfg[i]);
         }
     }
 }

@@ -70,6 +70,20 @@ winsens_status_t digital_io_init(void)
     return WINSENS_OK;
 }
 
+winsens_status_t digital_io_in_get_cfg(digital_io_pin_t pin, digital_io_input_pin_cfg_t* cfg)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    LOG_ERROR_BOOL_RETURN(NULL != cfg, WINSENS_INVALID_PARAMS);
+    
+    if (pin < DIGITAL_IO_INPUT_PINS_NUMBER)
+    {
+        *cfg = DIGITAL_IO_INPUT_CONFIG[pin];
+        return WINSENS_OK;
+    }
+
+    return WINSENS_NOT_FOUND;
+}
+
 winsens_status_t digital_io_set(digital_io_pin_t pin, bool on)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
@@ -84,6 +98,15 @@ winsens_status_t digital_io_set(digital_io_pin_t pin, bool on)
     }
 
     return WINSENS_OK;
+}
+
+bool digital_io_get(digital_io_pin_t pin)
+{
+    LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
+    
+    bool state = nrf_gpio_pin_out_read(DIGITAL_IO_OUTPUT_CONFIG[pin].pin_no);
+
+    return state;
 }
 
 winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_input_callback_t callback)
