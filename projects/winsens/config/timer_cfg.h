@@ -9,7 +9,7 @@
 #define TIMER_CFG_H_
 
 
-#define TIMER_CFG_TIMERS_NUM    (8)
+#define TIMER_CFG_TIMERS_NUM    (10)
 
 
 #endif /* TIMER_CFG_H_ */

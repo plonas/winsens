@@ -15,14 +15,13 @@
 #include "log_internal_nrf52.h"
 
 #include "nrfx_saadc.h"
-#include "app_timer.h"
 
 #include <string.h>
 
 
 typedef struct
 {
-    app_timer_t             timer;
+    timer_ws_t              timer;
     uint32_t                interval_ms;
     uint32_t                channel_mask;
     nrf_saadc_input_t       ain;
@@ -31,7 +30,7 @@ typedef struct
 
 
 static void adc_isr(nrfx_saadc_evt_t const *event);
-static void timer_isr(void *context);
+static void tmr_evt_handler(winsens_event_t evt);
 static void adc_event_handler(void *p_event_data, uint16_t event_size);
 static bool trigger_adc(uint32_t channels_mask);
 static void probe(uint32_t channels_mask);
@@ -58,10 +57,6 @@ winsens_status_t adc_init(void)
         nrfx_saadc_channel_t channels_conf[ADC_CHANNELS_NUMBER];
         nrfx_err_t err_code = NRF_ERROR_INTERNAL;
 
-        // init a timer
-        err_code = app_timer_init();
-        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-
         // init ADC
         err_code = nrfx_saadc_init(NRFX_SAADC_CONFIG_IRQ_PRIORITY);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
@@ -69,14 +64,17 @@ winsens_status_t adc_init(void)
         err_code = nrfx_saadc_offset_calibrate(NULL);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
 
+        // init a timer
+        winsens_status_t status = timer_init();
+        LOG_ERROR_RETURN(status, status);
+
         // configure adc channels and timers
         for (int ch = 0; ch < ADC_CHANNELS_NUMBER; ++ch)
         {
             if (0 < g_channels[ch].interval_ms)
             {
-                app_timer_id_t timer_id = &g_channels[ch].timer;
-                err_code = app_timer_create(&timer_id, APP_TIMER_MODE_REPEATED, timer_isr);
-                LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+                status = timer_create(&g_channels[ch].timer, tmr_evt_handler, &g_channels[ch]);
+                LOG_ERROR_RETURN(status, status);
             }
 
             g_channels[ch].channel_mask = (1 << ch);
@@ -100,8 +98,8 @@ winsens_status_t adc_start(adc_channel_id_t channel_id, adc_callback_t callback)
     g_channels[channel_id].callback = callback;
     if (0 < g_channels[channel_id].interval_ms)
     {
-        nrfx_err_t err_code = app_timer_start((app_timer_id_t)&g_channels[channel_id].timer, g_channels[channel_id].interval_ms, &g_channels[channel_id]);
-        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+        winsens_status_t status = timer_start(&g_channels[channel_id].timer, g_channels[channel_id].interval_ms, true);
+        LOG_ERROR_RETURN(status, status);
     }
 
     return WINSENS_OK;
@@ -116,8 +114,7 @@ void adc_stop(adc_channel_id_t channel_id)
 
     if (0 < g_channels[channel_id].interval_ms)
     {
-        nrfx_err_t err_code = app_timer_stop((app_timer_id_t)&g_channels[channel_id].timer);
-        LOG_NRF_ERROR_RETURN(err_code, ;);
+        timer_stop(&g_channels[channel_id].timer);
     }
 }
 
@@ -159,12 +156,11 @@ static void adc_isr(nrfx_saadc_evt_t const *event)
 
     probe(g_ch_mask_queue);
 }
-
-static void timer_isr(void *context)
+static void tmr_evt_handler(winsens_event_t evt)
 {
-    LOG_ERROR_BOOL_RETURN(NULL != context, ;);
+    LOG_ERROR_BOOL_RETURN(NULL != (void*)evt.data, ;);
 
-    const adc_channel_t *ch = (adc_channel_t *)context;
+    const adc_channel_t *ch = (adc_channel_t *)evt.data;
 
     if (ch->callback)
     {
@@ -195,6 +191,8 @@ static bool trigger_adc(uint32_t channels_mask)
     LOG_NRF_ERROR_RETURN(err_code, false);
 
     uint8_t ch_num = count_bits(channels_mask);
+    // LOG_DEBUG("xxx ch_num: %u", ch_num);
+    memset(&g_adc_buffer[0], 0, sizeof(g_adc_buffer[0]) * ch_num);
     err_code = nrfx_saadc_buffer_set(&g_adc_buffer[0], ch_num);
     LOG_NRF_ERROR_RETURN(err_code, false);
     

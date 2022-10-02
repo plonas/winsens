@@ -20,11 +20,11 @@ typedef enum
 #define ADC_CFG_REFERENCE_VOL       (3600) //mV
 #define ADC_CFG_RESOLUTION          (256) //8 bits
 
-#define ADC_CFG_CHANNEL_CONF(ain, ms)   { { {0} }, ms, 0, ain, NULL }
+#define ADC_CFG_CHANNEL_CONF(ain, ms)   { {0}, ms, 0, ain, NULL }
 
 #define ADC_CFG_CHANNEL_INIT { \
-    ADC_CFG_CHANNEL_CONF(NRF_SAADC_INPUT_AIN7, 0), \
     ADC_CFG_CHANNEL_CONF(NRF_SAADC_INPUT_AIN5, 0), \
+    ADC_CFG_CHANNEL_CONF(NRF_SAADC_INPUT_VDD, 0), \
 }
 
 #endif /* ADC_CFG_H_ */

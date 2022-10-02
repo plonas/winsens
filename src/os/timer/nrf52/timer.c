@@ -76,11 +76,14 @@ winsens_status_t timer_start(timer_ws_t* timer, uint32_t interval_ms, bool repea
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
 
-    app_timer_id_t app_tmr = &NRF_TMR(timer)->app_timer;
+    app_timer_id_t app_tmr = &(NRF_TMR(timer)->app_timer);
     app_timer_mode_t m = repeat ? APP_TIMER_MODE_REPEATED : APP_TIMER_MODE_SINGLE_SHOT;
 
     ret_code_t ret = app_timer_create(&app_tmr, m, app_tmr_evt_handler);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
+
+    timer->interval = interval_ms;
+    timer->repeat = repeat;
 
     ret = app_timer_start(app_tmr, APP_TIMER_TICKS(interval_ms), timer);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
@@ -95,7 +98,8 @@ winsens_status_t timer_restart(timer_ws_t* timer, uint32_t interval_ms)
     ret_code_t ret = app_timer_stop(&NRF_TMR(timer)->app_timer);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 
-    ret = app_timer_start(&NRF_TMR(timer)->app_timer, APP_TIMER_TICKS(interval_ms), timer);
+    app_timer_id_t app_tmr = &(NRF_TMR(timer)->app_timer);
+    ret = app_timer_start(app_tmr, APP_TIMER_TICKS(interval_ms), timer);
     LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
 
     return WINSENS_OK;
@@ -105,7 +109,8 @@ void timer_stop(timer_ws_t *timer)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, ;);
 
-    ret_code_t ret = app_timer_stop(&NRF_TMR(timer)->app_timer);
+    app_timer_id_t app_tmr = &(NRF_TMR(timer)->app_timer);
+    ret_code_t ret = app_timer_stop(app_tmr);
     LOG_NRF_ERROR_RETURN(ret, ;);
 
     // no need to destroy the app_timer, can be re-initialized again
