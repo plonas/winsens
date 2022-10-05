@@ -51,7 +51,6 @@ winsens_status_t spi_init(void)
 
             nrfx_err_t err = nrfx_spi_init(&g_spi_nrf_cfg[i], &spi_config, event_handler, (void*)i);
             LOG_NRF_DEBUG_CHECK(err);
-            LOG_FLUSH();
         }
 
         task_queue_init();
@@ -79,7 +78,6 @@ winsens_status_t spi_transfer(spi_t spi, uint8_t *tx, uint16_t tx_len, uint8_t *
     nrfx_spi_xfer_desc_t desc = { .p_rx_buffer = rx, .rx_length = rx_len, .p_tx_buffer = tx, .tx_length = tx_len };
     nrfx_err_t err = nrfx_spi_xfer(&g_spi_nrf_cfg[spi], &desc, 0);
     LOG_NRF_DEBUG_CHECK(err);
-    LOG_FLUSH();
 
     return WINSENS_OK;
 }

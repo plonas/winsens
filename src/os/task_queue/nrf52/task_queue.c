@@ -48,5 +48,6 @@ void task_queue_execute(void)
     LOG_ERROR_BOOL_RETURN(g_initialized, );
 
     app_sched_execute();
+    LOG_FLUSH();
     sd_app_evt_wait();
 }

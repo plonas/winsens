@@ -17,7 +17,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/hal/pwr_mgr/nrf52/pwr_mgr.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
-  $(PROJ_DIR)/src/hal/spi/nrf52/spi.c \
+  $(PROJ_DIR)/src/hal/i2c/nrf52/i2c.c \
   $(PROJ_DIR)/src/os/system/nrf52/system.c \
   $(PROJ_DIR)/src/os/critical_region/nrf52/critical_region.c \
   $(PROJ_DIR)/src/hal/digital_io/nrf52/digital_io.c \
@@ -33,7 +33,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/hardware/acc/lis3dh/acc.c \
   $(PROJ_DIR)/src/hardware/acc/ctrl/bt/acc_ctrl.c \
-  $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
+  $(PROJ_DIR)/src/hardware/ble_peripheral/stub/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
   $(PROJ_DIR)/src/utils/circular_buf/circular_buf.c \
@@ -48,7 +48,9 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_timer.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_ppi.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
-  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_spi.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_twi.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uart.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uarte.c \
   $(SDK_ROOT)/modules/nrfx/soc/nrfx_atomic.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
@@ -56,6 +58,7 @@ SRC_FILES += \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_rtt.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_uart.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_str_formatter.c \
@@ -80,6 +83,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/pwr_mgmt/nrf_pwr_mgmt.c \
   $(SDK_ROOT)/components/boards/boards.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_ppi.c \
+  $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_uart.c \
 
 # Source files for BLE
 SRC_FILES += \
@@ -141,7 +145,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/hal/digital_io \
   $(PROJ_DIR)/src/hardware/ble_peripheral \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl \
-  $(PROJ_DIR)/src/hal/spi \
+  $(PROJ_DIR)/src/hal/i2c \
   $(PROJ_DIR)/src/os/timer \
   $(PROJ_DIR)/src/os/task_queue \
   $(PROJ_DIR)/src/os/system \
@@ -180,6 +184,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/modules/nrfx/hal \
   $(SDK_ROOT)/modules/nrfx/drivers/include \
   $(SDK_ROOT)/integration/nrfx \
+  $(SDK_ROOT)/integration/nrfx/legacy \
 
 INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/timer \
@@ -199,8 +204,8 @@ OPT = -O3 -g3
 # C flags common to all targets
 CFLAGS += $(OPT)
 CFLAGS += -DNRF_LOG_ENABLED=1
-CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_UART=0
-CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_RTT=1
+CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_UART=1
+CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_RTT=0
 CFLAGS += -DSOFTDEVICE_PRESENT
 CFLAGS += -DSWI_DISABLE0
 CFLAGS += -DNRFX_SAADC_API_V2

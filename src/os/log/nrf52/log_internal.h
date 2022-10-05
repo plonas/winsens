@@ -1,5 +1,5 @@
 /*
- * LogInternal.h
+ * log_internal.h
  *
  *  Created on: 29.12.2019
  *      Author: Damian Plonek

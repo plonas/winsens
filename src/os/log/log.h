@@ -40,9 +40,9 @@
 #define LOG_INFO_BOOL_RETURN(s, r)      do{ if (true != (s)) { LOG_INFO_INTERNAL(#s " != true | %s:%u", s, __FUNCTION__, __LINE__); return r; } }while(0)
 #define LOG_DEBUG_BOOL_RETURN(s, r)     do{ if (true != (s)) { LOG_DEBUG_INTERNAL(#s " != true | %s:%u", s, __FUNCTION__, __LINE__); return r; } }while(0)
 
-#define LOG_IF_ERROR(s, ...)            do{ if (s) { LOG_ERROR_INTERNAL(__VA_ARGS__) } }while(0)
-#define LOG_IF_WARNING(s, ...)          do{ if (s) { LOG_WARNING_INTERNAL(__VA_ARGS__) } }while(0)
-#define LOG_IF_INFO(s, ...)             do{ if (s) { LOG_INFO_INTERNAL(__VA_ARGS__) } }while(0)
-#define LOG_IF_DEBUG(s, ...)            do{ if (s) { LOG_DEBUG_INTERNAL(__VA_ARGS__) } }while(0)
+#define LOG_IF_ERROR(s, ...)            do{ if (s) { LOG_ERROR_INTERNAL(__VA_ARGS__); } }while(0)
+#define LOG_IF_WARNING(s, ...)          do{ if (s) { LOG_WARNING_INTERNAL(__VA_ARGS__); } }while(0)
+#define LOG_IF_INFO(s, ...)             do{ if (s) { LOG_INFO_INTERNAL(__VA_ARGS__); } }while(0)
+#define LOG_IF_DEBUG(s, ...)            do{ if (s) { LOG_DEBUG_INTERNAL(__VA_ARGS__); } }while(0)
 
 #endif /* LOG_H_ */

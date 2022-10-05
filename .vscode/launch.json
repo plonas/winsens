@@ -14,6 +14,7 @@
         "serialNumber": "",
         "device": "nRF52840_xxAA",
         "runToMain": true,
+        "showDevDebugOutput": "raw",
     }
     ]
 }

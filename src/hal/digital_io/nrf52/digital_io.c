@@ -119,7 +119,6 @@ winsens_status_t digital_io_register_callback(digital_io_pin_t pin, digitalio_in
         config.pull = convert_pull_up_down(DIGITAL_IO_INPUT_CONFIG[pin].pullUpDown);
         nrfx_err_t ret = nrfx_gpiote_in_init((nrfx_gpiote_pin_t)DIGITAL_IO_INPUT_CONFIG[pin].pin_no, &config, digital_io_input_isr);
         LOG_NRF_ERROR_RETURN(ret, WINSENS_ERROR);
-        LOG_FLUSH();
 
         nrfx_gpiote_in_event_enable(DIGITAL_IO_INPUT_CONFIG[pin].pin_no, true);
 

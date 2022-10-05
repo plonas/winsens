@@ -13,10 +13,11 @@
 #include "critical_region.h"
 #include "digital_io.h"
 #include "digital_io_cfg.h"
-#include "spi.h"
-#include "spi_cfg.h"
+#include "i2c.h"
+#include "i2c_cfg.h"
 #include "subscribers.h"
 #include "task_queue.h"
+#include "timer.h"
 #define ILOG_MODULE_NAME ACC
 #include "log.h"
 
@@ -70,10 +71,10 @@
 #define LIS3DH_CTRL_REG0_VAL            0b00010000
 #define LIS3DH_TEMP_CFG_REG_VAL         0b00000000
 #define LIS3DH_CTRL_REG1_VAL            0b00001111
-#define LIS3DH_CTRL_REG2_VAL            0b11001001
-#define LIS3DH_CTRL_REG3_VAL            0b01000100
-#define LIS3DH_CTRL_REG4_VAL            0b00000000
-#define LIS3DH_CTRL_REG5_VAL            0b01001010
+#define LIS3DH_CTRL_REG2_VAL            0b00001001
+#define LIS3DH_CTRL_REG3_VAL            0b01000000
+#define LIS3DH_CTRL_REG4_VAL            0b10000000
+#define LIS3DH_CTRL_REG5_VAL            0b00001010
 #define LIS3DH_CTRL_REG6_VAL            0b00100000
 #define LIS3DH_FIFO_CTRL_REG_VAL        0b00000000
 #define LIS3DH_INT1_CFG_VAL             0b00101010
@@ -85,10 +86,12 @@
 
 #define LIS3DH_REG_BITMASK              0b00111111
 #define LIS3DH_FSS_BITMASK              0b00011111
-#define LIS3DH_INT1_SRC_IA_BITMASK      0b01000000
+#define LIS3DH_INT_SRC_IA_BITMASK       0b01000000
 
-#define LIS3DH_READ_REQ_BIT             0x80
-#define LIS3DH_AUTO_INCREMENT_BIT       0x40
+// #define LIS3DH_READ_REQ_BIT             0x80
+// #define LIS3DH_AUTO_INCREMENT_BIT       0x40
+#define LIS3DH_READ_REQ_BIT             0x00
+#define LIS3DH_AUTO_INCREMENT_BIT       0x80
 
 #define LIS3DH_IS_READ_BIT_SET(x)       ((x) & LIS3DH_READ_REQ_BIT)
 #define LIS3DH_GET_REG(x)               ((x) & LIS3DH_REG_BITMASK)
@@ -98,6 +101,7 @@
 #define ACC_DATA_BUFFER_LEN             (12)
 #define ACC_COMMANDS_MAX                (25)
 #define ACC_READ_BUF_SIZE               (ACC_RX_BUFFER_SIZE)
+#define ACC_READ_DATA_INTERVAL          (1020) //ms
 
 #define ACC_CMD_W_INIT(r, v)            (acc_command_t){.base.command = command_execute, .rx_len = 0, .reg = r, .tx_value = v, .read = false}
 #define ACC_CMD_R_INIT(r, l)            (acc_command_t){.base.command = command_execute, .rx_len = l, .reg = r, .tx_value = 0, .read = true}
@@ -140,6 +144,7 @@ static void update_hp_threshold(void);
 static void command_execute(command_t const* command);
 static bool execute_one_cmd(void);
 static bool execute_one_cmd_force(void);
+static void tmr_evt_handler(winsens_event_t evt);
 
 
 static bool                     g_initialized                           = false;
@@ -156,10 +161,9 @@ static acc_command_t            g_cmd_raw_buf[ACC_COMMANDS_MAX];
 static circular_buf_t           g_read_buf;
 static acc_command_t            g_read_raw_buf[ACC_READ_BUF_SIZE];
 static winsens_event_handler_t  g_evt_handlers[ACC_CFG_SUBSCRIBERS_NUM] = { NULL };
-
+static timer_ws_t               g_timer;
 
 LOG_REGISTER();
-
 
 winsens_status_t acc_init(void)
 {
@@ -172,16 +176,23 @@ winsens_status_t acc_init(void)
         circular_buf_safe_init(&g_cmd_buf, (uint8_t*)g_cmd_raw_buf, sizeof(g_cmd_raw_buf));
         circular_buf_safe_init(&g_read_buf, (uint8_t*)g_read_raw_buf, sizeof(g_read_raw_buf));
 
-        spi_init();
-        spi_subscribe(SPI_CFG_ACC, event_handler);
+        i2c_init();
+        i2c_subscribe(I2C_CFG_ACC, event_handler);
 
         digital_io_init();
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_HPF, dio_callback);
         digital_io_register_callback(DIGITAL_IO_INPUT_ACC_INT_FF, dio_callback);
 
+        timer_init();
+
         subscribers_init(&g_subscribers, g_evt_handlers, ACC_CFG_SUBSCRIBERS_NUM);
 
         lis3dh_init();
+
+        winsens_status_t status = timer_create(&g_timer, tmr_evt_handler, NULL);
+        LOG_ERROR_RETURN(status, status);
+        status = timer_start(&g_timer, ACC_READ_DATA_INTERVAL, true);
+        LOG_ERROR_RETURN(status, status);
     }
 
     return WINSENS_OK;
@@ -243,13 +254,13 @@ uint16_t acc_get_hp_threshold(void)
 
 static void event_handler(winsens_event_t event)
 {
-    if (SPI_EVT_TRANSFER_DONE == event.id)
+    if (I2C_EVT_TRANSFER_DONE == event.id)
     {
         switch (LIS3DH_GET_REG(g_tx_buffer[0]))
         {
             case LIS3DH_FIFO_SRC_REG:
             {
-                g_fss = g_rx_buffer[1] & LIS3DH_FSS_BITMASK;
+                g_fss = g_rx_buffer[0] & LIS3DH_FSS_BITMASK;
                 if (ACC_CFG_FIFO_SAMPLES_NUM < g_fss)
                 {
                     acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * sizeof(acc_t));
@@ -260,53 +271,56 @@ static void event_handler(winsens_event_t event)
 
             case LIS3DH_INT1_SRC:
             {
-                uint8_t ia = g_rx_buffer[1] & LIS3DH_INT1_SRC_IA_BITMASK;
+                uint8_t ia = g_rx_buffer[0] & LIS3DH_INT_SRC_IA_BITMASK;
+
+                LOG_DEBUG("xxx LIS3DH_INT1_SRC 0x%02x 0x%02x", ia, g_rx_buffer[0]);
 
                 if (0 != ia)
                 {
                     winsens_event_t e = { .id = ACC_EVT_HIPASS_INT, .data = 0 };
                     subscribers_update(&g_subscribers, e);
 
-                    task_queue_add(&g_rx_buffer[1], 1, hpf_task);
+                    task_queue_add(&g_rx_buffer[0], 1, hpf_task);
                 }
                 break;
             }
 
             case LIS3DH_INT2_SRC:
             {
-                uint8_t ia = g_rx_buffer[1] & LIS3DH_INT1_SRC_IA_BITMASK;
+                uint8_t ia = g_rx_buffer[0] & LIS3DH_INT_SRC_IA_BITMASK;
 
                 if (0 != ia)
                 {
                     winsens_event_t e = { .id = ACC_EVT_FREEFALL_INT, .data = 0 };
                     subscribers_update(&g_subscribers, e);
 
-                    task_queue_add(&g_rx_buffer[1], 1, ff_task);
+                    task_queue_add(&g_rx_buffer[0], 1, ff_task);
                 }
                 break;
             }
 
             case LIS3DH_OUT_X_L:
             {
-                store_data(&g_rx_buffer[1], g_fss * sizeof(acc_t));
+                LOG_DEBUG("xxx x %5d y %5d z %5d", *(int8_t*)(g_rx_buffer + 1) * 16, *(int8_t*)(g_rx_buffer + 3) * 16, *(int8_t*)(g_rx_buffer + 5) * 16);
+                store_data(&g_rx_buffer[0], g_fss * sizeof(acc_t));
                 update_subscribers();
                 break;
             }
 
             case LIS3DH_CTRL_REG0:
             {
-                if (LIS3DH_CTRL_REG0_VAL != g_rx_buffer[1])
+                if (LIS3DH_CTRL_REG0_VAL != g_rx_buffer[0])
                 {
-                    LOG_ERROR("LIS3DH_CTRL_REG0 read failed, value: 0x%02x", g_rx_buffer[1]);
+                    LOG_ERROR("LIS3DH_CTRL_REG0 read failed, value: 0x%02x", g_rx_buffer[0]);
                 }
                 break;
             }
 
             case LIS3DH_WHO_AM_I:
             {
-                if (LIS3DH_WHO_AM_I_VAL != g_rx_buffer[1])
+                if (LIS3DH_WHO_AM_I_VAL != g_rx_buffer[0])
                 {
-                    LOG_ERROR("LIS3DH_WHO_AM_I read failed, value: 0x%02x", g_rx_buffer[1]);
+                    LOG_ERROR("LIS3DH_WHO_AM_I read failed, value: 0x%02x", g_rx_buffer[0]);
                 }
                 break;
             }
@@ -342,12 +356,30 @@ static void dio_callback(digital_io_pin_t pin, bool on)
 
 static void hpf_task(void *p_data, uint16_t data_size)
 {
-//    LOG_DEBUG("xxx xxx xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
+   LOG_DEBUG("xxx HP 0x%02x INT 0x%x xxx xxx xxx", get_hp_threshold_cfg(), *(uint8_t*)p_data);
+
+    // if (digital_io_get(DIGITAL_IO_INPUT_ACC_INT_HPF))
+    // {
+    //     acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_FIFO_SRC_REG, 1);
+    //     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    //     cmd = ACC_CMD_R_INIT(LIS3DH_INT1_SRC, 1);
+    //     circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        g_fss = 1;
+        acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * sizeof(acc_t));
+        circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        // cmd = ACC_CMD_R_INIT(LIS3DH_REFERENCE, 1);
+        // circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+    //     execute_one_cmd();
+    // }
 }
 
 static void ff_task(void *p_data, uint16_t data_size)
 {
-//    LOG_DEBUG("xxx xxx xxx FF 0x%02x INT 0x%x xxx xxx xxx", get_ff_threshold_cfg(), *(uint8_t*)p_data);
+   LOG_DEBUG("xxx FF 0x%02x INT 0x%x xxx xxx xxx", get_ff_threshold_cfg(), *(uint8_t*)p_data);
 }
 
 static void lis3dh_init(void)
@@ -487,6 +519,7 @@ static uint8_t get_hp_threshold_cfg(void)
         reg_val = 0x7F;
     }
 
+    LOG_DEBUG("xxx ths %02X", reg_val);
     return (uint8_t)reg_val;
 }
 
@@ -524,19 +557,21 @@ static void write_reg(uint8_t reg, uint8_t value)
 {
     g_tx_buffer[0] = reg;
     g_tx_buffer[1] = value;
-    spi_transfer(SPI_CFG_ACC, g_tx_buffer, 2, g_rx_buffer, 0);
+    i2c_tx(I2C_CFG_ACC, g_tx_buffer, 2);
 }
 
 static void read_reg(uint8_t reg)
 {
     g_tx_buffer[0] = reg | LIS3DH_READ_REQ_BIT;
-    spi_transfer(SPI_CFG_ACC, g_tx_buffer, 1, g_rx_buffer, 2);
+
+    i2c_txrx(I2C_CFG_ACC, g_tx_buffer, 1, g_rx_buffer, 1);
 }
 
 static void read_multiple_bytes(uint8_t reg, uint16_t len)
 {
     g_tx_buffer[0] = reg | LIS3DH_READ_REQ_BIT | LIS3DH_AUTO_INCREMENT_BIT;
-    spi_transfer(SPI_CFG_ACC, g_tx_buffer, 1, g_rx_buffer, len + 1);
+
+    i2c_txrx(I2C_CFG_ACC, g_tx_buffer, 1, g_rx_buffer, len);
 }
 
 static void store_data(uint8_t* data, uint16_t size)
@@ -642,3 +677,14 @@ static bool execute_one_cmd_force(void)
     return executed;
 }
 
+static void tmr_evt_handler(winsens_event_t evt)
+{
+    if (TIMER_EVT_SIGNAL ==  evt.id)
+    {
+        g_fss = 1;
+        acc_command_t cmd = ACC_CMD_R_INIT(LIS3DH_OUT_X_L, g_fss * sizeof(acc_t));
+        circular_buf_push(&g_cmd_buf, (uint8_t*)&cmd, sizeof(acc_command_t));
+
+        execute_one_cmd();
+    }
+}
