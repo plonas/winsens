@@ -11,6 +11,7 @@
 #include "app_error.h"
 #include "utils/utils.h"
 #include "adc.h"
+#include "battery.h"
 #include "subscribers.h"
 #include "timer.h"
 #define ILOG_MODULE_NAME distance
@@ -22,14 +23,16 @@
 
 
 static void adc_evt_handler(adc_channel_id_t id, int16_t value);
-static void tmr_evt_handler(winsens_event_t event);
+static void pwr_tmr_evt_handler(winsens_event_t event);
+static void probe_tmr_evt_handler(winsens_event_t event);
 
 static bool g_initialized = false;
 static adc_channel_id_t g_adc_ids[] = DISTANCE_CFG_ADC_IDS_INIT;
 static winsens_event_handler_t g_callbacks[DISTANCE_CB_NUM];
 static subscribers_t g_subscribers;
 static int16_t g_values[DISTANCE_ADC_IDS_NUM] = {0};
-static timer_ws_t g_timer;
+static timer_ws_t g_pwr_tmr;
+static timer_ws_t g_probe_tmr;
 static bool g_enabled = false;
 
 
@@ -53,10 +56,16 @@ winsens_status_t distance_init(void)
         status = adc_init();
         LOG_ERROR_RETURN(status, status);
 
+        status = battery_init();
+        LOG_ERROR_RETURN(status, status);
+
         status = timer_init();
         LOG_ERROR_RETURN(status, status);
 
-        status = timer_create(&g_timer, tmr_evt_handler, NULL);
+        status = timer_create(&g_pwr_tmr, pwr_tmr_evt_handler, NULL);
+        LOG_ERROR_RETURN(status, status);
+
+        status = timer_create(&g_probe_tmr, probe_tmr_evt_handler, NULL);
         LOG_ERROR_RETURN(status, status);
 
         g_enabled = false;
@@ -91,7 +100,7 @@ winsens_status_t distance_enable(distance_sensor_id_t id)
     winsens_status_t status = adc_start(g_adc_ids[id], adc_evt_handler);
     LOG_ERROR_RETURN(status, status);
 
-    return timer_start(&g_timer, DISTANCE_CFG_PROBE_INTERVAL_MS, true);
+    return timer_start(&g_pwr_tmr, DISTANCE_CFG_PROBE_INTERVAL_MS, true);
 }
 
 void distance_disable(distance_sensor_id_t id)
@@ -101,7 +110,8 @@ void distance_disable(distance_sensor_id_t id)
 
     g_enabled = false;
 
-    timer_stop(&g_timer);
+    timer_stop(&g_pwr_tmr);
+    timer_stop(&g_probe_tmr);
     adc_stop(g_adc_ids[id]);
     digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_OFF);
 }
@@ -115,19 +125,35 @@ static void adc_evt_handler(adc_channel_id_t id, int16_t value)
 
     digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_OFF);
 
-    g_values[g_adc_ids[id]] = value;
+    int16_t vcc = 0;
+    const int16_t voltage = adc_get_voltage(value);
+
+    battery_get_voltage(&vcc);
+
+    g_values[g_adc_ids[id]] = vcc - voltage;
 
     winsens_event_t evt = { .id = DISTANCE_EVT_NEW_DATA, .data = id };
     subscribers_update(&g_subscribers, evt);
 }
 
-static void tmr_evt_handler(winsens_event_t event)
+static void pwr_tmr_evt_handler(winsens_event_t event)
 {
     if (g_enabled)
     {
         if (TIMER_EVT_SIGNAL == event.id)
         {
             digital_io_set(DISTANCE_CFG_SENSOR_POWER_PIN, DISTANCE_CFG_POWER_ON);
+            timer_start(&g_probe_tmr, DISTANCE_CFG_PROBE_DELAY_MS, false);
+        }
+    }
+}
+
+static void probe_tmr_evt_handler(winsens_event_t event)
+{
+    if (g_enabled)
+    {
+        if (TIMER_EVT_SIGNAL == event.id)
+        {
             adc_probe(g_adc_ids, DISTANCE_ADC_IDS_NUM);
         }
     }

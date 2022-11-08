@@ -38,6 +38,7 @@ static void update_subscribers(void);
  */
 static bool                     g_initialized = false;
 static uint8_t                  g_level;
+static int16_t                  g_voltage;
 static winsens_event_handler_t  g_callbacks[BATTERY_CB_NUMBER] = {NULL};
 static timer_ws_t               g_timer;
 
@@ -52,6 +53,7 @@ winsens_status_t battery_init(void)
     {
         g_initialized = true;
         g_level = 0;
+        g_voltage = 0;
 
         timer_init();
         timer_create(&g_timer, timer_evt_handler, NULL);
@@ -81,6 +83,16 @@ winsens_status_t battery_subscribe(winsens_event_handler_t callback)
     }
 
     return WINSENS_NO_RESOURCES;
+}
+
+winsens_status_t battery_get_voltage(int16_t *voltage)
+{
+    if (voltage)
+    {
+        *voltage = g_voltage;
+    }
+    
+    return WINSENS_OK;
 }
 
 winsens_status_t battery_get_level(battery_level_t *level)
@@ -116,8 +128,8 @@ static void timer_evt_handler(winsens_event_t evt)
 
 static void adc_callback(adc_channel_id_t id, int16_t value)
 {
-    LOG_DEBUG("adc %u val %d", id, value);
-    g_level = calc_battery_lvl(adc_get_voltage(value));
+    g_voltage = adc_get_voltage(value);
+    g_level = calc_battery_lvl(g_voltage);
     update_subscribers();
 }
 

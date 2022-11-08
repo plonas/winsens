@@ -19,6 +19,7 @@ winsens_status_t battery_init(void);
 
 winsens_status_t battery_subscribe(winsens_event_handler_t callback);
 
+winsens_status_t battery_get_voltage(int16_t *voltage);
 winsens_status_t battery_get_level(battery_level_t *level);
 
 

@@ -7,6 +7,8 @@
 
 #include "battery.h"
 #include "timer.h"
+#define ILOG_MODULE_NAME bat_sim
+#include "log.h"
 
 
 #define BATTERY_CB_NUMBER           (2)
@@ -30,6 +32,8 @@ static bool                     g_initialized = false;
 static uint8_t                  g_level;
 static winsens_event_handler_t  g_callbacks[BATTERY_CB_NUMBER] = {NULL};
 static timer_ws_t               g_timer;
+
+LOG_REGISTER();
 
 /*
  ******************************************************************************
@@ -70,6 +74,16 @@ winsens_status_t battery_subscribe(winsens_event_handler_t callback)
     return WINSENS_NO_RESOURCES;
 }
 
+winsens_status_t battery_get_voltage(int16_t *voltage)
+{
+    if (voltage)
+    {
+        *voltage = g_level * 33;
+    }
+    
+    return WINSENS_OK;
+}
+
 winsens_status_t battery_get_level(battery_level_t *level)
 {
     if (level)
@@ -92,6 +106,8 @@ static void timer_evt_handler(winsens_event_t evt)
     {
         g_level = 0;
     }
+
+    LOG_DEBUG("battery level: %u", g_level);
 
     update_subscribers();
 }
