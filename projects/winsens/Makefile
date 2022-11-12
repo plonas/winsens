@@ -14,6 +14,7 @@ SRC_FILES += \
   $(PROJ_DIR)/projects/winsens/main.c \
   $(PROJ_DIR)/projects/winsens/app/app.c \
   $(PROJ_DIR)/src/hal/adc/nrf52/adc.c \
+  $(PROJ_DIR)/src/hal/adc/cli/adc_cli.c \
   $(PROJ_DIR)/src/hal/pwr_mgr/nrf52/pwr_mgr.c \
   $(PROJ_DIR)/src/os/task_queue/nrf52/task_queue.c \
   $(PROJ_DIR)/src/hardware/storage/nrf52/storage.c \
@@ -40,6 +41,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf_safe.c \
   $(PROJ_DIR)/src/utils/circular_buf/nonsafe/circular_buf_nonsafe.c \
   $(PROJ_DIR)/src/utils/subscribers/impl/subscribers.c \
+  $(PROJ_DIR)/src/app/cli/embedded_cli/cli.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -151,6 +153,8 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/os/system \
   $(PROJ_DIR)/src/os/critical_region \
   $(PROJ_DIR)/src/app/hmi \
+  $(PROJ_DIR)/src/app/cli \
+  $(PROJ_DIR)/external/embedded-cli/lib/include \
 
 INC_FOLDERS += \
   $(SDK_ROOT)/components \
