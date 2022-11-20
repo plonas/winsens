@@ -5384,7 +5384,7 @@
  
 
 #ifndef NRF_BALLOC_CLI_CMDS
-#define NRF_BALLOC_CLI_CMDS 0
+#define NRF_BALLOC_CLI_CMDS 1
 #endif
 
 // </e>
@@ -5662,13 +5662,13 @@
 // <e> NRF_QUEUE_ENABLED - nrf_queue - Queue module
 //==========================================================
 #ifndef NRF_QUEUE_ENABLED
-#define NRF_QUEUE_ENABLED 0
+#define NRF_QUEUE_ENABLED 1
 #endif
 // <q> NRF_QUEUE_CLI_CMDS  - Enable CLI commands specific to the module
  
 
 #ifndef NRF_QUEUE_CLI_CMDS
-#define NRF_QUEUE_CLI_CMDS 0
+#define NRF_QUEUE_CLI_CMDS 1
 #endif
 
 // </e>
@@ -5809,7 +5809,7 @@
  
 
 #ifndef NRF_CLI_ENABLED
-#define NRF_CLI_ENABLED 0
+#define NRF_CLI_ENABLED 1
 #endif
 
 // <o> NRF_CLI_ARGC_MAX - Maximum number of parameters passed to the command handler. 
@@ -5826,7 +5826,7 @@
 
 // <o> NRF_CLI_CMD_BUFF_SIZE - Maximum buffer size for a single command. 
 #ifndef NRF_CLI_CMD_BUFF_SIZE
-#define NRF_CLI_CMD_BUFF_SIZE 128
+#define NRF_CLI_CMD_BUFF_SIZE 512
 #endif
 
 // <q> NRF_CLI_ECHO_STATUS  - CLI echo status. If set, echo is ON.
@@ -5840,14 +5840,14 @@
  
 
 #ifndef NRF_CLI_WILDCARD_ENABLED
-#define NRF_CLI_WILDCARD_ENABLED 0
+#define NRF_CLI_WILDCARD_ENABLED 1
 #endif
 
 // <q> NRF_CLI_METAKEYS_ENABLED  - Enable additional control keys for CLI commands like ctrl+a, ctrl+e, ctrl+w, ctrl+u
  
 
 #ifndef NRF_CLI_METAKEYS_ENABLED
-#define NRF_CLI_METAKEYS_ENABLED 0
+#define NRF_CLI_METAKEYS_ENABLED 1
 #endif
 
 // <o> NRF_CLI_PRINTF_BUFF_SIZE - Maximum print buffer size. 
@@ -5917,7 +5917,7 @@
  
 
 #ifndef NRF_FPRINTF_FLAG_AUTOMATIC_CR_ON_LF_ENABLED
-#define NRF_FPRINTF_FLAG_AUTOMATIC_CR_ON_LF_ENABLED 0
+#define NRF_FPRINTF_FLAG_AUTOMATIC_CR_ON_LF_ENABLED 1
 #endif
 
 // <q> NRF_FPRINTF_DOUBLE_ENABLED  - Enable IEEE-754 double precision formatting.
@@ -5999,7 +5999,7 @@
  
 
 #ifndef NRF_LOG_CLI_CMDS
-#define NRF_LOG_CLI_CMDS 0
+#define NRF_LOG_CLI_CMDS 1
 #endif
 
 // <o> NRF_LOG_DEFAULT_LEVEL  - Default Severity level
@@ -8029,6 +8029,13 @@
 #endif
 
 // </e>
+
+// <q> NRF_CLI_UART_ENABLED  - nrf_cli_uart - UART command line interface transport
+ 
+
+#ifndef NRF_CLI_UART_ENABLED
+#define NRF_CLI_UART_ENABLED 1
+#endif
 
 // <e> NRF_CLI_UART_CONFIG_LOG_ENABLED - Enables logging in the module.
 //==========================================================
@@ -10080,7 +10087,7 @@
 // <e> NRF_LOG_BACKEND_UART_ENABLED - nrf_log_backend_uart - Log UART backend
 //==========================================================
 #ifndef NRF_LOG_BACKEND_UART_ENABLED
-#define NRF_LOG_BACKEND_UART_ENABLED 1
+#define NRF_LOG_BACKEND_UART_ENABLED 0
 #endif
 // <o> NRF_LOG_BACKEND_UART_TX_PIN - UART TX pin
 #ifndef NRF_LOG_BACKEND_UART_TX_PIN
@@ -10122,33 +10129,80 @@
 
 // </e>
 
-// <e> NRF_LOG_ENABLED - nrf_log - Logger
 //==========================================================
-#ifndef NRF_LOG_ENABLED
-#define NRF_LOG_ENABLED 1
+// <e> NRF_LOG_BACKEND_FLASH_ENABLED - nrf_log_backend_flash - Log flash backend
+//==========================================================
+#ifndef NRF_LOG_BACKEND_FLASH_ENABLED
+#define NRF_LOG_BACKEND_FLASH_ENABLED 1
 #endif
-// <h> Log message pool - Configuration of log message pool
+// <q> NRF_LOG_BACKEND_FLASH_CLI_CMDS  - Enable CLI commands for this module.
+ 
+
+#ifndef NRF_LOG_BACKEND_FLASH_CLI_CMDS
+#define NRF_LOG_BACKEND_FLASH_CLI_CMDS 1
+#endif
+
+// <e> NRF_LOG_BACKEND_FLASHLOG_ENABLED - Enable flashlog backend.
+//==========================================================
+#ifndef NRF_LOG_BACKEND_FLASHLOG_ENABLED
+#define NRF_LOG_BACKEND_FLASHLOG_ENABLED 1
+#endif
+// <o> NRF_LOG_BACKEND_FLASHLOG_QUEUE_SIZE - Logger messages queue size. 
+// <i> Queue holds log messages pending to be written to flash.
+// <i> Note that the queue holds logger messages and thus the queue size determines
+// <i> increasing the pool of logger messages (see log message pool configuration).
+
+#ifndef NRF_LOG_BACKEND_FLASHLOG_QUEUE_SIZE
+#define NRF_LOG_BACKEND_FLASHLOG_QUEUE_SIZE 32
+#endif
+
+// </e>
+
+// <e> NRF_LOG_BACKEND_CRASHLOG_ENABLED - Enable crashlog backend.
+//==========================================================
+#ifndef NRF_LOG_BACKEND_CRASHLOG_ENABLED
+#define NRF_LOG_BACKEND_CRASHLOG_ENABLED 1
+#endif
+// <o> NRF_LOG_BACKEND_CRASHLOG_FIFO_SIZE - Number of log messages held to be flushed in panic. 
+// <i> Crashlog FIFO always keeps a defined number of the most
+// <i> recent logs (severity level is set on runtime).
+// <i> Note that the FIFO holds logger messages and thus the FIFO size determines
+// <i> increasing the pool of logger messages (see log message pool configuration).
+
+#ifndef NRF_LOG_BACKEND_CRASHLOG_FIFO_SIZE
+#define NRF_LOG_BACKEND_CRASHLOG_FIFO_SIZE 8
+#endif
+
+// </e>
+
+// <o> NRF_LOG_BACKEND_FLASH_SER_BUFFER_SIZE - Size of the buffer used for serialize log message. 
+// <i> Message is trimmed if it is longer. It may happen in case of 
+// <i> hexdump message. Buffer size must be multiple of 4.
+
+#ifndef NRF_LOG_BACKEND_FLASH_SER_BUFFER_SIZE
+#define NRF_LOG_BACKEND_FLASH_SER_BUFFER_SIZE 64
+#endif
+
+// <h> Flash log location - Configuration of flash area used for storing the logs.
 
 //==========================================================
-// <o> NRF_LOG_MSGPOOL_ELEMENT_SIZE - Size of a single element in the pool of memory objects.
-// <i> If a small value is set, then performance of logs processing
-// <i> is degraded because data is fragmented. Bigger value impacts
-// <i> RAM memory utilization. The size is set to fit a message with
-// <i> a timestamp and up to 2 arguments in a single memory object.
+// <o> NRF_LOG_BACKEND_FLASH_START_PAGE - Starting page.  
+// <i> If 0, then pages directly after the application are used.
 
-#ifndef NRF_LOG_MSGPOOL_ELEMENT_SIZE
-#define NRF_LOG_MSGPOOL_ELEMENT_SIZE 20
+#ifndef NRF_LOG_BACKEND_FLASH_START_PAGE
+#define NRF_LOG_BACKEND_FLASH_START_PAGE 0
 #endif
 
-// <o> NRF_LOG_MSGPOOL_ELEMENT_COUNT - Number of elements in the pool of memory objects
-// <i> If a small value is set, then it may lead to a deadlock
-// <i> in certain cases if backend has high latency and holds
-// <i> multiple messages for long time. Bigger value impacts
-// <i> RAM memory usage.
-
-#ifndef NRF_LOG_MSGPOOL_ELEMENT_COUNT
-#define NRF_LOG_MSGPOOL_ELEMENT_COUNT 8
+// <o> NRF_LOG_BACKEND_PAGES - Number of pages. 
+#ifndef NRF_LOG_BACKEND_PAGES
+#define NRF_LOG_BACKEND_PAGES 1
 #endif
+
+// </h> 
+//==========================================================
+
+// </e>
+
 
 // <<< end of configuration section >>>
 #endif //SDK_CONFIG_H

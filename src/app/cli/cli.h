@@ -10,10 +10,14 @@
 
 
 #include "winsens_types.h"
+#include "cli_internal.h"
 
-#define CLI_ARGS_NUM_MAX    8
+#define CLI_CMD_REG                     CLI_INTERNAL_CMD_REG
+#define CLI_CMD                         CLI_INTERNAL_CMD
+#define CLI_CREATE_STATIC_SUBCMD_SET    CLI_INTERNAL_CREATE_STATIC_SUBCMD_SET
+#define CLI_SUBCMD_SET_END              CLI_INTERNAL_SUBCMD_SET_END
 
-#define CLI_STR_ARG(_str)    {.len = 1, .args = {{.str = (_str), .type = CLI_ARG_TYPE_STR}}}
+typedef cli_internal_t cli_t;
 
 typedef enum
 {
@@ -42,30 +46,20 @@ typedef struct
     };
 } cli_arg_t;
 
-typedef struct cli_args_list_t
-{
-    uint8_t len;
-    cli_arg_t args[CLI_ARGS_NUM_MAX];
-} cli_args_list_t;
-
-typedef struct cli_ret_args_list_t
-{
-    uint8_t len;
-    cli_arg_t args[1];
-} cli_ret_args_list_t;
-
-typedef void (*cli_invoke_fn)(const cli_args_list_t *args);
-
-typedef struct cli_invoke_info_t
-{
-    cli_invoke_fn invoke_fn;
-    cli_arg_type_t args_types[];
-} cli_invoke_info_t;
-
+#define cli_error(_fmt, ...)        cli_error_raw(_fmt "\n", ##__VA_ARGS__)
+#define cli_warn(_fmt, ...)         cli_warn_raw(_fmt "\n", ##__VA_ARGS__)
+#define cli_info(_fmt, ...)         cli_info_raw(_fmt "\n", ##__VA_ARGS__)
+#define cli_print(_fmt, ...)        cli_print_raw(_fmt "\n", ##__VA_ARGS__)
 
 winsens_status_t cli_init(void);
-winsens_status_t cli_register_cmd(const char *cmd, const char *help, const cli_invoke_info_t *invoke);
-void cli_answer(bool result, const cli_ret_args_list_t *answer);
+void cli_process(void);
+bool cli_str_to_val(const char *str, cli_arg_type_t type, cli_arg_t *val);
+
+void cli_help_print(void);
+void cli_print_raw(char const *fmt, ...);
+void cli_info_raw(char const *fmt, ...);
+void cli_warn_raw(char const *fmt, ...);
+void cli_error_raw(char const *fmt, ...);
 
 
 #endif /* CLI_H_ */

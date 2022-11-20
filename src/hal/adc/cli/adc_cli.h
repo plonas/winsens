@@ -9,7 +9,5 @@
 #define ADC_CLI_H_
 
 
-void adc_cli_init(void);
-
 
 #endif /* ADC_CLI_H_ */

@@ -41,7 +41,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/utils/circular_buf/safe/circular_buf_safe.c \
   $(PROJ_DIR)/src/utils/circular_buf/nonsafe/circular_buf_nonsafe.c \
   $(PROJ_DIR)/src/utils/subscribers/impl/subscribers.c \
-  $(PROJ_DIR)/src/app/cli/embedded_cli/cli.c \
+  $(PROJ_DIR)/src/app/cli/nrf/cli.c \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
@@ -54,14 +54,17 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uart.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_uarte.c \
   $(SDK_ROOT)/modules/nrfx/soc/nrfx_atomic.c \
+  $(SDK_ROOT)/modules/nrfx/hal/nrf_nvmc.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
+  $(SDK_ROOT)/external/fnmatch/fnmatch.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_rtt.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_uart.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
+  $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_flash.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_str_formatter.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_default_backends.c \
@@ -74,6 +77,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
   $(SDK_ROOT)/components/libraries/fstorage/nrf_fstorage.c \
   $(SDK_ROOT)/components/libraries/fstorage/nrf_fstorage_sd.c \
+  $(SDK_ROOT)/components/libraries/fstorage/nrf_fstorage_nvmc.c \
   $(SDK_ROOT)/components/libraries/atomic/nrf_atomic.c \
   $(SDK_ROOT)/components/libraries/atomic_fifo/nrf_atfifo.c \
   $(SDK_ROOT)/components/libraries/atomic_flags/nrf_atflags.c \
@@ -86,6 +90,8 @@ SRC_FILES += \
   $(SDK_ROOT)/components/boards/boards.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_ppi.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_uart.c \
+  $(SDK_ROOT)/components/libraries/cli/nrf_cli.c \
+  $(SDK_ROOT)/components/libraries/cli/uart/nrf_cli_uart.c \
 
 # Source files for BLE
 SRC_FILES += \
@@ -116,7 +122,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
   $(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
-
+  $(SDK_ROOT)/components/libraries/queue/nrf_queue.c \
 
 INC_FOLDERS += \
   ./config \
@@ -154,7 +160,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/os/critical_region \
   $(PROJ_DIR)/src/app/hmi \
   $(PROJ_DIR)/src/app/cli \
-  $(PROJ_DIR)/external/embedded-cli/lib/include \
+  $(PROJ_DIR)/src/app/cli/nrf \
 
 INC_FOLDERS += \
   $(SDK_ROOT)/components \
@@ -183,12 +189,16 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/button \
   $(SDK_ROOT)/external/segger_rtt \
   $(SDK_ROOT)/external/fprintf \
+  $(SDK_ROOT)/external/fnmatch \
   $(SDK_ROOT)/modules/nrfx \
   $(SDK_ROOT)/modules/nrfx/mdk \
   $(SDK_ROOT)/modules/nrfx/hal \
   $(SDK_ROOT)/modules/nrfx/drivers/include \
   $(SDK_ROOT)/integration/nrfx \
   $(SDK_ROOT)/integration/nrfx/legacy \
+  $(SDK_ROOT)/components/libraries/cli \
+  $(SDK_ROOT)/components/libraries/cli/uart \
+  $(SDK_ROOT)/components/libraries/queue \
 
 INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/timer \
@@ -208,7 +218,7 @@ OPT = -O3 -g3
 # C flags common to all targets
 CFLAGS += $(OPT)
 CFLAGS += -DNRF_LOG_ENABLED=1
-CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_UART=1
+CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_UART=0
 CFLAGS += -DNRF_LOG_BACKEND_SERIAL_USES_RTT=0
 CFLAGS += -DSOFTDEVICE_PRESENT
 CFLAGS += -DSWI_DISABLE0
