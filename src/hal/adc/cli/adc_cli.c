@@ -56,7 +56,7 @@ static void adc_get_voltage_cli(const cli_t *cli, size_t argc, char **argv)
 
     if (2 != argc)
     {
-        cli_error("%s: bad parameter count", argv[0]);
+        cli_error(cli, "%s: bad parameter count", argv[0]);
         return;
     }
 
@@ -64,13 +64,13 @@ static void adc_get_voltage_cli(const cli_t *cli, size_t argc, char **argv)
 
     if (!cli_str_to_val(argv[1], CLI_ARG_TYPE_INT_16, &val))
     {
-        cli_error("%s: wrong number", argv[0]);
+        cli_error(cli, "%s: wrong number", argv[0]);
         return;
     }
 
     int16_t voltage = adc_get_voltage(val.num_int16);
 
-    cli_print("voltage: %d", voltage);
+    cli_print(cli, "voltage: %d", voltage);
 }
 
 CLI_CREATE_STATIC_SUBCMD_SET(m_sub_adc)

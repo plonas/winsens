@@ -46,20 +46,16 @@ typedef struct
     };
 } cli_arg_t;
 
-#define cli_error(_fmt, ...)        cli_error_raw(_fmt "\n", ##__VA_ARGS__)
-#define cli_warn(_fmt, ...)         cli_warn_raw(_fmt "\n", ##__VA_ARGS__)
-#define cli_info(_fmt, ...)         cli_info_raw(_fmt "\n", ##__VA_ARGS__)
-#define cli_print(_fmt, ...)        cli_print_raw(_fmt "\n", ##__VA_ARGS__)
+#define cli_error       nrf_cli_error
+#define cli_warn        nrf_cli_warn
+#define cli_info        nrf_cli_info
+#define cli_print       nrf_cli_print
 
 winsens_status_t cli_init(void);
 void cli_process(void);
 bool cli_str_to_val(const char *str, cli_arg_type_t type, cli_arg_t *val);
 
 void cli_help_print(void);
-void cli_print_raw(char const *fmt, ...);
-void cli_info_raw(char const *fmt, ...);
-void cli_warn_raw(char const *fmt, ...);
-void cli_error_raw(char const *fmt, ...);
 
 
 #endif /* CLI_H_ */

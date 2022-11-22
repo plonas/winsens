@@ -122,46 +122,6 @@ void cli_help_print(void)
     nrf_cli_help_print(&m_cli_uart, NULL, 0);
 }
 
-void cli_print_raw(char const *fmt, ...)
-{
-    va_list args = {0};
-    va_start(args, fmt);
-
-    nrf_cli_fprintf(&m_cli_uart, NRF_CLI_DEFAULT, fmt, &args);
-
-    va_end(args);
-}
-
-void cli_info_raw(char const *fmt, ...)
-{
-    va_list args = {0};
-    va_start(args, fmt);
-
-    nrf_cli_fprintf(&m_cli_uart, NRF_CLI_INFO, fmt, &args);
-
-    va_end(args);
-}
-
-void cli_warn_raw(char const *fmt, ...)
-{
-    va_list args = {0};
-    va_start(args, fmt);
-
-    nrf_cli_fprintf(&m_cli_uart, NRF_CLI_WARNING, fmt, &args);
-
-    va_end(args);
-}
-
-void cli_error_raw(char const *fmt, ...)
-{
-    va_list args = {0};
-    va_start(args, fmt);
-
-    nrf_cli_fprintf(&m_cli_uart, NRF_CLI_ERROR, fmt, &args);
-
-    va_end(args);
-}
-
 /*
  ******************************************************************************
  * Private functions
