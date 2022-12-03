@@ -77,6 +77,7 @@ typedef struct
     bool                        read_enabled;
     bool                        write_enabled;
     bool                        notification_enabled;
+    bool                        notifications_active;
     uint16_t                    value_len;
     uint8_t                     *value;
 } ble_peripheral_char_t;
@@ -87,7 +88,8 @@ typedef struct
     .char_uuid = {.uuid = BLE_UUID_CS_THRESHOLD_CHARACTERISTC_UUID_BASE + WINDOW_STATE_CFG_WINDOW}, \
     .read_enabled = true , \
     .write_enabled = true, \
-    .notification_enabled = false, \
+    .notifications_enabled = false, \
+    .notifications_active = false, \
     .value_len = sizeof(int16_t), \
     .desc = "Window's threshold", \
     }, \
@@ -96,7 +98,8 @@ typedef struct
     .char_uuid = {.uuid = BLE_UUID_WMS_STATE_CHARACTERISTC_UUID}, \
     .read_enabled = true , \
     .write_enabled = false, \
-    .notification_enabled = true, \
+    .notifications_enabled = false, \
+    .notifications_active = true, \
     .value_len = sizeof(uint8_t), \
     .desc = "Window's state", \
     }, \
@@ -105,7 +108,8 @@ typedef struct
     .char_uuid = {.uuid = BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID}, \
     .read_enabled = true , \
     .write_enabled = true, \
-    .notification_enabled = false, \
+    .notifications_enabled = false, \
+    .notifications_active = false, \
     .value_len = sizeof(uint16_t), \
     .desc = "Free fall sensitivity", \
     }, \
@@ -114,7 +118,8 @@ typedef struct
     .char_uuid = {.uuid = BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID}, \
     .read_enabled = true , \
     .write_enabled = true, \
-    .notification_enabled = false, \
+    .notifications_enabled = false, \
+    .notifications_active = false, \
     .value_len = sizeof(uint16_t), \
     .desc = "High pass sensitivity", \
     }, \
@@ -123,7 +128,8 @@ typedef struct
     .char_uuid = {.uuid = BLE_UUID_BAT_LEVEL_CHARACTERISTC_UUID}, \
     .read_enabled = true , \
     .write_enabled = false, \
-    .notification_enabled = true, \
+    .notifications_enabled = false, \
+    .notifications_active = true, \
     .value_len = sizeof(uint8_t), \
     .desc = "Battery level", \
     }, \

@@ -80,7 +80,16 @@ typedef void (*ble_peripheral_evt_handler_t)(winsens_event_t event);
 typedef void (*ble_peripheral_state_entry_t)(void);
 typedef void (*ble_peripheral_state_exit_t)(void);
 
-typedef struct WS_ServerBtState_s
+typedef struct
+{
+    ble_peripheral_svc_id_t     server_id;
+    ble_peripheral_char_id_t    char_id;
+    ble_uuid_t                  uuid;
+    uint16_t                    value_len;
+    uint8_t const               *value;
+} ble_peripheral_write_t;
+
+typedef struct
 {
     ble_peripheral_state_enum_t     state_id;
     ble_peripheral_evt_handler_t    evt_handler;
@@ -134,6 +143,7 @@ static bool disconnect(uint16_t connHandle);
 static void start_advertising(ble_gap_addr_t* addr);
 static bool bond(uint16_t connHandle);
 static bool add_to_whitelist(pm_peer_id_t peerId);
+static void handle_write_char(const ble_peripheral_write_t *write_data);
 static void notify_on_write(const ble_peripheral_update_t *update_data);
 static ble_peripheral_char_id_t get_char_id(uint16_t attr_handle);
 static char const * convert_state_to_str(ble_peripheral_state_enum_t state);
@@ -280,7 +290,27 @@ winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_pe
 
     ret_code_t err_code;
 
-    if (BLE_CONN_HANDLE_INVALID == g_conn_handle || !g_characteristics[char_id].notification_enabled)
+    if (BLE_CONN_HANDLE_INVALID != g_conn_handle && g_characteristics[char_id].notifications_enabled)
+    {
+        ble_gatts_hvx_params_t hv_params;
+        hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
+        hv_params.type = BLE_GATT_HVX_NOTIFICATION;
+        hv_params.offset = 0;
+        hv_params.p_len = &value_len;
+        hv_params.p_data = value;
+
+        err_code = sd_ble_gatts_hvx(g_conn_handle, &hv_params);
+        if (BLE_ERROR_GATTS_SYS_ATTR_MISSING == err_code)
+        {
+            sd_ble_gatts_sys_attr_set(g_conn_handle, NULL, 0, 0);
+        }
+        else
+        {
+            LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
+            LOG_ERROR_BOOL_CHECK(0 != *hv_params.p_len);
+        }
+    }
+    else
     {
         ble_gatts_value_t gatts_value;
         memset(&gatts_value, 0, sizeof(gatts_value));
@@ -291,19 +321,6 @@ winsens_status_t ble_peripheral_update(ble_peripheral_svc_id_t server_id, ble_pe
 
         err_code = sd_ble_gatts_value_set(BLE_CONN_HANDLE_INVALID, g_characteristics[char_id].char_handle.value_handle, &gatts_value);
         LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-    }
-    else
-    {
-        ble_gatts_hvx_params_t hv_params;
-        hv_params.handle = g_characteristics[char_id].char_handle.value_handle;
-        hv_params.type = BLE_GATT_HVX_NOTIFICATION;
-        hv_params.offset = 0;
-        hv_params.p_len = &value_len;
-        hv_params.p_data = value;
-
-        err_code = sd_ble_gatts_hvx(g_conn_handle, &hv_params);
-        LOG_NRF_ERROR_RETURN(err_code, WINSENS_ERROR);
-        LOG_ERROR_BOOL_CHECK(0 != *hv_params.p_len);
     }
 
     return WINSENS_OK;
@@ -583,10 +600,16 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
             LOG_DEBUG("BLE_GATTS_EVT_WRITE");
             const ble_gatts_evt_write_t *write_evt = &p_ble_evt->evt.gatts_evt.params.write;
             const ble_peripheral_char_id_t char_id = get_char_id(write_evt->handle);
+
             if (BLE_PERIPHERAL_CHAR_ID_INVALID != char_id)
             {
-                const ble_peripheral_update_t update_data = { .server_id = g_characteristics[char_id].service_id, .char_id = char_id, .value_len = write_evt->len, .value = write_evt->data };
-                winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&update_data };
+                const ble_peripheral_write_t write_data = { 
+                    .server_id = g_characteristics[char_id].service_id, 
+                    .char_id = char_id, 
+                    .uuid = write_evt->uuid,
+                    .value_len = write_evt->len, 
+                    .value = write_evt->data };
+                winsens_event_t e = { .id = BLE_PERIPHERAL_EVT_WRITE, .data = (winsens_event_data_t)&write_data };
                 evt_handler(e);
             }
             break;
@@ -787,7 +810,7 @@ static void connected_evt_handler(winsens_event_t event)
     }
     else if (BLE_PERIPHERAL_EVT_WRITE == event.id)
     {
-        notify_on_write((const ble_peripheral_update_t *)event.data);
+        handle_write_char((const ble_peripheral_write_t *)event.data);
     }
     else
     {
@@ -962,7 +985,7 @@ static void add_characteristic(ble_peripheral_char_t *charact)
     memset(&char_md, 0, sizeof(char_md));
     char_md.char_props.read         = charact->read_enabled;
     char_md.char_props.write        = charact->write_enabled;
-    char_md.char_props.notify       = charact->notification_enabled;
+    char_md.char_props.notify       = charact->notifications_active;
 
     if (charact->desc && '\0' != charact->desc[0])
     {
@@ -971,7 +994,7 @@ static void add_characteristic(ble_peripheral_char_t *charact)
         char_md.char_user_desc_max_size = strlen(charact->desc);
     }
 
-    if (charact->notification_enabled)
+    if (charact->notifications_active)
     {
         //Configuring Client Characteristic Configuration Descriptor metadata
         ble_gatts_attr_md_t cccd_md;
@@ -1006,7 +1029,7 @@ static void add_characteristic(ble_peripheral_char_t *charact)
                                        &attr_char_value,
                                        &charact->char_handle);
     LOG_NRF_ERROR_CHECK(err_code);
-    LOG_FLUSH();
+    // LOG_FLUSH();
 }
 
 static void remove_all_bondings(void)
@@ -1058,6 +1081,25 @@ static bool add_to_whitelist(pm_peer_id_t peerId)
     return false;
 }
 
+static void handle_write_char(const ble_peripheral_write_t *write_data)
+{
+    if (g_characteristics[write_data->char_id].char_uuid.uuid == write_data->uuid.uuid)
+    {
+        const ble_peripheral_update_t update = {
+            .char_id = write_data->char_id,
+            .server_id = write_data->server_id,
+            .value = write_data->value,
+            .value_len = write_data->value_len,
+        };
+        notify_on_write(&update);
+    }
+    else if (BLE_UUID_DESCRIPTOR_CLIENT_CHAR_CONFIG == write_data->uuid.uuid)
+    {
+        bool enabled = (*(uint8_t*)write_data->value) == 0 ? false : true;
+        g_characteristics[write_data->char_id].notifications_enabled = enabled;
+    }
+}
+
 static void notify_on_write(const ble_peripheral_update_t *update_data)
 {
     if (BLE_PERIPHERAL_CHAR_ID_INVALID == update_data->char_id)
@@ -1078,7 +1120,10 @@ static ble_peripheral_char_id_t get_char_id(uint16_t attr_handle)
 {
     for (ble_peripheral_char_id_t i = 0; i < CHARACTERISTICS_NUMBER; ++i)
     {
-        if (attr_handle == g_characteristics[i].char_handle.value_handle)
+        if (attr_handle == g_characteristics[i].char_handle.value_handle ||
+            attr_handle == g_characteristics[i].char_handle.user_desc_handle ||
+            attr_handle == g_characteristics[i].char_handle.sccd_handle ||
+            attr_handle == g_characteristics[i].char_handle.cccd_handle)
         {
             return i;
         }

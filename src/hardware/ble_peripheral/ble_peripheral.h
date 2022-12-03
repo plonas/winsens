@@ -53,7 +53,8 @@ typedef struct
     ble_uuid_t                  char_uuid;
     bool                        read_enabled;
     bool                        write_enabled;
-    bool                        notification_enabled;
+    bool                        notifications_enabled;
+    bool                        notifications_active;
     uint16_t                    value_len;
     char                        *desc;
 } ble_peripheral_char_t;
