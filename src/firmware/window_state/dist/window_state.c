@@ -78,7 +78,7 @@ winsens_status_t window_state_init(void)
 winsens_status_t window_state_subscribe(winsens_event_handler_t callback)
 {
     LOG_ERROR_BOOL_RETURN(g_initialized, WINSENS_NOT_INITIALIZED);
-    return subscribers_add(&g_subscribers, callback);;
+    return subscribers_add(&g_subscribers, callback);
 }
 
 window_state_type_t window_state_get(window_id_t window)
