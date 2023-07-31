@@ -9,10 +9,13 @@
 #include "winsens.h"
 #include "system.h"
 #include "task_queue.h"
+#include "ble_peripheral_ctrl.h"
 #include "acc_ctrl.h"
 #include "battery_observer.h"
 #include "ble/window_state_observer.h"
 #include "pwr_mgr.h"
+#include "timer.h"
+#include "cli.h"
 #define ILOG_MODULE_NAME winsens_app
 #include "log.h"
 #include "log_internal_nrf52.h"
@@ -23,7 +26,7 @@
 
 
 LOG_REGISTER();
-// APP_TIMER_DEF(blink_timer);
+APP_TIMER_DEF(blink_timer);
 
 
 // static void timer_callback(void *p_data, uint16_t data_size)
@@ -31,11 +34,11 @@ LOG_REGISTER();
 //     bsp_board_led_invert(0);
 // }
 
-// static void timer_isr(void* context)
-// {
-//     task_queue_add(NULL, 0, timer_callback);
-// //    bsp_board_led_invert( 0 );
-// }
+static void timer_isr(void* context)
+{
+    // task_queue_add(NULL, 0, timer_callback);
+   bsp_board_led_invert( 0 );
+}
 
 static void event_handler(winsens_event_t event)
 {
@@ -47,12 +50,17 @@ static void event_handler(winsens_event_t event)
     }
 }
 
+
 void app_init(void)
 {
     winsens_status_t status = WINSENS_ERROR;
 
-
     LOG_INIT(NULL);
+
+    timer_init();
+
+    status = cli_init();
+    LOG_ERROR_RETURN(status, ;);
 
     status = system_init();
     LOG_ERROR_RETURN(status, ;);
@@ -61,6 +69,9 @@ void app_init(void)
     LOG_ERROR_RETURN(status, ;);
 
     status = winsens_init();
+    LOG_ERROR_RETURN(status, ;);
+
+    status = ble_peripheral_ctrl_init();
     LOG_ERROR_RETURN(status, ;);
 
     status = acc_ctrl_init();
@@ -75,11 +86,11 @@ void app_init(void)
     bsp_board_init(BSP_INIT_LEDS);
 
     ret_code_t err_code;
-    // err_code = app_timer_create(&blink_timer, APP_TIMER_MODE_REPEATED, timer_isr);
-    // LOG_WARNING_CHECK(err_code);
+    err_code = app_timer_create(&blink_timer, APP_TIMER_MODE_REPEATED, timer_isr);
+    LOG_WARNING_CHECK(err_code);
 
-    // err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
-    // LOG_WARNING_CHECK(err_code);
+    err_code = app_timer_start(blink_timer, APP_TIMER_TICKS(500), NULL);
+    LOG_WARNING_CHECK(err_code);
 
     err_code = winsens_subscribe(pwr_mgr_callback);
     LOG_WARNING_CHECK(err_code);
@@ -93,6 +104,6 @@ void app_run(void)
     while (true)
     {
         task_queue_execute();
-        LOG_FLUSH();
+        // LOG_FLUSH();
     };
 }
