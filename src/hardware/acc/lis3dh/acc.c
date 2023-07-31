@@ -189,10 +189,12 @@ winsens_status_t acc_init(void)
 
         lis3dh_init();
 
-        winsens_status_t status = timer_create(&g_timer, tmr_evt_handler, NULL);
-        LOG_ERROR_RETURN(status, status);
-        status = timer_start(&g_timer, ACC_READ_DATA_INTERVAL, true);
-        LOG_ERROR_RETURN(status, status);
+        // winsens_status_t status = timer_create(&g_timer, tmr_evt_handler, NULL);
+        // LOG_ERROR_RETURN(status, status);
+        // status = timer_start(&g_timer, ACC_READ_DATA_INTERVAL, true);
+        // LOG_ERROR_RETURN(status, status);
+        (void)tmr_evt_handler;
+        (void)g_timer;
     }
 
     return WINSENS_OK;
