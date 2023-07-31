@@ -34,7 +34,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/hardware/acc/lis3dh/acc.c \
   $(PROJ_DIR)/src/hardware/acc/ctrl/bt/acc_ctrl.c \
-  $(PROJ_DIR)/src/hardware/ble_peripheral/stub/ble_peripheral.c \
+  $(PROJ_DIR)/src/hardware/ble_peripheral/nrf52/ble_peripheral.c \
   $(PROJ_DIR)/src/hardware/ble_peripheral_ctrl/nrf52/ble_peripheral_ctrl.c \
   $(PROJ_DIR)/src/app/hmi/buttons/hmi.c \
   $(PROJ_DIR)/src/utils/circular_buf/circular_buf.c \
