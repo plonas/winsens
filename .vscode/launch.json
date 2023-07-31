@@ -9,11 +9,13 @@
         "cwd": "${workspaceRoot}",
         "executable": "../winsens_build/nrf52840_xxaa.out",
         "request": "launch",
+        // "request": "attach",
         "type": "cortex-debug",
+        "serverpath": "/usr/local/bin/JLinkGDBServerCL",
         "servertype": "jlink",
         "serialNumber": "",
         "device": "nRF52840_xxAA",
-        "runToMain": true,
+        "runToEntryPoint": "main",
         "showDevDebugOutput": "raw",
     }
     ]
