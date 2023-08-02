@@ -23,6 +23,7 @@
 #define BLE_UUID_ACC_FF_SENSITIV_CHARACTERISTC_UUID     0xF030 // Just a random, but recognizable value
 #define BLE_UUID_ACC_HP_SENSITIV_CHARACTERISTC_UUID     0xF040 // Just a random, but recognizable value
 #define BLE_UUID_BAT_LEVEL_CHARACTERISTC_UUID           0xF050 // Just a random, but recognizable value
+#define BLE_UUID_DISTANCE_CHARACTERISTC_UUID            0xF060 // Just a random, but recognizable value
 
 typedef enum
 {
@@ -39,6 +40,7 @@ typedef enum
     BLE_PERIPERAL_CHAR_ACC_FF,
     BLE_PERIPERAL_CHAR_ACC_HP,
     BLE_PERIPERAL_CHAR_BAT_LVL,
+    BLE_PERIPERAL_CHAR_DISTANCE,
 } ble_peripheral_char_id_enum_t;
 
 /*
@@ -132,6 +134,16 @@ typedef struct
     .notifications_active = true, \
     .value_len = sizeof(uint8_t), \
     .desc = "Battery level", \
+    }, \
+    { \
+    .service_id = BLE_PERIPERAL_SVC_CS, \
+    .char_uuid = {.uuid = BLE_UUID_DISTANCE_CHARACTERISTC_UUID}, \
+    .read_enabled = true , \
+    .write_enabled = false, \
+    .notifications_enabled = false, \
+    .notifications_active = true, \
+    .value_len = sizeof(uint16_t), \
+    .desc = "Distance", \
     }, \
 }
 

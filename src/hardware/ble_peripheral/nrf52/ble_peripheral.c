@@ -440,7 +440,7 @@ static void services_init(void)
 
         for (uint8_t char_id = 0; char_id < CHARACTERISTICS_NUMBER; ++char_id)
         {
-            if (svc_id ==  g_characteristics[char_id].service_id)
+            if (svc_id == g_characteristics[char_id].service_id)
             {
                 add_characteristic(&g_characteristics[char_id]);
             }
@@ -973,12 +973,12 @@ static void add_service(ble_peripheral_svc_t *svc)
 static void add_characteristic(ble_peripheral_char_t *charact)
 {
     const ble_peripheral_svc_t *svc = &g_services[charact->service_id];
-    charact->char_uuid.type = svc->service_uuid.type;
+    // charact->char_uuid.type = svc->service_uuid.type;
 
     uint32_t err_code;
 
-//    err_code = sd_ble_uuid_vs_add(&svc->service_base_uuid, &charact->char_uuid.type);
-//    LOG_NRF_ERROR_CHECK(err_code);
+    err_code = sd_ble_uuid_vs_add(&svc->service_base_uuid, &charact->char_uuid.type);
+    LOG_NRF_ERROR_CHECK(err_code);
 
     //Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -1021,7 +1021,7 @@ static void add_characteristic(ble_peripheral_char_t *charact)
     //Set characteristic length in number of bytes
     attr_char_value.init_len    = charact->value_len;
     attr_char_value.max_len     = charact->value_len;
-//    attr_char_value.p_value     = charact->value;
+    attr_char_value.init_offs   = 0;
 
     //Add our new characteristic to the service
     err_code = sd_ble_gatts_characteristic_add(svc->service_handle,

@@ -30,6 +30,7 @@ SRC_FILES += \
   $(PROJ_DIR)/src/firmware/battery/cr2032/battery.c \
   $(PROJ_DIR)/src/firmware/battery/observer/ble/battery_observer.c \
   $(PROJ_DIR)/src/firmware/distance/cny70/distance.c \
+  $(PROJ_DIR)/src/firmware/distance/observer/ble/distance_observer.c \
   $(PROJ_DIR)/src/firmware/winsens/impl/winsens.c \
   $(PROJ_DIR)/src/firmware/config/storage/config.c \
   $(PROJ_DIR)/src/hardware/acc/lis3dh/acc.c \
@@ -140,6 +141,7 @@ INC_FOLDERS += \
   $(PROJ_DIR)/src/firmware/battery/observer \
   $(PROJ_DIR)/src/firmware/window_state/observer \
   $(PROJ_DIR)/src/firmware/distance \
+  $(PROJ_DIR)/src/firmware/distance/observer \
   $(PROJ_DIR)/src/firmware/winsens \
   $(PROJ_DIR)/src/firmware/config \
   $(PROJ_DIR)/src/hardware/acc \

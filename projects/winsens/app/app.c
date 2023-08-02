@@ -13,6 +13,7 @@
 #include "acc_ctrl.h"
 #include "battery_observer.h"
 #include "ble/window_state_observer.h"
+#include "distance_observer.h"
 #include "pwr_mgr.h"
 #include "timer.h"
 #include "cli.h"
@@ -81,6 +82,9 @@ void app_init(void)
     LOG_ERROR_RETURN(status, ;);
 
     status = battery_observer_init();
+    LOG_ERROR_RETURN(status, ;);
+
+    status = distance_observer_init();
     LOG_ERROR_RETURN(status, ;);
 
     bsp_board_init(BSP_INIT_LEDS);

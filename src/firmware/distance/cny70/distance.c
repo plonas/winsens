@@ -19,7 +19,7 @@
 
 
 #define DISTANCE_ADC_IDS_NUM        ( sizeof(g_adc_ids)/sizeof(g_adc_ids[0]) )
-#define DISTANCE_CB_NUM             ( 3 )
+#define DISTANCE_CB_NUM             ( 4 )
 
 
 static void adc_evt_handler(adc_channel_id_t id, int16_t value);
